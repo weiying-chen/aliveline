@@ -166,13 +166,23 @@ export default function App() {
 
   useEffect(() => {
     const todayKey = dateKey(now)
-    if (localStorage.getItem(LS_DAILY_CLEAR_KEY) === todayKey) return
+    const savedKey = localStorage.getItem(LS_DAILY_CLEAR_KEY)
+    if (savedKey === todayKey) return
 
     const cutoff = new Date(now)
     cutoff.setHours(17, 30, 0, 0)
-    if (now.getTime() < cutoff.getTime()) return
+    if (!savedKey && now.getTime() < cutoff.getTime()) return
 
-    localStorage.setItem(LS_DAILY_CLEAR_KEY, todayKey)
+    const yesterday = new Date(now)
+    yesterday.setDate(now.getDate() - 1)
+    const yesterdayKey = dateKey(yesterday)
+
+    if (now.getTime() < cutoff.getTime() && savedKey === yesterdayKey) return
+
+    localStorage.setItem(
+      LS_DAILY_CLEAR_KEY,
+      now.getTime() >= cutoff.getTime() ? todayKey : yesterdayKey
+    )
     setTasks([])
     setTaskText('')
     setTaskHours('')
