@@ -98,8 +98,10 @@ button {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 8px 12px;
+  height: 40px;
+  padding: 0 12px;
   font-family: inherit;
+  font-size: 14px;
   cursor: pointer;
 }
 
@@ -132,8 +134,10 @@ input {
   color: var(--text);
   border: 1px solid var(--background);
   border-radius: 10px;
-  padding: 8px 12px;
+  height: 40px;
+  padding: 0 12px;
   font-family: inherit;
+  font-size: 14px;
   resize: vertical;
 }
 
