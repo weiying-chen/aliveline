@@ -13,11 +13,13 @@ import {
 import { minutesFromTimeParts } from './utils/taskTime'
 import {
   addWorkMinutes,
+  atLocalTime,
   isInWorkTime,
   nextWorkStart,
   shouldShowEarlyFinishReminder,
   shouldShowTeamsReminder,
   workMsBetween,
+  WORK_BLOCKS,
 } from './utils/workTime'
 
 type PickerInput = HTMLInputElement
@@ -126,6 +128,22 @@ export default function App() {
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    const current = new Date()
+    const dayStart = new Date(current)
+    dayStart.setHours(0, 0, 0, 0)
+    const firstBlock = WORK_BLOCKS[0]
+    const lastBlock = WORK_BLOCKS[WORK_BLOCKS.length - 1]
+    const reminderStart = atLocalTime(dayStart, firstBlock.start)
+    const reminderEnd = new Date(reminderStart)
+    reminderEnd.setMinutes(reminderEnd.getMinutes() + 60)
+    const cutoff = atLocalTime(dayStart, lastBlock.end)
+    const firedKey = localStorage.getItem(LS_REMINDER_NOTIFIED_KEY)
+    console.log(
+      `[reminder] window ${fmtTime(reminderStart)}–${fmtTime(reminderEnd)}; cutoff ${fmtTime(cutoff)}; fired ${firedKey === dateKey(current) ? 'yes' : 'no'}`
+    )
   }, [])
 
   useEffect(() => {

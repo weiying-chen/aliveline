@@ -125,7 +125,7 @@ export function shouldShowEarlyFinishReminder(now: Date, deadline: Date) {
 
   const reminderStart = atLocalTime(dayStart, firstBlock(WORK_BLOCKS).start)
   const reminderEnd = new Date(reminderStart)
-  reminderEnd.setMinutes(reminderEnd.getMinutes() + 30)
+  reminderEnd.setMinutes(reminderEnd.getMinutes() + 60)
 
   const finishCutoff = atLocalTime(dayStart, lastBlock(WORK_BLOCKS).end)
 
@@ -148,7 +148,7 @@ export function shouldShowTeamsReminder(now: Date, deadline: Date) {
   if (deadlineDay.getTime() !== dayStart.getTime() || deadline.getTime() >= dayCutoff.getTime()) {
     const reminderEnd = new Date(dayCutoff)
     const reminderStart = new Date(dayCutoff)
-    reminderStart.setMinutes(reminderStart.getMinutes() - 30)
+    reminderStart.setMinutes(reminderStart.getMinutes() - 60)
     return now.getTime() >= reminderStart.getTime() && now.getTime() < reminderEnd.getTime()
   }
 

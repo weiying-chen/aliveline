@@ -72,7 +72,7 @@ describe('nextWorkStart', () => {
 })
 
 describe('shouldShowEarlyFinishReminder', () => {
-  it('shows between 8:00 and 8:30 when deadline ends by 17:00', () => {
+  it('shows between 8:00 and 9:00 when deadline ends by 17:00', () => {
     const now = at(8, 5)
     const deadline = at(17, 0)
     expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(true)
@@ -84,8 +84,8 @@ describe('shouldShowEarlyFinishReminder', () => {
     expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(false)
   })
 
-  it('does not show after 8:30', () => {
-    const now = at(8, 31)
+  it('does not show after 9:00', () => {
+    const now = at(9, 1)
     const deadline = at(17, 0)
     expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(false)
   })
@@ -111,20 +111,20 @@ describe('shouldShowEarlyFinishReminder', () => {
 })
 
 describe('shouldShowTeamsReminder', () => {
-  it('shows at 4:30 when the deadline spills past 17:00', () => {
-    const now = at(16, 32)
+  it('shows at 4:00 when the deadline spills past 17:00', () => {
+    const now = at(16, 2)
     const deadline = at(18, 0)
     expect(shouldShowTeamsReminder(now, deadline)).toBe(true)
   })
 
-  it('shows at 4:30 when the deadline is exactly 17:00', () => {
-    const now = at(16, 35)
+  it('shows at 4:00 when the deadline is exactly 17:00', () => {
+    const now = at(16, 5)
     const deadline = at(17, 0)
     expect(shouldShowTeamsReminder(now, deadline)).toBe(true)
   })
 
-  it('shows at 4:30 when the deadline is on a later day', () => {
-    const now = at(16, 33)
+  it('shows at 4:00 when the deadline is on a later day', () => {
+    const now = at(16, 3)
     const deadline = at(9, 0)
     deadline.setDate(deadline.getDate() + 1)
     expect(shouldShowTeamsReminder(now, deadline)).toBe(true)
