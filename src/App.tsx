@@ -170,7 +170,7 @@ export default function App() {
     if (savedKey === todayKey) return
 
     const cutoff = new Date(now)
-    cutoff.setHours(17, 30, 0, 0)
+    cutoff.setHours(17, 0, 0, 0)
     if (!savedKey && now.getTime() < cutoff.getTime()) return
 
     const yesterday = new Date(now)

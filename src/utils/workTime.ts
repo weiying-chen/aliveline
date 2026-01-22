@@ -1,4 +1,4 @@
-// Work-time rules: 8:00–12:00, 13:00–17:30 (local time).
+// Work-time rules: 8:00–12:00, 13:00–17:00 (local time).
 // Pure logic: no React, no storage.
 
 export type TimeHM = { h: number; m: number }
@@ -6,7 +6,7 @@ export type WorkBlock = { start: TimeHM; end: TimeHM }
 
 export const WORK_BLOCKS: WorkBlock[] = [
   { start: { h: 8, m: 0 }, end: { h: 12, m: 0 } },
-  { start: { h: 13, m: 0 }, end: { h: 17, m: 30 } },
+  { start: { h: 13, m: 0 }, end: { h: 17, m: 0 } },
 ]
 
 function firstBlock(blocks: WorkBlock[]) {
