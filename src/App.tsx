@@ -469,7 +469,11 @@ export default function App() {
           aria-label="Deadline time"
         />
 
-        <button onClick={reset} className="resetButton" aria-label="Reset deadline to now">
+        <button
+          onClick={reset}
+          className="resetButton btn-secondary"
+          aria-label="Reset deadline to now"
+        >
           Reset
         </button>
       </div>
@@ -539,6 +543,7 @@ export default function App() {
                       disabled={
                         !taskText.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null
                       }
+                      className="btn-primary"
                     >
                       Add task
                     </button>
@@ -550,7 +555,11 @@ export default function App() {
                         <div key={`${entry.text}-${index}`} className="taskRow">
                           <span>{entry.text}</span>
                           <span>{formatDuration(entry.minutes)}</span>
-                          <button onClick={() => removeTaskEntry(index)} aria-label="Remove task">
+                          <button
+                            onClick={() => removeTaskEntry(index)}
+                            aria-label="Remove task"
+                            className="btn-secondary"
+                          >
                             Remove
                           </button>
                         </div>
@@ -563,7 +572,11 @@ export default function App() {
                   </div>
 
                   <div className="messageActions">
-                    <button onClick={onCopyTeamsMessage} disabled={!teamsMessage}>
+                    <button
+                      onClick={onCopyTeamsMessage}
+                      disabled={!teamsMessage}
+                      className="btn-primary"
+                    >
                       Copy Teams message
                     </button>
                     {copyStatus === 'copied' && <span className="copyStatus">Copied.</span>}
@@ -633,7 +646,11 @@ export default function App() {
                   </div>
 
                   <div className="messageActions">
-                    <button onClick={onCopyStatusMessage} disabled={!statusMessage}>
+                    <button
+                      onClick={onCopyStatusMessage}
+                      disabled={!statusMessage}
+                      className="btn-primary"
+                    >
                       Copy status message
                     </button>
                     {statusCopyStatus === 'copied' && <span className="copyStatus">Copied.</span>}
