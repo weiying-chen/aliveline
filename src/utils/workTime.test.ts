@@ -13,6 +13,10 @@ function at(h: number, m: number) {
   return new Date(2025, 0, 2, h, m, 0, 0)
 }
 
+function atDate(y: number, monthIndex: number, day: number, h: number, m: number) {
+  return new Date(y, monthIndex, day, h, m, 0, 0)
+}
+
 describe('work time schedule', () => {
   it('counts time across midday', () => {
     const start = at(11, 30)
@@ -35,6 +39,13 @@ describe('work time schedule', () => {
     expect(isInWorkTime(at(16, 45))).toBe(true)
     expect(isInWorkTime(at(17, 0))).toBe(false)
   })
+
+  it('treats weekends as non-working time', () => {
+    const saturday = atDate(2025, 0, 4, 9, 0)
+    const sunday = atDate(2025, 0, 5, 9, 0)
+    expect(isInWorkTime(saturday)).toBe(false)
+    expect(isInWorkTime(sunday)).toBe(false)
+  })
 })
 
 describe('addWorkMinutes', () => {
@@ -52,6 +63,14 @@ describe('addWorkMinutes', () => {
     expect(end.getHours()).toBe(9)
     expect(end.getMinutes()).toBe(30)
   })
+
+  it('skips weekends when adding work minutes', () => {
+    const start = atDate(2025, 0, 3, 16, 30)
+    const end = addWorkMinutes(start, 120)
+    expect(end.getDay()).toBe(1)
+    expect(end.getHours()).toBe(9)
+    expect(end.getMinutes()).toBe(30)
+  })
 })
 
 describe('nextWorkStart', () => {
@@ -59,6 +78,14 @@ describe('nextWorkStart', () => {
     const start = at(18, 0)
     const next = nextWorkStart(start)
     expect(next.getDate()).toBe(3)
+    expect(next.getHours()).toBe(8)
+    expect(next.getMinutes()).toBe(0)
+  })
+
+  it('skips weekends for the next work start', () => {
+    const start = atDate(2025, 0, 3, 18, 0)
+    const next = nextWorkStart(start)
+    expect(next.getDay()).toBe(1)
     expect(next.getHours()).toBe(8)
     expect(next.getMinutes()).toBe(0)
   })
@@ -108,6 +135,12 @@ describe('shouldShowEarlyFinishReminder', () => {
     deadline.setDate(deadline.getDate() + 1)
     expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(false)
   })
+
+  it('does not show on weekends', () => {
+    const now = atDate(2025, 0, 4, 8, 10)
+    const deadline = atDate(2025, 0, 4, 17, 0)
+    expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(false)
+  })
 })
 
 describe('shouldShowTeamsReminder', () => {
@@ -152,5 +185,20 @@ describe('shouldShowTeamsReminder', () => {
     const now = at(17, 1)
     const deadline = at(18, 0)
     expect(shouldShowTeamsReminder(now, deadline)).toBe(false)
+  })
+
+  it('does not show on weekends', () => {
+    const now = atDate(2025, 0, 4, 16, 5)
+    const deadline = atDate(2025, 0, 4, 17, 0)
+    expect(shouldShowTeamsReminder(now, deadline)).toBe(false)
+  })
+})
+
+describe('workMsBetween', () => {
+  it('skips weekend hours', () => {
+    const start = atDate(2025, 0, 3, 16, 0)
+    const end = atDate(2025, 0, 6, 9, 0)
+    const ms = workMsBetween(start, end)
+    expect(ms).toBe(2 * 60 * 60000)
   })
 })

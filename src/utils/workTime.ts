@@ -9,6 +9,11 @@ export const WORK_BLOCKS: WorkBlock[] = [
   { start: { h: 13, m: 0 }, end: { h: 17, m: 0 } },
 ]
 
+function isWorkday(date: Date) {
+  const day = date.getDay()
+  return day !== 0 && day !== 6
+}
+
 function firstBlock(blocks: WorkBlock[]) {
   return blocks[0]
 }
@@ -24,6 +29,7 @@ export function atLocalTime(baseDay: Date, t: TimeHM) {
 }
 
 export function isInWorkTime(now: Date, blocks: WorkBlock[] = WORK_BLOCKS) {
+  if (!isWorkday(now)) return false
   const dayStart = new Date(now)
   dayStart.setHours(0, 0, 0, 0)
 
@@ -50,6 +56,7 @@ export function workMsBetween(start: Date, end: Date, blocks: WorkBlock[] = WORK
   endDay.setHours(0, 0, 0, 0)
 
   for (let day = new Date(cursorDay); day.getTime() <= endDay.getTime(); day.setDate(day.getDate() + 1)) {
+    if (!isWorkday(day)) continue
     for (const block of blocks) {
       const bs = atLocalTime(day, block.start)
       const be = atLocalTime(day, block.end)
@@ -68,14 +75,20 @@ export function nextWorkStart(now: Date, blocks: WorkBlock[] = WORK_BLOCKS) {
   const dayStart = new Date(now)
   dayStart.setHours(0, 0, 0, 0)
 
-  for (const block of blocks) {
-    const bs = atLocalTime(dayStart, block.start)
-    if (bs.getTime() > now.getTime()) return bs
+  for (let safety = 0; safety < 366 * 3; safety++) {
+    if (isWorkday(dayStart)) {
+      for (const block of blocks) {
+        const bs = atLocalTime(dayStart, block.start)
+        if (bs.getTime() > now.getTime()) return bs
+      }
+    }
+
+    dayStart.setDate(dayStart.getDate() + 1)
+    dayStart.setHours(0, 0, 0, 0)
+    now = new Date(dayStart)
   }
 
-  const nextDay = new Date(dayStart)
-  nextDay.setDate(nextDay.getDate() + 1)
-  return atLocalTime(nextDay, blocks[0].start)
+  return dayStart
 }
 
 export function addWorkMinutes(start: Date, minutes: number, blocks: WorkBlock[] = WORK_BLOCKS) {
@@ -87,6 +100,13 @@ export function addWorkMinutes(start: Date, minutes: number, blocks: WorkBlock[]
   for (let safety = 0; safety < 366 * 3; safety++) {
     const dayStart = new Date(cursor)
     dayStart.setHours(0, 0, 0, 0)
+
+    if (!isWorkday(dayStart)) {
+      cursor = new Date(dayStart)
+      cursor.setDate(cursor.getDate() + 1)
+      cursor.setHours(0, 0, 0, 0)
+      continue
+    }
 
     for (const block of blocks) {
       const bs = atLocalTime(dayStart, block.start)
@@ -115,6 +135,7 @@ export function addWorkMinutes(start: Date, minutes: number, blocks: WorkBlock[]
 }
 
 export function shouldShowEarlyFinishReminder(now: Date, deadline: Date) {
+  if (!isWorkday(now)) return false
   const dayStart = new Date(now)
   dayStart.setHours(0, 0, 0, 0)
 
@@ -137,6 +158,7 @@ export function shouldShowEarlyFinishReminder(now: Date, deadline: Date) {
 }
 
 export function shouldShowTeamsReminder(now: Date, deadline: Date) {
+  if (!isWorkday(now)) return false
   const dayStart = new Date(now)
   dayStart.setHours(0, 0, 0, 0)
 
