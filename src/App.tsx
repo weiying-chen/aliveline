@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDuration, formatTeamsMessage, type TaskEntry } from './utils/deadlineHistory'
 import { formatStatusMessage } from './utils/statusMessage'
 import {
-  fmtDateTime,
   fmtDateTimeWithWeekday,
   fmtTime,
   msToParts,
@@ -481,7 +480,9 @@ export default function App() {
           <div className="reminder">Reminder: ask for more work before 9:00 AM.</div>
         )}
         {showTeamsReminder && <div className="reminder">Reminder: post the Teams update.</div>}
-        {!isInWorkTime(now) && <div className="overdue">Counting from {fmtTime(workStartAt)}.</div>}
+        {!isInWorkTime(now) && (
+          <div className="overdue">Counting from {fmtDateTimeWithWeekday(workStartAt)}.</div>
+        )}
       </div>
 
       <div className="controls">
