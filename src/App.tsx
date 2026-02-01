@@ -10,6 +10,7 @@ import {
   parseDatetimeLocalValue,
   toDatetimeLocalValue,
 } from './utils/time'
+import { recentTaskNames } from './utils/taskHistory'
 import { minutesFromTimeParts } from './utils/taskTime'
 import {
   addWorkMinutes,
@@ -98,6 +99,7 @@ export default function App() {
   const [taskText, setTaskText] = useState('')
   const [taskHours, setTaskHours] = useState('')
   const [taskMinutes, setTaskMinutes] = useState('')
+  const [isRecentOpen, setIsRecentOpen] = useState(false)
   const [messageAssignment, setMessageAssignment] = useState(
     () => localStorage.getItem(LS_MESSAGE_ASSIGNMENT_KEY) ?? ''
   )
@@ -356,6 +358,16 @@ export default function App() {
     })
   }, [deadline, messageAssignee, messageAssignment, previousDeadline, previousTasks, tasks])
 
+  const recentTaskItems = useMemo(
+    () => recentTaskNames([...previousTasks, ...tasks]),
+    [previousTasks, tasks]
+  )
+  const filteredRecentTaskItems = useMemo(() => {
+    const needle = taskText.trim().toLowerCase()
+    if (!needle) return recentTaskItems
+    return recentTaskItems.filter((item) => item.toLowerCase().includes(needle))
+  }, [recentTaskItems, taskText])
+
   useEffect(() => {
     setCopyStatus('idle')
   }, [teamsMessage])
@@ -520,13 +532,36 @@ export default function App() {
                   </div>
 
                   <div className="taskFields">
-                    <input
-                      type="text"
-                      value={taskText}
-                      onChange={(e) => setTaskText(e.target.value)}
-                      placeholder="Task item"
-                      aria-label="Task item"
-                    />
+                    <div className="taskInputWrap">
+                      <input
+                        type="text"
+                        value={taskText}
+                        onChange={(e) => setTaskText(e.target.value)}
+                        onFocus={() => setIsRecentOpen(true)}
+                        onBlur={() => setIsRecentOpen(false)}
+                        placeholder="Task item"
+                        aria-label="Task item"
+                      />
+                      {isRecentOpen && filteredRecentTaskItems.length > 0 && (
+                        <div className="taskRecent" role="listbox" aria-label="Recent tasks">
+                          {filteredRecentTaskItems.map((name) => (
+                            <button
+                              key={name}
+                              type="button"
+                              className="taskRecentItem"
+                              onMouseDown={(event) => {
+                                event.preventDefault()
+                                setTaskText(name)
+                                setIsRecentOpen(false)
+                              }}
+                              role="option"
+                            >
+                              {name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <input
                       type="number"
                       min="0"
