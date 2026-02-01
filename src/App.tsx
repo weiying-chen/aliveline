@@ -100,6 +100,7 @@ export default function App() {
   const [taskHours, setTaskHours] = useState('')
   const [taskMinutes, setTaskMinutes] = useState('')
   const [isRecentOpen, setIsRecentOpen] = useState(false)
+  const [recentActiveIndex, setRecentActiveIndex] = useState<number>(-1)
   const [messageAssignment, setMessageAssignment] = useState(
     () => localStorage.getItem(LS_MESSAGE_ASSIGNMENT_KEY) ?? ''
   )
@@ -369,6 +370,10 @@ export default function App() {
   }, [recentTaskItems, taskText])
 
   useEffect(() => {
+    setRecentActiveIndex(filteredRecentTaskItems.length > 0 ? 0 : -1)
+  }, [filteredRecentTaskItems])
+
+  useEffect(() => {
     setCopyStatus('idle')
   }, [teamsMessage])
 
@@ -539,16 +544,52 @@ export default function App() {
                         onChange={(e) => setTaskText(e.target.value)}
                         onFocus={() => setIsRecentOpen(true)}
                         onBlur={() => setIsRecentOpen(false)}
+                        onKeyDown={(event) => {
+                          if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
+                          if (event.key === 'ArrowDown') {
+                            event.preventDefault()
+                            setRecentActiveIndex((current) =>
+                              current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
+                            )
+                          } else if (event.key === 'ArrowUp') {
+                            event.preventDefault()
+                            setRecentActiveIndex((current) =>
+                              current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
+                            )
+                          } else if (event.key === 'Enter') {
+                            if (recentActiveIndex < 0) return
+                            event.preventDefault()
+                            const picked = filteredRecentTaskItems[recentActiveIndex]
+                            if (!picked) return
+                            setTaskText(picked)
+                            setIsRecentOpen(false)
+                          } else if (event.key === 'Escape') {
+                            event.preventDefault()
+                            setIsRecentOpen(false)
+                          }
+                        }}
                         placeholder="Task item"
                         aria-label="Task item"
+                        aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
+                        aria-controls="task-recent-list"
                       />
                       {isRecentOpen && filteredRecentTaskItems.length > 0 && (
-                        <div className="taskRecent" role="listbox" aria-label="Recent tasks">
+                        <div
+                          id="task-recent-list"
+                          className="taskRecent"
+                          role="listbox"
+                          aria-label="Recent tasks"
+                        >
                           {filteredRecentTaskItems.map((name) => (
                             <button
                               key={name}
                               type="button"
                               className="taskRecentItem"
+                              data-state={
+                                name === filteredRecentTaskItems[recentActiveIndex]
+                                  ? 'active'
+                                  : 'idle'
+                              }
                               onMouseDown={(event) => {
                                 event.preventDefault()
                                 setTaskText(name)

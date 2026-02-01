@@ -308,7 +308,8 @@ input::placeholder {
 }
 
 .taskRecentItem:hover,
-.taskRecentItem:focus-visible {
+.taskRecentItem:focus-visible,
+.taskRecentItem[data-state='active'] {
   border-color: var(--border);
   background: var(--primary-5);
 }
