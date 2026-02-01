@@ -4,6 +4,7 @@ import { formatDuration, formatTeamsMessage, type TaskEntry } from './utils/dead
 import { formatStatusMessage } from './utils/statusMessage'
 import {
   fmtDateTime,
+  fmtDateTimeWithWeekday,
   fmtTime,
   msToParts,
   pad2,
@@ -459,12 +460,14 @@ export default function App() {
       <div className="main">
         <div className="block">
           <div className="label">Previous deadline</div>
-          <div className="previous">{previousDeadline ? fmtDateTime(previousDeadline) : '—'}</div>
+          <div className="previous">
+            {previousDeadline ? fmtDateTimeWithWeekday(previousDeadline) : '—'}
+          </div>
         </div>
 
         <div className="block">
           <div className="label">Deadline</div>
-          <div className="deadline">{fmtDateTime(deadline)}</div>
+          <div className="deadline">{fmtDateTimeWithWeekday(deadline)}</div>
         </div>
 
         <div className="block">

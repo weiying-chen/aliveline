@@ -311,7 +311,7 @@ input::placeholder {
 .taskRecentItem:focus-visible,
 .taskRecentItem[data-state='active'] {
   border-color: var(--border);
-  background: var(--primary-5);
+  background: var(--panel-muted);
 }
 
 .taskList {
@@ -385,10 +385,10 @@ input::placeholder {
   --background: #0d0904;
   --primary: #e0c29b;
   --primary-hsl: 43 52% 75%;
-  --primary-5: hsl(var(--primary-hsl) / 0.05);
+  --panel-muted: hsl(var(--primary-hsl) / 0.05);
   --secondary: #748027;
   --accent: #9ec84c;
-  --panel: var(--primary-5);
+  --panel: hsl(var(--primary-hsl) / 0.1);
   --border: #2b2214;
   --space-2: 8px;
   --space-3: 12px;

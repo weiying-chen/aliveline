@@ -9,6 +9,15 @@ export function fmtDateTime(d: Date) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${hours12}:${pad2(d.getMinutes())} ${ampm}`
 }
 
+export function fmtDateTimeWithWeekday(d: Date) {
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const weekday = weekdays[d.getDay()] ?? ''
+  const hours24 = d.getHours()
+  const hours12 = hours24 % 12 || 12
+  const ampm = hours24 < 12 ? 'AM' : 'PM'
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} (${weekday}), ${hours12}:${pad2(d.getMinutes())} ${ampm}`
+}
+
 export function fmtTime(d: Date) {
   const hours24 = d.getHours()
   const hours12 = hours24 % 12 || 12
