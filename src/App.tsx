@@ -228,7 +228,12 @@ export default function App() {
     if (typeof Notification === 'undefined') return
 
     const todayKey = dateKey(now)
-    if (localStorage.getItem(LS_REMINDER_NOTIFIED_KEY) === todayKey) return
+    const notifiedKey = localStorage.getItem(LS_REMINDER_NOTIFIED_KEY)
+    const requestedKey = localStorage.getItem(LS_REMINDER_REQUESTED_KEY)
+    console.log(
+      `[reminder] permission ${Notification.permission}; requested ${requestedKey === todayKey ? 'yes' : 'no'}; notified ${notifiedKey === todayKey ? 'yes' : 'no'}`
+    )
+    if (notifiedKey === todayKey) return
 
     const sendNotification = () => {
       new Notification('Reminder', {
@@ -244,7 +249,7 @@ export default function App() {
 
     if (Notification.permission === 'denied') return
 
-    if (localStorage.getItem(LS_REMINDER_REQUESTED_KEY) === todayKey) return
+    if (requestedKey === todayKey) return
     localStorage.setItem(LS_REMINDER_REQUESTED_KEY, todayKey)
 
     Notification.requestPermission().then((permission) => {
