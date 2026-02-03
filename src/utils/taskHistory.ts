@@ -18,3 +18,13 @@ export function recentTaskNames(entries: TaskEntry[], limit = 6) {
 
   return names
 }
+
+export function updateRecentTaskNames(recent: string[], name: string, limit = 6) {
+  if (!Array.isArray(recent) || limit <= 0) return []
+  if (typeof name !== 'string') return recent.slice(0, limit)
+  const trimmed = name.trim()
+  if (!trimmed) return recent.slice(0, limit)
+
+  const next = [trimmed, ...recent.filter((item) => item !== trimmed)]
+  return next.slice(0, limit)
+}

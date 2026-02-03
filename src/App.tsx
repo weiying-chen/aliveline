@@ -10,7 +10,7 @@ import {
   parseDatetimeLocalValue,
   toDatetimeLocalValue,
 } from './utils/time'
-import { recentTaskNames } from './utils/taskHistory'
+import { updateRecentTaskNames } from './utils/taskHistory'
 import { minutesFromTimeParts } from './utils/taskTime'
 import {
   addWorkMinutes,
@@ -30,6 +30,7 @@ const LS_PREV_DEADLINE_KEY = 'aliveline:previous-deadline-iso'
 const LS_PREV_CHANGED_KEY = 'aliveline:previous-deadline-changed-iso'
 const LS_PREV_TASKS_KEY = 'aliveline:previous-tasks'
 const LS_TASKS_KEY = 'aliveline:tasks'
+const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
 const LS_MESSAGE_ASSIGNMENT_KEY = 'aliveline:message-assignment'
 const LS_MESSAGE_ASSIGNEE_KEY = 'aliveline:message-assignee'
@@ -70,6 +71,18 @@ function readStoredEntries(key: string) {
   }
 }
 
+function readStoredStringList(key: string) {
+  const saved = localStorage.getItem(key)
+  if (!saved) return [] as string[]
+  try {
+    const parsed = JSON.parse(saved) as string[]
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((item) => typeof item === 'string' && item.trim().length > 0)
+  } catch {
+    return []
+  }
+}
+
 function readStoredBool(key: string, fallback: boolean) {
   const saved = localStorage.getItem(key)
   if (saved === null) return fallback
@@ -92,6 +105,9 @@ export default function App() {
   )
   const [tasks, setTasks] = useState<TaskEntry[]>(() =>
     readStoredEntries(LS_TASKS_KEY)
+  )
+  const [recentTasks, setRecentTasks] = useState<string[]>(() =>
+    readStoredStringList(LS_RECENT_TASKS_KEY)
   )
   const [changeBaseDeadline, setChangeBaseDeadline] = useState<Date | null>(() =>
     readStoredDate(LS_CHANGE_BASE_KEY)
@@ -172,6 +188,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(LS_TASKS_KEY, JSON.stringify(tasks))
   }, [tasks])
+
+  useEffect(() => {
+    localStorage.setItem(LS_RECENT_TASKS_KEY, JSON.stringify(recentTasks))
+  }, [recentTasks])
 
   useEffect(() => {
     if (changeBaseDeadline) {
@@ -359,15 +379,11 @@ export default function App() {
     })
   }, [deadline, messageAssignee, messageAssignment, previousDeadline, previousTasks, tasks])
 
-  const recentTaskItems = useMemo(
-    () => recentTaskNames([...previousTasks, ...tasks]),
-    [previousTasks, tasks]
-  )
   const filteredRecentTaskItems = useMemo(() => {
     const needle = taskText.trim().toLowerCase()
-    if (!needle) return recentTaskItems
-    return recentTaskItems.filter((item) => item.toLowerCase().includes(needle))
-  }, [recentTaskItems, taskText])
+    if (!needle) return recentTasks
+    return recentTasks.filter((item) => item.toLowerCase().includes(needle))
+  }, [recentTasks, taskText])
 
   useEffect(() => {
     setRecentActiveIndex(filteredRecentTaskItems.length > 0 ? 0 : -1)
@@ -428,6 +444,7 @@ export default function App() {
       text: taskText.trim(),
       minutes: Math.round(minutes),
     }
+    setRecentTasks((prev) => updateRecentTaskNames(prev, entry.text))
     const nextTasks = [...tasks, entry]
     const baseDeadline = changeBaseDeadline ?? deadline
     if (!changeBaseDeadline) {
