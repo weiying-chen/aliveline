@@ -226,7 +226,6 @@ input::placeholder {
 }
 
 .messagePanel[data-state='open'] .messagePanelInner {
-  overflow: visible;
 }
 
 @media (prefers-reduced-motion: reduce) {
