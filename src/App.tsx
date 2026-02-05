@@ -178,8 +178,6 @@ export default function App() {
   useEffect(() => {
     if (previousChangedAt) {
       localStorage.setItem(LS_PREV_CHANGED_KEY, previousChangedAt.toISOString())
-    } else {
-      localStorage.removeItem(LS_PREV_CHANGED_KEY)
     }
   }, [previousChangedAt])
 
@@ -226,8 +224,6 @@ export default function App() {
       LS_DAILY_CLEAR_KEY,
       now.getTime() >= cutoff.getTime() ? todayKey : yesterdayKey
     )
-    setPreviousDeadline(deadline)
-    setPreviousChangedAt(now)
     setTasks([])
     setTaskText('')
     setTaskHours('')
@@ -349,26 +345,10 @@ export default function App() {
     nextDeadline: Date,
     options?: { tasks?: TaskEntry[]; resetDrafts?: boolean }
   ) => {
-    const shouldSyncPrevious = options?.resetDrafts
-    const sameDeadline = nextDeadline.getTime() === deadline.getTime()
-    if (sameDeadline && shouldSyncPrevious) {
-      setPreviousDeadline(nextDeadline)
-      setPreviousChangedAt(null)
-      setPreviousTasks([])
-      setTasks([])
-      setChangeBaseDeadline(null)
-      return
-    }
-    if (sameDeadline) return
-    if (shouldSyncPrevious) {
-      setPreviousDeadline(nextDeadline)
-      setPreviousChangedAt(null)
-      setPreviousTasks([])
-    } else {
-      setPreviousDeadline(deadline)
-      setPreviousChangedAt(new Date())
-      setPreviousTasks(options?.tasks ?? [])
-    }
+    if (nextDeadline.getTime() === deadline.getTime()) return
+    setPreviousDeadline(deadline)
+    setPreviousChangedAt(new Date())
+    setPreviousTasks(options?.tasks ?? [])
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
       setTasks([])
@@ -468,6 +448,8 @@ export default function App() {
     const nextTasks = [...tasks, entry]
     const baseDeadline = changeBaseDeadline ?? deadline
     if (!changeBaseDeadline) {
+      setPreviousDeadline(deadline)
+      setPreviousChangedAt(new Date())
       setChangeBaseDeadline(deadline)
     }
     setTasks(nextTasks)
