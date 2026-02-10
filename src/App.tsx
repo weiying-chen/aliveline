@@ -34,7 +34,6 @@ const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
 const LS_MESSAGE_ASSIGNMENT_KEY = 'aliveline:message-assignment'
 const LS_MESSAGE_ASSIGNEE_KEY = 'aliveline:message-assignee'
-const LS_STATUS_COMPLETED_ASSIGNMENT_KEY = 'aliveline:status-completed-assignment'
 const LS_STATUS_NEXT_ASSIGNMENT_KEY = 'aliveline:status-next-assignment'
 const LS_STATUS_ASSIGNEE_KEY = 'aliveline:status-assignee'
 const LS_STATUS_START_KEY = 'aliveline:status-start-iso'
@@ -122,9 +121,6 @@ export default function App() {
   )
   const [messageAssignee, setMessageAssignee] = useState(
     () => localStorage.getItem(LS_MESSAGE_ASSIGNEE_KEY) ?? ''
-  )
-  const [statusCompletedAssignment, setStatusCompletedAssignment] = useState(
-    () => localStorage.getItem(LS_STATUS_COMPLETED_ASSIGNMENT_KEY) ?? ''
   )
   const [statusNextAssignment, setStatusNextAssignment] = useState(
     () => localStorage.getItem(LS_STATUS_NEXT_ASSIGNMENT_KEY) ?? ''
@@ -316,10 +312,6 @@ export default function App() {
   }, [messageAssignee])
 
   useEffect(() => {
-    localStorage.setItem(LS_STATUS_COMPLETED_ASSIGNMENT_KEY, statusCompletedAssignment)
-  }, [statusCompletedAssignment])
-
-  useEffect(() => {
     localStorage.setItem(LS_STATUS_NEXT_ASSIGNMENT_KEY, statusNextAssignment)
   }, [statusNextAssignment])
 
@@ -413,11 +405,11 @@ export default function App() {
 
   const statusMessage = useMemo(() => {
     if (!statusStartAt) return ''
-    if (!statusCompletedAssignment.trim()) return ''
+    if (!messageAssignment.trim()) return ''
     if (!statusNextAssignment.trim()) return ''
     if (!statusAssignee.trim()) return ''
     return formatStatusMessage({
-      completedAssignment: statusCompletedAssignment,
+      completedAssignment: messageAssignment,
       nextAssignment: statusNextAssignment,
       assignee: statusAssignee,
       start: statusStartAt,
@@ -425,8 +417,8 @@ export default function App() {
     })
   }, [
     deadline,
+    messageAssignment,
     statusAssignee,
-    statusCompletedAssignment,
     statusNextAssignment,
     statusStartAt,
   ])
@@ -568,8 +560,8 @@ export default function App() {
                       type="text"
                       value={messageAssignee}
                       onChange={(e) => setMessageAssignee(e.target.value)}
-                      placeholder="Confirm by"
-                      aria-label="Confirm by"
+                      placeholder="Confirmed by"
+                      aria-label="Confirmed by"
                     />
                   </div>
 
@@ -730,8 +722,8 @@ export default function App() {
                   <div className="statusFields">
                     <input
                       type="text"
-                      value={statusCompletedAssignment}
-                      onChange={(e) => setStatusCompletedAssignment(e.target.value)}
+                      value={messageAssignment}
+                      onChange={(e) => setMessageAssignment(e.target.value)}
                       placeholder="Completed assignment"
                       aria-label="Completed assignment"
                     />
@@ -746,8 +738,8 @@ export default function App() {
                       type="text"
                       value={statusAssignee}
                       onChange={(e) => setStatusAssignee(e.target.value)}
-                      placeholder="Confirm by"
-                      aria-label="Status confirm by"
+                      placeholder="Confirmed by"
+                      aria-label="Status confirmed by"
                       className="statusConfirmBy"
                     />
                     <input
