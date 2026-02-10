@@ -234,8 +234,6 @@ export default function App() {
     setTaskMinutes('')
     setChangeBaseDeadline(null)
     setPreviousTasks([])
-    setMessageAssignment('')
-    setMessageAssignee('')
   }, [now])
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
