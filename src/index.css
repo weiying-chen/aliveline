@@ -311,8 +311,7 @@ input::placeholder {
 .taskRecentItem:hover,
 .taskRecentItem:focus-visible,
 .taskRecentItem[data-state='active'] {
-  border-color: var(--border);
-  background: var(--panel-muted);
+  background: var(--panel);
 }
 
 .taskList {
@@ -386,7 +385,6 @@ input::placeholder {
   --background: #0d0904;
   --primary: #e0c29b;
   --primary-hsl: 43 52% 75%;
-  --panel-muted: hsl(var(--primary-hsl) / 0.05);
   --secondary: #748027;
   --accent: #9ec84c;
   --panel: hsl(var(--primary-hsl) / 0.1);

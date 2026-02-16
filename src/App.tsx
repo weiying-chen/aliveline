@@ -570,7 +570,13 @@ export default function App() {
                       <input
                         type="text"
                         value={taskText}
-                        onChange={(e) => setTaskText(e.target.value)}
+                        onChange={(e) => {
+                          const nextValue = e.target.value
+                          setTaskText(nextValue)
+                          if (nextValue.trim().length === 0) {
+                            setIsRecentOpen(true)
+                          }
+                        }}
                         onFocus={() => setIsRecentOpen(true)}
                         onBlur={() => setIsRecentOpen(false)}
                         onKeyDown={(event) => {
