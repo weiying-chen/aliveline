@@ -167,7 +167,7 @@ input:focus-visible {
 }
 
 input::placeholder {
-  color: var(--fg);
+  color: var(--muted);
 }
 
 input::selection {
@@ -476,7 +476,7 @@ input::selection {
 :root {
   color-scheme: light;
   --fg: #373737;
-  --muted: #6b6b6b;
+  --muted: #7b7b7b;
   --text-dim: #b9aea0;
   --bg: #e8e8e8;
   --primary: #f36a50;
