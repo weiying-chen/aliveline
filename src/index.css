@@ -50,8 +50,7 @@ body {
 /* Text */
 .label {
   font-size: 18px;
-  color: var(--fg);
-  opacity: 0.7;
+  color: var(--muted);
   margin-bottom: 4px;
 }
 
@@ -69,13 +68,11 @@ body {
 
 .previousMeta {
   font-size: 12px;
-  opacity: 0.6;
   margin-bottom: 6px;
 }
 
 .previousNote {
   font-size: 13px;
-  opacity: 0.8;
   margin-bottom: 12px;
   white-space: pre-wrap;
 }
@@ -90,13 +87,13 @@ body {
 .overdue {
   margin-top: 10px;
   font-size: 13px;
-  color: var(--secondary-muted);
+  color: var(--secondary);
 }
 
 .reminder {
   margin-top: 10px;
   font-size: 14px;
-  color: var(--accent);
+  color: var(--secondary);
 }
 
 .block {
@@ -143,7 +140,7 @@ button:hover {
 }
 
 .btn-secondary {
-  background: var(--secondary-muted);
+  background: var(--secondary);
   color: var(--fg);
   border-color: var(--border);
 }
@@ -171,7 +168,6 @@ input:focus-visible {
 
 input::placeholder {
   color: var(--fg);
-  opacity: 0.5;
 }
 
 input::selection {
@@ -235,7 +231,7 @@ input::selection {
 }
 
 .messageHeader:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--secondary);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -392,7 +388,7 @@ input::selection {
 .taskRecentItem:hover,
 .taskRecentItem:focus-visible,
 .taskRecentItem[data-state='active'] {
-  background: var(--secondary-muted);
+  background: var(--secondary);
 }
 
 .taskList {
@@ -435,7 +431,7 @@ input::selection {
   margin: 0 0 var(--space-3);
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--secondary-muted);
+  background: var(--secondary);
   padding: var(--space-3);
   text-align: left;
   white-space: pre-wrap;
@@ -451,7 +447,6 @@ input::selection {
 
 .copyStatus {
   font-size: 12px;
-  opacity: 0.8;
 }
 
 @media (max-width: 640px) {
@@ -481,11 +476,11 @@ input::selection {
 :root {
   color-scheme: light;
   --fg: #373737;
+  --muted: #6b6b6b;
   --text-dim: #b9aea0;
   --bg: #e8e8e8;
   --primary: #f36a50;
-  --secondary-muted: #dcdedf;
-  --accent: var(--secondary-muted);
+  --secondary: #dcdcdc;
   --border: var(--fg);
   --space-2: 8px;
   --space-3: 12px;
