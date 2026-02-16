@@ -87,7 +87,7 @@ body {
 .overdue {
   margin-top: 10px;
   font-size: 13px;
-  color: var(--secondary);
+  color: var(--muted);
 }
 
 .reminder {
