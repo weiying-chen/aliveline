@@ -21,12 +21,28 @@ body {
   justify-content: center;
 }
 
+.taskSection,
+.messagesSection,
+.deadlineSection {
+  max-width: 640px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.deadlineSection {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
 /* Card */
 .main {
   border: 0;
   border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 12px;
+  padding: 0;
+  margin-bottom: 0;
   text-align: center;
 }
 
@@ -86,13 +102,17 @@ body {
   margin-bottom: 18px;
 }
 
+.main .block:last-child {
+  margin-bottom: 0;
+}
+
 /* Controls */
 .controls {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
   justify-content: center;
-  margin-bottom: var(--space-3);
+  margin-bottom: 0;
 }
 
 button {
@@ -160,9 +180,8 @@ input::selection {
 
 .message {
   padding: 0;
-  max-width: 640px;
-  width: 100%;
-  margin: 0 auto;
+  margin-top: 0;
+  margin-bottom: 0;
   text-align: left;
   border-bottom: 1px solid var(--border);
 }
@@ -172,6 +191,23 @@ input::selection {
 }
 
 .message + .message {
+}
+
+.taskSection {
+  margin-top: 0;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.messagesSection {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.taskSectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
 }
 
 .messageHeader {
@@ -359,7 +395,6 @@ input::selection {
 }
 
 .taskList {
-  margin: 0 0 var(--space-3);
   display: grid;
   gap: var(--space-2);
   text-align: left;
@@ -374,6 +409,10 @@ input::selection {
   border-radius: 10px;
   padding: var(--space-2) 10px;
   text-align: left;
+}
+
+.taskList .taskRow:last-child {
+  margin-bottom: 0;
 }
 
 .messagePreview {

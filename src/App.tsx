@@ -111,7 +111,7 @@ export default function App() {
   const [changeBaseDeadline, setChangeBaseDeadline] = useState<Date | null>(() =>
     readStoredDate(LS_CHANGE_BASE_KEY)
   )
-  const [taskText, setTaskText] = useState('')
+  const [taskName, setTaskName] = useState('')
   const [taskHours, setTaskHours] = useState('')
   const [taskMinutes, setTaskMinutes] = useState('')
   const [isRecentOpen, setIsRecentOpen] = useState(false)
@@ -225,7 +225,7 @@ export default function App() {
     setPreviousDeadline(deadline)
     setPreviousChangedAt(now)
     setTasks([])
-    setTaskText('')
+    setTaskName('')
     setTaskHours('')
     setTaskMinutes('')
     setChangeBaseDeadline(null)
@@ -390,10 +390,10 @@ export default function App() {
   }, [deadline, messageAssignee, messageAssignment, previousDeadline, previousTasks, tasks])
 
   const filteredRecentTaskItems = useMemo(() => {
-    const needle = taskText.trim().toLowerCase()
+    const needle = taskName.trim().toLowerCase()
     if (!needle) return recentTasks
     return recentTasks.filter((item) => item.toLowerCase().includes(needle))
-  }, [recentTasks, taskText])
+  }, [recentTasks, taskName])
 
   useEffect(() => {
     setRecentActiveIndex(filteredRecentTaskItems.length > 0 ? 0 : -1)
@@ -449,9 +449,9 @@ export default function App() {
 
   const addTaskEntry = () => {
     const minutes = minutesFromTimeParts(taskHours, taskMinutes)
-    if (!taskText.trim() || minutes === null) return
+    if (!taskName.trim() || minutes === null) return
     const entry: TaskEntry = {
-      text: taskText.trim(),
+      text: taskName.trim(),
       minutes: Math.round(minutes),
     }
     setRecentTasks((prev) => updateRecentTaskNames(prev, entry.text))
@@ -463,7 +463,7 @@ export default function App() {
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)
     setDeadline(addWorkMinutes(baseDeadline, nextTasks.reduce((sum, item) => sum + item.minutes, 0)))
-    setTaskText('')
+    setTaskName('')
     setTaskHours('')
     setTaskMinutes('')
   }
@@ -481,54 +481,197 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="main">
-        <div className="block">
-          <div className="label">Previous deadline</div>
-          <div className="previous">
-            {previousDeadline ? fmtDateTimeWithWeekday(previousDeadline) : '—'}
+      <div className="deadlineSection">
+        <div className="main">
+          <div className="block">
+            <div className="label">Previous deadline</div>
+            <div className="previous">
+              {previousDeadline ? fmtDateTimeWithWeekday(previousDeadline) : '—'}
+            </div>
           </div>
+
+          <div className="block">
+            <div className="label">Deadline</div>
+            <div className="deadline">{fmtDateTimeWithWeekday(deadline)}</div>
+          </div>
+
+          <div className="block">
+            <div className="label">Remaining (work time)</div>
+            <div className="remaining">
+              {parts.days > 0 && `${parts.days}d `}
+              {parts.hours}h {parts.minutes}m {parts.seconds}s
+            </div>
+          </div>
+          {showEarlyFinishReminder && (
+            <div className="reminder">Reminder: ask for more work before 9:00 AM.</div>
+          )}
+          {showTeamsReminder && <div className="reminder">Reminder: post the Teams update.</div>}
+          {!isInWorkTime(now) && (
+            <div className="overdue">Counting from {fmtDateTimeWithWeekday(workStartAt)}.</div>
+          )}
         </div>
 
-        <div className="block">
-          <div className="label">Deadline</div>
-          <div className="deadline">{fmtDateTimeWithWeekday(deadline)}</div>
-        </div>
+        <div className="controls">
+          <input
+            ref={deadlineRef}
+            className="deadlineInput"
+            type="datetime-local"
+            value={toDatetimeLocalValue(deadline)}
+            onChange={(e) => onSetDeadline(e.target.value)}
+            aria-label="Deadline time"
+          />
 
-        <div className="block">
-          <div className="label">Remaining (work time)</div>
-          <div className="remaining">
-            {parts.days > 0 && `${parts.days}d `}
-            {parts.hours}h {parts.minutes}m {parts.seconds}s
-          </div>
+          <button
+            onClick={reset}
+            className="resetButton btn-primary"
+            aria-label="Reset deadline to now"
+          >
+            Reset
+          </button>
         </div>
-        {showEarlyFinishReminder && (
-          <div className="reminder">Reminder: ask for more work before 9:00 AM.</div>
-        )}
-        {showTeamsReminder && <div className="reminder">Reminder: post the Teams update.</div>}
-        {!isInWorkTime(now) && (
-          <div className="overdue">Counting from {fmtDateTimeWithWeekday(workStartAt)}.</div>
+      </div>
+
+      <div className="taskSection">
+        <div className="taskSectionTitle">Tasks</div>
+        <div className="taskFields">
+            <div className="fieldGroup taskTextField">
+              <label className="fieldLabel" htmlFor="task-name">
+                Name
+              </label>
+              <div className="taskInputWrap">
+                <input
+                  id="task-name"
+                  type="text"
+                  value={taskName}
+                  onChange={(e) => {
+                    const nextValue = e.target.value
+                    setTaskName(nextValue)
+                    if (nextValue.trim().length === 0) {
+                      setIsRecentOpen(true)
+                    }
+                  }}
+                  onFocus={() => setIsRecentOpen(true)}
+                  onBlur={() => setIsRecentOpen(false)}
+                  onKeyDown={(event) => {
+                    if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault()
+                      setRecentActiveIndex((current) =>
+                        current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
+                      )
+                    } else if (event.key === 'ArrowUp') {
+                      event.preventDefault()
+                      setRecentActiveIndex((current) =>
+                        current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
+                      )
+                    } else if (event.key === 'Enter') {
+                      if (recentActiveIndex < 0) return
+                      event.preventDefault()
+                      const picked = filteredRecentTaskItems[recentActiveIndex]
+                      if (!picked) return
+                      setTaskName(picked)
+                      setIsRecentOpen(false)
+                    } else if (event.key === 'Escape') {
+                      event.preventDefault()
+                      setIsRecentOpen(false)
+                    }
+                  }}
+                placeholder="Name"
+                aria-label="Name"
+                aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
+                aria-controls="task-recent-list"
+              />
+                {isRecentOpen && filteredRecentTaskItems.length > 0 && (
+                  <div
+                    id="task-recent-list"
+                    className="taskRecent"
+                    role="listbox"
+                    aria-label="Recent tasks"
+                  >
+                    {filteredRecentTaskItems.map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        className="taskRecentItem"
+                        data-state={
+                          name === filteredRecentTaskItems[recentActiveIndex] ? 'active' : 'idle'
+                        }
+                        onMouseDown={(event) => {
+                          event.preventDefault()
+                          setTaskName(name)
+                          setIsRecentOpen(false)
+                        }}
+                        role="option"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="fieldGroup">
+              <label className="fieldLabel" htmlFor="task-hours">
+                Hours
+              </label>
+              <input
+                id="task-hours"
+                type="number"
+                min="0"
+                value={taskHours}
+                onChange={(e) => setTaskHours(e.target.value)}
+                placeholder="Hours"
+                aria-label="Hours"
+              />
+            </div>
+            <div className="fieldGroup">
+              <label className="fieldLabel" htmlFor="task-minutes">
+                Minutes
+              </label>
+              <input
+                id="task-minutes"
+                type="number"
+                min="0"
+                value={taskMinutes}
+                onChange={(e) => setTaskMinutes(e.target.value)}
+                placeholder="Minutes"
+                aria-label="Minutes"
+              />
+            </div>
+            <div className="fieldGroup">
+              <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
+                Action
+              </span>
+              <button
+                onClick={addTaskEntry}
+                disabled={!taskName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
+                className="btn-primary"
+              >
+                Add task
+              </button>
+            </div>
+          </div>
+
+        {tasks.length > 0 && (
+          <div className="taskList">
+            {tasks.map((entry, index) => (
+              <div key={`${entry.text}-${index}`} className="taskRow">
+                <span>{entry.text}</span>
+                <span>{formatDuration(entry.minutes)}</span>
+                <button
+                  onClick={() => removeTaskEntry(index)}
+                  aria-label="Remove task"
+                  className="btn-secondary"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      <div className="controls">
-        <input
-          ref={deadlineRef}
-          className="deadlineInput"
-          type="datetime-local"
-          value={toDatetimeLocalValue(deadline)}
-          onChange={(e) => onSetDeadline(e.target.value)}
-          aria-label="Deadline time"
-        />
-
-        <button
-          onClick={reset}
-          className="resetButton btn-primary"
-          aria-label="Reset deadline to now"
-        >
-          Reset
-        </button>
-      </div>
-
+      <div className="messagesSection">
       <div className="message" data-state={isTasksPanelOpen ? 'open' : 'closed'}>
           <button
             type="button"
@@ -576,147 +719,6 @@ export default function App() {
                       />
                     </div>
                   </div>
-
-                  <div className="taskFields">
-                    <div className="fieldGroup taskTextField">
-                      <label className="fieldLabel" htmlFor="task-item">
-                        Task item
-                      </label>
-                      <div className="taskInputWrap">
-                        <input
-                          id="task-item"
-                          type="text"
-                          value={taskText}
-                          onChange={(e) => {
-                            const nextValue = e.target.value
-                            setTaskText(nextValue)
-                            if (nextValue.trim().length === 0) {
-                              setIsRecentOpen(true)
-                            }
-                          }}
-                          onFocus={() => setIsRecentOpen(true)}
-                          onBlur={() => setIsRecentOpen(false)}
-                          onKeyDown={(event) => {
-                            if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
-                            if (event.key === 'ArrowDown') {
-                              event.preventDefault()
-                              setRecentActiveIndex((current) =>
-                                current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
-                              )
-                            } else if (event.key === 'ArrowUp') {
-                              event.preventDefault()
-                              setRecentActiveIndex((current) =>
-                                current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
-                              )
-                            } else if (event.key === 'Enter') {
-                              if (recentActiveIndex < 0) return
-                              event.preventDefault()
-                              const picked = filteredRecentTaskItems[recentActiveIndex]
-                              if (!picked) return
-                              setTaskText(picked)
-                              setIsRecentOpen(false)
-                            } else if (event.key === 'Escape') {
-                              event.preventDefault()
-                              setIsRecentOpen(false)
-                            }
-                          }}
-                          placeholder="Task item"
-                          aria-label="Task item"
-                          aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
-                          aria-controls="task-recent-list"
-                        />
-                        {isRecentOpen && filteredRecentTaskItems.length > 0 && (
-                          <div
-                            id="task-recent-list"
-                            className="taskRecent"
-                            role="listbox"
-                            aria-label="Recent tasks"
-                          >
-                            {filteredRecentTaskItems.map((name) => (
-                              <button
-                                key={name}
-                                type="button"
-                                className="taskRecentItem"
-                                data-state={
-                                  name === filteredRecentTaskItems[recentActiveIndex]
-                                    ? 'active'
-                                    : 'idle'
-                                }
-                                onMouseDown={(event) => {
-                                  event.preventDefault()
-                                  setTaskText(name)
-                                  setIsRecentOpen(false)
-                                }}
-                                role="option"
-                              >
-                                {name}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="fieldGroup">
-                      <label className="fieldLabel" htmlFor="task-hours">
-                        Hours
-                      </label>
-                      <input
-                        id="task-hours"
-                        type="number"
-                        min="0"
-                        value={taskHours}
-                        onChange={(e) => setTaskHours(e.target.value)}
-                        placeholder="Hours"
-                        aria-label="Hours"
-                      />
-                    </div>
-                    <div className="fieldGroup">
-                      <label className="fieldLabel" htmlFor="task-minutes">
-                        Minutes
-                      </label>
-                      <input
-                        id="task-minutes"
-                        type="number"
-                        min="0"
-                        value={taskMinutes}
-                        onChange={(e) => setTaskMinutes(e.target.value)}
-                        placeholder="Minutes"
-                        aria-label="Minutes"
-                      />
-                    </div>
-                    <div className="fieldGroup">
-                      <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
-                        Action
-                      </span>
-                      <button
-                        onClick={addTaskEntry}
-                        disabled={
-                          !taskText.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null
-                        }
-                        className="btn-primary"
-                      >
-                        Add task
-                      </button>
-                    </div>
-                  </div>
-
-                  {tasks.length > 0 && (
-                    <div className="taskList">
-                      {tasks.map((entry, index) => (
-                        <div key={`${entry.text}-${index}`} className="taskRow">
-                          <span>{entry.text}</span>
-                          <span>{formatDuration(entry.minutes)}</span>
-                          <button
-                            onClick={() => removeTaskEntry(index)}
-                            aria-label="Remove task"
-                            className="btn-secondary"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
 
                   <div className="messagePreview" aria-label="Teams message preview">
                     {teamsMessage || 'Fill all fields to generate a Teams message preview.'}
@@ -835,6 +837,7 @@ export default function App() {
               </fieldset>
             </div>
           </div>
+      </div>
       </div>
     </div>
   )
