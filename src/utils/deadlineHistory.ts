@@ -33,9 +33,9 @@ function formatTaskLine(task: TaskEntry) {
 export function formatDuration(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
-  if (hours > 0 && minutes > 0) return `${hours}時${minutes}分`
-  if (hours > 0) return `${hours}時`
-  return `${minutes}分`
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`
+  if (hours > 0) return `${hours}h`
+  return `${minutes}m`
 }
 
 export function formatTeamsMessage({ previous, next, tasks, assignment, assignee }: TeamsMessageOptions) {
