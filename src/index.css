@@ -225,10 +225,6 @@ input::placeholder {
   border-top: 0;
 }
 
-.messagePanel[data-state='open'] .messagePanelInner {
-  overflow: visible;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .messagePanel {
     transition: none;
