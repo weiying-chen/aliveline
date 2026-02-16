@@ -405,6 +405,7 @@ input::selection {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: var(--space-2) 10px;
+  font-size: 14px;
   text-align: left;
 }
 
