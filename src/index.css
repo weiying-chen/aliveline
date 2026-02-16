@@ -265,6 +265,28 @@ input::selection {
   padding: 0;
 }
 
+.fieldGroup {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fieldGroup > input {
+  width: 100%;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--fg);
+  text-align: left;
+}
+
+.fieldLabelSpacer {
+  visibility: hidden;
+}
+
 .messageFields {
   display: grid;
   gap: var(--space-2);
@@ -404,7 +426,7 @@ input::selection {
 /* Native control styling hint */
 :root {
   color-scheme: light;
-  --fg: #1f1f1f;
+  --fg: #373737;
   --text-dim: #b9aea0;
   --bg: #e8e8e8;
   --primary: #f36a50;

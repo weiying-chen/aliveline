@@ -549,120 +549,155 @@ export default function App() {
               <fieldset disabled={!isTasksPanelOpen} className="messageFieldset">
                 <div className="messageBody">
                   <div className="messageFields">
-                    <input
-                      type="text"
-                      value={messageAssignment}
-                      onChange={(e) => setMessageAssignment(e.target.value)}
-                      placeholder="Assignment"
-                      aria-label="Assignment name"
-                    />
-                    <input
-                      type="text"
-                      value={messageAssignee}
-                      onChange={(e) => setMessageAssignee(e.target.value)}
-                      placeholder="Confirmed by"
-                      aria-label="Confirmed by"
-                    />
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="teams-assignment">
+                        Assignment
+                      </label>
+                      <input
+                        id="teams-assignment"
+                        type="text"
+                        value={messageAssignment}
+                        onChange={(e) => setMessageAssignment(e.target.value)}
+                        placeholder="Assignment"
+                        aria-label="Assignment name"
+                      />
+                    </div>
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="teams-confirmed-by">
+                        Confirmed by
+                      </label>
+                      <input
+                        id="teams-confirmed-by"
+                        type="text"
+                        value={messageAssignee}
+                        onChange={(e) => setMessageAssignee(e.target.value)}
+                        placeholder="Confirmed by"
+                        aria-label="Confirmed by"
+                      />
+                    </div>
                   </div>
 
                   <div className="taskFields">
-                    <div className="taskInputWrap">
-                      <input
-                        type="text"
-                        value={taskText}
-                        onChange={(e) => {
-                          const nextValue = e.target.value
-                          setTaskText(nextValue)
-                          if (nextValue.trim().length === 0) {
-                            setIsRecentOpen(true)
-                          }
-                        }}
-                        onFocus={() => setIsRecentOpen(true)}
-                        onBlur={() => setIsRecentOpen(false)}
-                        onKeyDown={(event) => {
-                          if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
-                          if (event.key === 'ArrowDown') {
-                            event.preventDefault()
-                            setRecentActiveIndex((current) =>
-                              current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
-                            )
-                          } else if (event.key === 'ArrowUp') {
-                            event.preventDefault()
-                            setRecentActiveIndex((current) =>
-                              current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
-                            )
-                          } else if (event.key === 'Enter') {
-                            if (recentActiveIndex < 0) return
-                            event.preventDefault()
-                            const picked = filteredRecentTaskItems[recentActiveIndex]
-                            if (!picked) return
-                            setTaskText(picked)
-                            setIsRecentOpen(false)
-                          } else if (event.key === 'Escape') {
-                            event.preventDefault()
-                            setIsRecentOpen(false)
-                          }
-                        }}
-                        placeholder="Task item"
-                        aria-label="Task item"
-                        aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
-                        aria-controls="task-recent-list"
-                      />
-                      {isRecentOpen && filteredRecentTaskItems.length > 0 && (
-                        <div
-                          id="task-recent-list"
-                          className="taskRecent"
-                          role="listbox"
-                          aria-label="Recent tasks"
-                        >
-                          {filteredRecentTaskItems.map((name) => (
-                            <button
-                              key={name}
-                              type="button"
-                              className="taskRecentItem"
-                              data-state={
-                                name === filteredRecentTaskItems[recentActiveIndex]
-                                  ? 'active'
-                                  : 'idle'
-                              }
-                              onMouseDown={(event) => {
-                                event.preventDefault()
-                                setTaskText(name)
-                                setIsRecentOpen(false)
-                              }}
-                              role="option"
-                            >
-                              {name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                    <div className="fieldGroup taskTextField">
+                      <label className="fieldLabel" htmlFor="task-item">
+                        Task item
+                      </label>
+                      <div className="taskInputWrap">
+                        <input
+                          id="task-item"
+                          type="text"
+                          value={taskText}
+                          onChange={(e) => {
+                            const nextValue = e.target.value
+                            setTaskText(nextValue)
+                            if (nextValue.trim().length === 0) {
+                              setIsRecentOpen(true)
+                            }
+                          }}
+                          onFocus={() => setIsRecentOpen(true)}
+                          onBlur={() => setIsRecentOpen(false)}
+                          onKeyDown={(event) => {
+                            if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
+                            if (event.key === 'ArrowDown') {
+                              event.preventDefault()
+                              setRecentActiveIndex((current) =>
+                                current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
+                              )
+                            } else if (event.key === 'ArrowUp') {
+                              event.preventDefault()
+                              setRecentActiveIndex((current) =>
+                                current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
+                              )
+                            } else if (event.key === 'Enter') {
+                              if (recentActiveIndex < 0) return
+                              event.preventDefault()
+                              const picked = filteredRecentTaskItems[recentActiveIndex]
+                              if (!picked) return
+                              setTaskText(picked)
+                              setIsRecentOpen(false)
+                            } else if (event.key === 'Escape') {
+                              event.preventDefault()
+                              setIsRecentOpen(false)
+                            }
+                          }}
+                          placeholder="Task item"
+                          aria-label="Task item"
+                          aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
+                          aria-controls="task-recent-list"
+                        />
+                        {isRecentOpen && filteredRecentTaskItems.length > 0 && (
+                          <div
+                            id="task-recent-list"
+                            className="taskRecent"
+                            role="listbox"
+                            aria-label="Recent tasks"
+                          >
+                            {filteredRecentTaskItems.map((name) => (
+                              <button
+                                key={name}
+                                type="button"
+                                className="taskRecentItem"
+                                data-state={
+                                  name === filteredRecentTaskItems[recentActiveIndex]
+                                    ? 'active'
+                                    : 'idle'
+                                }
+                                onMouseDown={(event) => {
+                                  event.preventDefault()
+                                  setTaskText(name)
+                                  setIsRecentOpen(false)
+                                }}
+                                role="option"
+                              >
+                                {name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <input
-                      type="number"
-                      min="0"
-                      value={taskHours}
-                      onChange={(e) => setTaskHours(e.target.value)}
-                      placeholder="Hours"
-                      aria-label="Hours"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      value={taskMinutes}
-                      onChange={(e) => setTaskMinutes(e.target.value)}
-                      placeholder="Minutes"
-                      aria-label="Minutes"
-                    />
-                    <button
-                      onClick={addTaskEntry}
-                      disabled={
-                        !taskText.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null
-                      }
-                      className="btn-primary"
-                    >
-                      Add task
-                    </button>
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="task-hours">
+                        Hours
+                      </label>
+                      <input
+                        id="task-hours"
+                        type="number"
+                        min="0"
+                        value={taskHours}
+                        onChange={(e) => setTaskHours(e.target.value)}
+                        placeholder="Hours"
+                        aria-label="Hours"
+                      />
+                    </div>
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="task-minutes">
+                        Minutes
+                      </label>
+                      <input
+                        id="task-minutes"
+                        type="number"
+                        min="0"
+                        value={taskMinutes}
+                        onChange={(e) => setTaskMinutes(e.target.value)}
+                        placeholder="Minutes"
+                        aria-label="Minutes"
+                      />
+                    </div>
+                    <div className="fieldGroup">
+                      <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
+                        Action
+                      </span>
+                      <button
+                        onClick={addTaskEntry}
+                        disabled={
+                          !taskText.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null
+                        }
+                        className="btn-primary"
+                      >
+                        Add task
+                      </button>
+                    </div>
                   </div>
 
                   {tasks.length > 0 && (
@@ -726,35 +761,57 @@ export default function App() {
               <fieldset disabled={!isStatusPanelOpen} className="messageFieldset">
                 <div className="messageBody">
                   <div className="statusFields">
-                    <input
-                      type="text"
-                      value={messageAssignment}
-                      onChange={(e) => setMessageAssignment(e.target.value)}
-                      placeholder="Completed assignment"
-                      aria-label="Completed assignment"
-                    />
-                    <input
-                      type="text"
-                      value={statusNextAssignment}
-                      onChange={(e) => setStatusNextAssignment(e.target.value)}
-                      placeholder="Next assignment"
-                      aria-label="Next assignment"
-                    />
-                    <input
-                      type="text"
-                      value={statusAssignee}
-                      onChange={(e) => setStatusAssignee(e.target.value)}
-                      placeholder="Confirmed by"
-                      aria-label="Status confirmed by"
-                      className="statusConfirmBy"
-                    />
-                    <input
-                      type="datetime-local"
-                      value={statusStartAt ? toDatetimeLocalValue(statusStartAt) : ''}
-                      onChange={(e) => setStatusStartAt(parseDatetimeLocalValue(e.target.value))}
-                      className="statusStartAt"
-                      aria-label="Start time"
-                    />
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="status-completed-assignment">
+                        Completed assignment
+                      </label>
+                      <input
+                        id="status-completed-assignment"
+                        type="text"
+                        value={messageAssignment}
+                        onChange={(e) => setMessageAssignment(e.target.value)}
+                        placeholder="Completed assignment"
+                        aria-label="Completed assignment"
+                      />
+                    </div>
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="status-next-assignment">
+                        Next assignment
+                      </label>
+                      <input
+                        id="status-next-assignment"
+                        type="text"
+                        value={statusNextAssignment}
+                        onChange={(e) => setStatusNextAssignment(e.target.value)}
+                        placeholder="Next assignment"
+                        aria-label="Next assignment"
+                      />
+                    </div>
+                    <div className="fieldGroup statusConfirmBy">
+                      <label className="fieldLabel" htmlFor="status-confirmed-by">
+                        Confirmed by
+                      </label>
+                      <input
+                        id="status-confirmed-by"
+                        type="text"
+                        value={statusAssignee}
+                        onChange={(e) => setStatusAssignee(e.target.value)}
+                        placeholder="Confirmed by"
+                        aria-label="Status confirmed by"
+                      />
+                    </div>
+                    <div className="fieldGroup statusStartAt">
+                      <label className="fieldLabel" htmlFor="status-start-at">
+                        Start time
+                      </label>
+                      <input
+                        id="status-start-at"
+                        type="datetime-local"
+                        value={statusStartAt ? toDatetimeLocalValue(statusStartAt) : ''}
+                        onChange={(e) => setStatusStartAt(parseDatetimeLocalValue(e.target.value))}
+                        aria-label="Start time"
+                      />
+                    </div>
                   </div>
 
                   <div className="messagePreview" aria-label="Status message preview">
