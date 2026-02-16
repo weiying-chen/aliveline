@@ -522,7 +522,7 @@ export default function App() {
 
         <button
           onClick={reset}
-          className="resetButton btn-secondary"
+          className="resetButton btn-primary"
           aria-label="Reset deadline to now"
         >
           Reset
