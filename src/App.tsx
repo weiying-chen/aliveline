@@ -523,7 +523,7 @@ export default function App() {
 
           <button
             onClick={reset}
-            className="resetButton btn-primary"
+            className="resetButton btn-secondary"
             aria-label="Reset deadline to now"
           >
             Reset
@@ -647,7 +647,7 @@ export default function App() {
                 disabled={!taskName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
                 className="btn-primary"
               >
-                Add task
+                <i className="las la-plus" aria-hidden="true"></i> Add task
               </button>
             </div>
           </div>
@@ -661,9 +661,9 @@ export default function App() {
                 <button
                   onClick={() => removeTaskEntry(index)}
                   aria-label="Remove task"
-                  className="btn-secondary"
+                  className="btn-secondary taskRemoveButton"
                 >
-                  Remove
+                  <i className="las la-trash" aria-hidden="true"></i>
                 </button>
               </div>
             ))}
@@ -730,7 +730,7 @@ export default function App() {
                       disabled={!teamsMessage}
                       className="btn-primary"
                     >
-                      Copy Teams message
+                      <i className="las la-copy" aria-hidden="true"></i> Copy
                     </button>
                     {copyStatus === 'copied' && <span className="copyStatus">Copied.</span>}
                     {copyStatus === 'failed' && (
@@ -826,7 +826,7 @@ export default function App() {
                       disabled={!statusMessage}
                       className="btn-primary"
                     >
-                      Copy status message
+                      <i className="las la-copy" aria-hidden="true"></i> Copy
                     </button>
                     {statusCopyStatus === 'copied' && <span className="copyStatus">Copied.</span>}
                     {statusCopyStatus === 'failed' && (
