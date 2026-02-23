@@ -27,7 +27,7 @@ type TeamsMessageOptions = {
 function formatTaskLine(task: TaskEntry) {
   const trimmed = task.text.trim()
   if (!trimmed) return ''
-  return `${trimmed} ${formatDuration(task.minutes)}`
+  return `${trimmed} ${formatDurationForMessage(task.minutes)}`
 }
 
 export function formatDuration(totalMinutes: number) {
@@ -38,6 +38,14 @@ export function formatDuration(totalMinutes: number) {
   return `${minutes}m`
 }
 
+function formatDurationForMessage(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours > 0 && minutes > 0) return `${hours}時${minutes}分`
+  if (hours > 0) return `${hours}時`
+  return `${minutes}分`
+}
+
 export function formatTeamsMessage({ previous, next, tasks, assignment, assignee }: TeamsMessageOptions) {
   const sanitizedTasks =
     tasks?.filter((item) => item.text.trim().length > 0 && item.minutes > 0) ?? []
@@ -45,7 +53,7 @@ export function formatTeamsMessage({ previous, next, tasks, assignment, assignee
   const taskLines = sanitizedTasks.map(formatTaskLine).filter((line) => line.length > 0).join('\n')
   const prefix =
     taskLines.length > 0
-      ? `今日做其他事時間是 ${formatDuration(totalMinutes)}\n\n${taskLines}\n\n`
+      ? `今日做其他事時間是 ${formatDurationForMessage(totalMinutes)}\n\n${taskLines}\n\n`
       : ''
   const action = next.getTime() < previous.getTime() ? '提前至' : '延後至'
   const assignmentPrefix = assignment?.trim() ? `${assignment.trim()}，` : ''
