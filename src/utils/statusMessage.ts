@@ -1,4 +1,4 @@
-import { formatTeamsDate } from './deadlineHistory'
+import { formatMessageDate } from './deadlineHistory'
 
 export type StatusMessageOptions = {
   completedAssignment: string
@@ -18,6 +18,6 @@ export function formatStatusMessage(options: StatusMessageOptions) {
   return (
     `已完成${completedAssignment}，接下來會開始翻譯${nextAssignment}，` +
     `再麻煩${assignee}便時幫忙設deadline，` +
-    `從${formatTeamsDate(options.start)}起算，謝謝。`
+    `從${formatMessageDate(options.start)}起算，謝謝。`
   )
 }

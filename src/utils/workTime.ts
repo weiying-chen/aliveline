@@ -157,7 +157,7 @@ export function shouldShowEarlyFinishReminder(now: Date, deadline: Date) {
   )
 }
 
-export function shouldShowTeamsReminder(now: Date, deadline: Date) {
+export function shouldShowDeadlineExtensionReminder(now: Date, deadline: Date) {
   if (!isWorkday(now)) return false
   const dayStart = new Date(now)
   dayStart.setHours(0, 0, 0, 0)

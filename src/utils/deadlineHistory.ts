@@ -2,7 +2,7 @@ import { pad2 } from './time'
 
 const WEEKDAY_CN = ['日', '一', '二', '三', '四', '五', '六']
 
-export function formatTeamsDate(d: Date) {
+export function formatMessageDate(d: Date) {
   const month = d.getMonth() + 1
   const day = d.getDate()
   const weekday = WEEKDAY_CN[d.getDay()]
@@ -16,7 +16,7 @@ export type TaskEntry = {
   minutes: number
 }
 
-type TeamsMessageOptions = {
+type DeadlineExtensionMessageOptions = {
   previous: Date
   next: Date
   tasks?: TaskEntry[]
@@ -46,7 +46,13 @@ function formatDurationForMessage(totalMinutes: number) {
   return `${minutes}分`
 }
 
-export function formatTeamsMessage({ previous, next, tasks, assignment, assignee }: TeamsMessageOptions) {
+export function formatDeadlineExtensionMessage({
+  previous,
+  next,
+  tasks,
+  assignment,
+  assignee,
+}: DeadlineExtensionMessageOptions) {
   const sanitizedTasks =
     tasks?.filter((item) => item.text.trim().length > 0 && item.minutes > 0) ?? []
   const totalMinutes = sanitizedTasks.reduce((sum, item) => sum + item.minutes, 0)
@@ -61,6 +67,6 @@ export function formatTeamsMessage({ previous, next, tasks, assignment, assignee
 
   return (
     prefix +
-    `${assignmentPrefix}deadline由${formatTeamsDate(previous)}，${action}${formatTeamsDate(next)}${assigneeText}，謝謝。`
+    `${assignmentPrefix}deadline由${formatMessageDate(previous)}，${action}${formatMessageDate(next)}${assigneeText}，謝謝。`
   )
 }

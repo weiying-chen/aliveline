@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatTeamsDate, formatTeamsMessage } from './deadlineHistory'
+import { formatDeadlineExtensionMessage, formatMessageDate } from './deadlineHistory'
 
-describe('formatTeamsDate', () => {
+describe('formatMessageDate', () => {
   it('formats date with weekday and 24h time', () => {
     const d = new Date(2025, 0, 8, 14, 25)
-    expect(formatTeamsDate(d)).toBe('1/8（三）14:25')
+    expect(formatMessageDate(d)).toBe('1/8（三）14:25')
   })
 })
 
-describe('formatTeamsMessage', () => {
-  it('builds a multi-line Teams update', () => {
+describe('formatDeadlineExtensionMessage', () => {
+  it('builds a multi-line deadline extension update', () => {
     const previous = new Date(2025, 0, 8, 14, 25)
     const next = new Date(2025, 0, 8, 15, 10)
     const tasks = [
       { text: '討論小編文', minutes: 45 },
       { text: '其他任務', minutes: 15 },
     ]
-    const message = formatTeamsMessage({
+    const message = formatDeadlineExtensionMessage({
       previous,
       next,
       tasks,
@@ -36,7 +36,7 @@ describe('formatTeamsMessage', () => {
   it('uses 提前至 when the deadline moves earlier', () => {
     const previous = new Date(2025, 0, 8, 15, 10)
     const next = new Date(2025, 0, 8, 14, 25)
-    const message = formatTeamsMessage({ previous, next })
+    const message = formatDeadlineExtensionMessage({ previous, next })
 
     expect(message).toBe('deadline由1/8（三）15:10，提前至1/8（三）14:25，謝謝。')
   })

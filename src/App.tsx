@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { formatDuration, formatTeamsMessage, type TaskEntry } from './utils/deadlineHistory'
+import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
 import { formatStatusMessage } from './utils/statusMessage'
 import { syncStatusStartWithDeadline } from './utils/statusStart'
 import {
@@ -19,7 +19,7 @@ import {
   isInWorkTime,
   nextWorkStart,
   shouldShowEarlyFinishReminder,
-  shouldShowTeamsReminder,
+  shouldShowDeadlineExtensionReminder,
   workMsBetween,
   WORK_BLOCKS,
 } from './utils/workTime'
@@ -43,8 +43,8 @@ const LS_PANEL_STATUS_OPEN_KEY = 'aliveline:panel-status-open'
 const LS_DAILY_CLEAR_KEY = 'aliveline:daily-clear'
 const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
-const LS_TEAMS_REMINDER_NOTIFIED_KEY = 'aliveline:teams-reminder-notified'
-const LS_TEAMS_REMINDER_REQUESTED_KEY = 'aliveline:teams-reminder-requested'
+const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
+const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
 
 function readStoredDate(key: string) {
   const saved = localStorage.getItem(key)
@@ -240,8 +240,8 @@ export default function App() {
     () => shouldShowEarlyFinishReminder(now, deadline),
     [deadline, now]
   )
-  const showTeamsReminder = useMemo(
-    () => shouldShowTeamsReminder(now, deadline),
+  const showDeadlineExtensionReminder = useMemo(
+    () => shouldShowDeadlineExtensionReminder(now, deadline),
     [deadline, now]
   )
 
@@ -280,17 +280,19 @@ export default function App() {
   }, [deadline, now, showEarlyFinishReminder])
 
   useEffect(() => {
-    if (!showTeamsReminder) return
+    if (!showDeadlineExtensionReminder) return
     if (typeof Notification === 'undefined') return
 
     const todayKey = dateKey(now)
-    if (localStorage.getItem(LS_TEAMS_REMINDER_NOTIFIED_KEY) === todayKey) return
+    if (localStorage.getItem(LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY) === todayKey) {
+      return
+    }
 
     const sendNotification = () => {
       new Notification('Reminder', {
-        body: 'Post the Teams update.',
+        body: 'Post the deadline extension message.',
       })
-      localStorage.setItem(LS_TEAMS_REMINDER_NOTIFIED_KEY, todayKey)
+      localStorage.setItem(LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY, todayKey)
     }
 
     if (Notification.permission === 'granted') {
@@ -300,13 +302,15 @@ export default function App() {
 
     if (Notification.permission === 'denied') return
 
-    if (localStorage.getItem(LS_TEAMS_REMINDER_REQUESTED_KEY) === todayKey) return
-    localStorage.setItem(LS_TEAMS_REMINDER_REQUESTED_KEY, todayKey)
+    if (localStorage.getItem(LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY) === todayKey) {
+      return
+    }
+    localStorage.setItem(LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY, todayKey)
 
     Notification.requestPermission().then((permission) => {
       if (permission === 'granted') sendNotification()
     })
-  }, [deadline, now, showTeamsReminder])
+  }, [deadline, now, showDeadlineExtensionReminder])
 
   useEffect(() => {
     localStorage.setItem(LS_MESSAGE_ASSIGNEE_KEY, messageAssignee)
@@ -380,12 +384,12 @@ export default function App() {
     updateDeadline(new Date(), { resetDrafts: true })
   }
 
-  const teamsMessage = useMemo(() => {
+  const deadlineExtensionMessage = useMemo(() => {
     if (!previousDeadline) return ''
     if (!messageAssignment.trim()) return ''
     if (!messageAssignee.trim()) return ''
     if (tasks.length === 0) return ''
-    return formatTeamsMessage({
+    return formatDeadlineExtensionMessage({
       previous: previousDeadline,
       next: deadline,
       tasks: tasks.length > 0 ? tasks : previousTasks,
@@ -406,7 +410,7 @@ export default function App() {
 
   useEffect(() => {
     setCopyStatus('idle')
-  }, [teamsMessage])
+  }, [deadlineExtensionMessage])
 
   const statusMessage = useMemo(() => {
     if (!statusStartAt) return ''
@@ -432,10 +436,10 @@ export default function App() {
     setStatusCopyStatus('idle')
   }, [statusMessage])
 
-  const onCopyTeamsMessage = async () => {
-    if (!teamsMessage) return
+  const onCopyDeadlineExtensionMessage = async () => {
+    if (!deadlineExtensionMessage) return
     try {
-      await navigator.clipboard.writeText(teamsMessage)
+      await navigator.clipboard.writeText(deadlineExtensionMessage)
       setCopyStatus('copied')
     } catch {
       setCopyStatus('failed')
@@ -510,7 +514,7 @@ export default function App() {
           {showEarlyFinishReminder && (
             <div className="reminder">Reminder: ask for more work before 9:00 AM.</div>
           )}
-          {showTeamsReminder && <div className="reminder">Reminder: post the Teams update.</div>}
+          {showDeadlineExtensionReminder && <div className="reminder">Reminder: post the deadline extension message.</div>}
           {!isInWorkTime(now) && (
             <div className="overdue">Counting from {fmtDateTimeWithWeekday(workStartAt)}.</div>
           )}
@@ -698,11 +702,11 @@ export default function App() {
                 <div className="messageBody">
                   <div className="messageFields">
                     <div className="fieldGroup">
-                      <label className="fieldLabel" htmlFor="teams-assignment">
+                      <label className="fieldLabel" htmlFor="deadline-extension-assignment">
                         Assignment
                       </label>
                       <input
-                        id="teams-assignment"
+                        id="deadline-extension-assignment"
                         type="text"
                         value={messageAssignment}
                         onChange={(e) => setMessageAssignment(e.target.value)}
@@ -711,11 +715,11 @@ export default function App() {
                       />
                     </div>
                     <div className="fieldGroup">
-                      <label className="fieldLabel" htmlFor="teams-confirmed-by">
+                      <label className="fieldLabel" htmlFor="deadline-extension-confirmed-by">
                         Confirmed by
                       </label>
                       <input
-                        id="teams-confirmed-by"
+                        id="deadline-extension-confirmed-by"
                         type="text"
                         value={messageAssignee}
                         onChange={(e) => setMessageAssignee(e.target.value)}
@@ -725,14 +729,14 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="messagePreview" aria-label="Teams message preview">
-                    {teamsMessage || 'Fill all fields to generate a Teams message preview.'}
+                  <div className="messagePreview" aria-label="Deadline extension message preview">
+                    {deadlineExtensionMessage || 'Fill all fields to generate a deadline extension message preview.'}
                   </div>
 
                   <div className="messageActions">
                     <button
-                      onClick={onCopyTeamsMessage}
-                      disabled={!teamsMessage}
+                      onClick={onCopyDeadlineExtensionMessage}
+                      disabled={!deadlineExtensionMessage}
                       className="btn-primary"
                     >
                       <i className="las la-copy" aria-hidden="true"></i> Copy
