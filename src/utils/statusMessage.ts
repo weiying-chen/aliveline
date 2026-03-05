@@ -18,6 +18,6 @@ export function formatStatusMessage(options: StatusMessageOptions) {
   return (
     `已完成${completedAssignment}，接下來會開始翻譯${nextAssignment}，` +
     `再麻煩${assignee}便時幫忙設deadline，` +
-    `從${formatTeamsDate(options.start)}起算，deadline為${formatTeamsDate(options.deadline)}，謝謝。`
+    `從${formatTeamsDate(options.start)}起算，謝謝。`
   )
 }
