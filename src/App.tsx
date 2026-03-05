@@ -241,8 +241,8 @@ export default function App() {
     [deadline, now]
   )
   const showDeadlineExtensionReminder = useMemo(
-    () => shouldShowDeadlineExtensionReminder(now, deadline),
-    [deadline, now]
+    () => shouldShowDeadlineExtensionReminder(now, deadline, tasks.length > 0),
+    [deadline, now, tasks.length]
   )
 
   useEffect(() => {

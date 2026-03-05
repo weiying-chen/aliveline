@@ -144,6 +144,12 @@ describe('shouldShowEarlyFinishReminder', () => {
 })
 
 describe('shouldShowDeadlineExtensionReminder', () => {
+  it('does not show when there are no pending extension tasks', () => {
+    const now = at(16, 2)
+    const deadline = at(18, 0)
+    expect(shouldShowDeadlineExtensionReminder(now, deadline, false)).toBe(false)
+  })
+
   it('shows at 4:00 when the deadline spills past 17:00', () => {
     const now = at(16, 2)
     const deadline = at(18, 0)
