@@ -176,6 +176,12 @@ input::selection {
   color: var(--bg);
 }
 
+input:disabled,
+input[readonly] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .message {
   padding: 0;
   margin-top: 0;

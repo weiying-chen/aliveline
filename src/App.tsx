@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { formatDuration, formatTeamsMessage, type TaskEntry } from './utils/deadlineHistory'
 import { formatStatusMessage } from './utils/statusMessage'
+import { syncStatusStartWithDeadline } from './utils/statusStart'
 import {
   fmtDateTimeWithWeekday,
   fmtTime,
@@ -129,7 +130,7 @@ export default function App() {
     () => localStorage.getItem(LS_STATUS_ASSIGNEE_KEY) ?? ''
   )
   const [statusStartAt, setStatusStartAt] = useState<Date | null>(
-    () => readStoredDate(LS_STATUS_START_KEY)
+    () => syncStatusStartWithDeadline(readStoredDate(LS_STATUS_START_KEY), deadline)
   )
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
   const [statusCopyStatus, setStatusCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
@@ -334,6 +335,10 @@ export default function App() {
       localStorage.removeItem(LS_STATUS_START_KEY)
     }
   }, [statusStartAt])
+
+  useEffect(() => {
+    setStatusStartAt((prev) => syncStatusStartWithDeadline(prev, deadline))
+  }, [deadline])
 
   const updateDeadline = (
     nextDeadline: Date,
@@ -810,7 +815,8 @@ export default function App() {
                         id="status-start-at"
                         type="datetime-local"
                         value={statusStartAt ? toDatetimeLocalValue(statusStartAt) : ''}
-                        onChange={(e) => setStatusStartAt(parseDatetimeLocalValue(e.target.value))}
+                        disabled
+                        readOnly
                         aria-label="Start time"
                       />
                     </div>
