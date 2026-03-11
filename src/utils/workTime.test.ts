@@ -150,7 +150,7 @@ describe('shouldShowDeadlineExtensionReminder', () => {
     expect(shouldShowDeadlineExtensionReminder(now, deadline, false)).toBe(false)
   })
 
-  it('shows at 4:00 when the deadline spills past 17:00', () => {
+  it('shows at 4:00 when the same-day deadline spills past 17:00', () => {
     const now = at(16, 2)
     const deadline = at(18, 0)
     expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(true)
@@ -162,11 +162,17 @@ describe('shouldShowDeadlineExtensionReminder', () => {
     expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(true)
   })
 
-  it('shows at 4:00 when the deadline is on a later day', () => {
-    const now = at(16, 3)
-    const deadline = at(9, 0)
-    deadline.setDate(deadline.getDate() + 1)
+  it('shows one hour before a next-day deadline on the deadline day', () => {
+    const now = atDate(2025, 0, 3, 8, 35)
+    const deadline = atDate(2025, 0, 3, 9, 35)
     expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(true)
+  })
+
+  it('does not show the previous afternoon for a next-day deadline', () => {
+    const now = at(16, 3)
+    const deadline = at(9, 35)
+    deadline.setDate(deadline.getDate() + 1)
+    expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(false)
   })
 
   it('shows one hour before a same-day deadline ending by 17:00', () => {
@@ -193,11 +199,17 @@ describe('shouldShowDeadlineExtensionReminder', () => {
     expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(false)
   })
 
+  it('does not show after a next-day reminder window passes', () => {
+    const now = atDate(2025, 0, 3, 9, 36)
+    const deadline = atDate(2025, 0, 3, 9, 35)
+    expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(false)
+  })
+
   it('does not show on weekends', () => {
     const now = atDate(2025, 0, 4, 16, 5)
     const deadline = atDate(2025, 0, 4, 17, 0)
     expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(false)
-})
+  })
 })
 
 describe('workMsBetween', () => {
