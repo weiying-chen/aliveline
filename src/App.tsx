@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
-import { getAssignmentAfterDeadlineChange } from './utils/assignmentReview'
+import {
+  getAssignmentAfterDeadlineChange,
+  getStatusNextAssignmentAfterDeadlineChange,
+} from './utils/assignmentReview'
 import { formatStatusMessage } from './utils/statusMessage'
 import { syncStatusStartWithDeadline } from './utils/statusStart'
 import {
@@ -370,6 +373,7 @@ export default function App() {
       setPreviousTasks(options?.tasks ?? [])
     }
     setMessageAssignment(getAssignmentAfterDeadlineChange(messageAssignment))
+    setStatusNextAssignment(getStatusNextAssignmentAfterDeadlineChange(statusNextAssignment))
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
       setTasks([])
