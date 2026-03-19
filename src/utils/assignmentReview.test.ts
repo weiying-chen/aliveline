@@ -1,22 +1,28 @@
 import { describe, expect, it } from 'vitest'
 
-import { reduceAssignmentReviewState } from './assignmentReview'
+import {
+  getAssignmentAfterDeadlineChange,
+  shouldConfirmKeepingAssignment,
+} from './assignmentReview'
 
-describe('reduceAssignmentReviewState', () => {
-  it('requires confirmation after the deadline changes with an existing assignment', () => {
-    expect(
-      reduceAssignmentReviewState(false, {
-        type: 'deadlineChanged',
-        assignment: 'Existing assignment',
-      })
-    ).toBe(true)
+describe('shouldConfirmKeepingAssignment', () => {
+  it('requires confirmation when the current assignment is not blank', () => {
+    expect(shouldConfirmKeepingAssignment('Existing assignment')).toBe(true)
   })
 
-  it('does not require confirmation when the assignment is edited', () => {
-    expect(reduceAssignmentReviewState(true, { type: 'assignmentEdited' })).toBe(false)
+  it('does not require confirmation when the assignment is blank', () => {
+    expect(shouldConfirmKeepingAssignment('   ')).toBe(false)
+  })
+})
+
+describe('getAssignmentAfterDeadlineChange', () => {
+  it('keeps the current assignment when the user confirms it', () => {
+    expect(getAssignmentAfterDeadlineChange('Existing assignment', true)).toBe(
+      'Existing assignment'
+    )
   })
 
-  it('clears the confirmation requirement after the user keeps the same assignment', () => {
-    expect(reduceAssignmentReviewState(true, { type: 'assignmentConfirmed' })).toBe(false)
+  it('clears the assignment when the user does not keep it', () => {
+    expect(getAssignmentAfterDeadlineChange('Existing assignment', false)).toBe('')
   })
 })
