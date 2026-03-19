@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
-import {
-  getAssignmentAfterDeadlineChange,
-  getStatusNextAssignmentAfterDeadlineChange,
-} from './utils/assignmentReview'
-import { formatStatusMessage } from './utils/statusMessage'
-import { syncStatusStartWithDeadline } from './utils/statusStart'
+import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
+import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
+import { syncNextAssignmentMessageStartWithDeadline } from './utils/nextAssignmentMessageStart'
 import {
   fmtDateTimeWithWeekday,
   fmtTime,
@@ -37,13 +34,13 @@ const LS_PREV_TASKS_KEY = 'aliveline:previous-tasks'
 const LS_TASKS_KEY = 'aliveline:tasks'
 const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
-const LS_MESSAGE_ASSIGNMENT_KEY = 'aliveline:message-assignment'
-const LS_MESSAGE_ASSIGNEE_KEY = 'aliveline:message-assignee'
-const LS_STATUS_NEXT_ASSIGNMENT_KEY = 'aliveline:status-next-assignment'
-const LS_STATUS_ASSIGNEE_KEY = 'aliveline:status-assignee'
-const LS_STATUS_START_KEY = 'aliveline:status-start-iso'
+const LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY = 'aliveline:deadline-extension-assignment'
+const LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY = 'aliveline:deadline-extension-confirmed-by'
+const LS_NEXT_ASSIGNMENT_KEY = 'aliveline:next-assignment'
+const LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY = 'aliveline:next-assignment-confirmed-by'
+const LS_NEXT_ASSIGNMENT_START_KEY = 'aliveline:next-assignment-start-iso'
 const LS_PANEL_TASKS_OPEN_KEY = 'aliveline:panel-tasks-open'
-const LS_PANEL_STATUS_OPEN_KEY = 'aliveline:panel-status-open'
+const LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY = 'aliveline:panel-next-assignment-message-open'
 const LS_DAILY_CLEAR_KEY = 'aliveline:daily-clear'
 const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
@@ -121,28 +118,36 @@ export default function App() {
   const [taskMinutes, setTaskMinutes] = useState('')
   const [isRecentOpen, setIsRecentOpen] = useState(false)
   const [recentActiveIndex, setRecentActiveIndex] = useState<number>(-1)
-  const [messageAssignment, setMessageAssignment] = useState(
-    () => localStorage.getItem(LS_MESSAGE_ASSIGNMENT_KEY) ?? ''
+  const [deadlineExtensionAssignment, setDeadlineExtensionAssignment] = useState(
+    () => localStorage.getItem(LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY) ?? ''
   )
-  const [messageAssignee, setMessageAssignee] = useState(
-    () => localStorage.getItem(LS_MESSAGE_ASSIGNEE_KEY) ?? ''
+  const [deadlineExtensionConfirmedBy, setDeadlineExtensionConfirmedBy] = useState(
+    () => localStorage.getItem(LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY) ?? ''
   )
-  const [statusNextAssignment, setStatusNextAssignment] = useState(
-    () => localStorage.getItem(LS_STATUS_NEXT_ASSIGNMENT_KEY) ?? ''
+  const [nextAssignment, setNextAssignment] = useState(
+    () => localStorage.getItem(LS_NEXT_ASSIGNMENT_KEY) ?? ''
   )
-  const [statusAssignee, setStatusAssignee] = useState(
-    () => localStorage.getItem(LS_STATUS_ASSIGNEE_KEY) ?? ''
+  const [nextAssignmentConfirmedBy, setNextAssignmentConfirmedBy] = useState(
+    () => localStorage.getItem(LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY) ?? ''
   )
-  const [statusStartAt, setStatusStartAt] = useState<Date | null>(
-    () => syncStatusStartWithDeadline(readStoredDate(LS_STATUS_START_KEY), deadline)
+  const [nextAssignmentStartAt, setNextAssignmentStartAt] = useState<Date | null>(
+    () =>
+      syncNextAssignmentMessageStartWithDeadline(
+        readStoredDate(LS_NEXT_ASSIGNMENT_START_KEY),
+        deadline
+      )
   )
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
-  const [statusCopyStatus, setStatusCopyStatus] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const [deadlineExtensionCopyState, setDeadlineExtensionCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle')
+  const [nextAssignmentCopyState, setNextAssignmentCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle')
   const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(() =>
     readStoredBool(LS_PANEL_TASKS_OPEN_KEY, false)
   )
-  const [isStatusPanelOpen, setIsStatusPanelOpen] = useState(() =>
-    readStoredBool(LS_PANEL_STATUS_OPEN_KEY, false)
+  const [isNextAssignmentPanelOpen, setIsNextAssignmentPanelOpen] = useState(() =>
+    readStoredBool(LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY, false)
   )
 
   useEffect(() => {
@@ -205,8 +210,8 @@ export default function App() {
   }, [changeBaseDeadline])
 
   useEffect(() => {
-    localStorage.setItem(LS_MESSAGE_ASSIGNMENT_KEY, messageAssignment)
-  }, [messageAssignment])
+    localStorage.setItem(LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY, deadlineExtensionAssignment)
+  }, [deadlineExtensionAssignment])
 
   useEffect(() => {
     const todayKey = dateKey(now)
@@ -317,35 +322,40 @@ export default function App() {
   }, [deadline, now, showDeadlineExtensionReminder])
 
   useEffect(() => {
-    localStorage.setItem(LS_MESSAGE_ASSIGNEE_KEY, messageAssignee)
-  }, [messageAssignee])
+    localStorage.setItem(LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY, deadlineExtensionConfirmedBy)
+  }, [deadlineExtensionConfirmedBy])
 
   useEffect(() => {
-    localStorage.setItem(LS_STATUS_NEXT_ASSIGNMENT_KEY, statusNextAssignment)
-  }, [statusNextAssignment])
+    localStorage.setItem(LS_NEXT_ASSIGNMENT_KEY, nextAssignment)
+  }, [nextAssignment])
 
   useEffect(() => {
-    localStorage.setItem(LS_STATUS_ASSIGNEE_KEY, statusAssignee)
-  }, [statusAssignee])
+    localStorage.setItem(LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY, nextAssignmentConfirmedBy)
+  }, [nextAssignmentConfirmedBy])
 
   useEffect(() => {
     localStorage.setItem(LS_PANEL_TASKS_OPEN_KEY, String(isTasksPanelOpen))
   }, [isTasksPanelOpen])
 
   useEffect(() => {
-    localStorage.setItem(LS_PANEL_STATUS_OPEN_KEY, String(isStatusPanelOpen))
-  }, [isStatusPanelOpen])
+    localStorage.setItem(
+      LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY,
+      String(isNextAssignmentPanelOpen)
+    )
+  }, [isNextAssignmentPanelOpen])
 
   useEffect(() => {
-    if (statusStartAt) {
-      localStorage.setItem(LS_STATUS_START_KEY, statusStartAt.toISOString())
+    if (nextAssignmentStartAt) {
+      localStorage.setItem(LS_NEXT_ASSIGNMENT_START_KEY, nextAssignmentStartAt.toISOString())
     } else {
-      localStorage.removeItem(LS_STATUS_START_KEY)
+      localStorage.removeItem(LS_NEXT_ASSIGNMENT_START_KEY)
     }
-  }, [statusStartAt])
+  }, [nextAssignmentStartAt])
 
   useEffect(() => {
-    setStatusStartAt((prev) => syncStatusStartWithDeadline(prev, deadline))
+    setNextAssignmentStartAt((prev) =>
+      syncNextAssignmentMessageStartWithDeadline(prev, deadline)
+    )
   }, [deadline])
 
   const updateDeadline = (
@@ -372,8 +382,8 @@ export default function App() {
       setPreviousChangedAt(new Date())
       setPreviousTasks(options?.tasks ?? [])
     }
-    setMessageAssignment(getAssignmentAfterDeadlineChange(messageAssignment))
-    setStatusNextAssignment(getStatusNextAssignmentAfterDeadlineChange(statusNextAssignment))
+    setDeadlineExtensionAssignment(clearTextAfterDeadlineChange(deadlineExtensionAssignment))
+    setNextAssignment(clearTextAfterDeadlineChange(nextAssignment))
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
       setTasks([])
@@ -392,17 +402,24 @@ export default function App() {
 
   const deadlineExtensionMessage = useMemo(() => {
     if (!previousDeadline) return ''
-    if (!messageAssignment.trim()) return ''
-    if (!messageAssignee.trim()) return ''
+    if (!deadlineExtensionAssignment.trim()) return ''
+    if (!deadlineExtensionConfirmedBy.trim()) return ''
     if (tasks.length === 0) return ''
     return formatDeadlineExtensionMessage({
       previous: previousDeadline,
       next: deadline,
       tasks: tasks.length > 0 ? tasks : previousTasks,
-      assignment: messageAssignment,
-      assignee: messageAssignee,
+      assignment: deadlineExtensionAssignment,
+      assignee: deadlineExtensionConfirmedBy,
     })
-  }, [deadline, messageAssignee, messageAssignment, previousDeadline, previousTasks, tasks])
+  }, [
+    deadline,
+    deadlineExtensionConfirmedBy,
+    deadlineExtensionAssignment,
+    previousDeadline,
+    previousTasks,
+    tasks,
+  ])
 
   const filteredRecentTaskItems = useMemo(() => {
     const needle = taskName.trim().toLowerCase()
@@ -415,50 +432,50 @@ export default function App() {
   }, [filteredRecentTaskItems])
 
   useEffect(() => {
-    setCopyStatus('idle')
+    setDeadlineExtensionCopyState('idle')
   }, [deadlineExtensionMessage])
 
-  const statusMessage = useMemo(() => {
-    if (!statusStartAt) return ''
-    if (!messageAssignment.trim()) return ''
-    if (!statusNextAssignment.trim()) return ''
-    if (!statusAssignee.trim()) return ''
-    return formatStatusMessage({
-      completedAssignment: messageAssignment,
-      nextAssignment: statusNextAssignment,
-      assignee: statusAssignee,
-      start: statusStartAt,
+  const nextAssignmentMessage = useMemo(() => {
+    if (!nextAssignmentStartAt) return ''
+    if (!deadlineExtensionAssignment.trim()) return ''
+    if (!nextAssignment.trim()) return ''
+    if (!nextAssignmentConfirmedBy.trim()) return ''
+    return formatNextAssignmentMessage({
+      completedAssignment: deadlineExtensionAssignment,
+      nextAssignment,
+      assignee: nextAssignmentConfirmedBy,
+      start: nextAssignmentStartAt,
       deadline,
     })
   }, [
     deadline,
-    messageAssignment,
-    statusAssignee,
-    statusNextAssignment,
-    statusStartAt,
+    deadlineExtensionAssignment,
+    nextAssignment,
+    nextAssignmentConfirmedBy,
+    nextAssignmentStartAt,
   ])
 
   useEffect(() => {
-    setStatusCopyStatus('idle')
-  }, [statusMessage])
+    setNextAssignmentCopyState('idle')
+  }, [nextAssignmentMessage])
 
   const onCopyDeadlineExtensionMessage = async () => {
     if (!deadlineExtensionMessage) return
     try {
       await navigator.clipboard.writeText(deadlineExtensionMessage)
-      setCopyStatus('copied')
+      setDeadlineExtensionCopyState('copied')
     } catch {
-      setCopyStatus('failed')
+      setDeadlineExtensionCopyState('failed')
     }
   }
 
-  const onCopyStatusMessage = async () => {
-    if (!statusMessage) return
+  const onCopyNextAssignmentMessage = async () => {
+    if (!nextAssignmentMessage) return
     try {
-      await navigator.clipboard.writeText(statusMessage)
-      setStatusCopyStatus('copied')
+      await navigator.clipboard.writeText(nextAssignmentMessage)
+      setNextAssignmentCopyState('copied')
     } catch {
-      setStatusCopyStatus('failed')
+      setNextAssignmentCopyState('failed')
     }
   }
 
@@ -714,8 +731,8 @@ export default function App() {
                       <input
                         id="deadline-extension-assignment"
                         type="text"
-                        value={messageAssignment}
-                        onChange={(e) => setMessageAssignment(e.target.value)}
+                        value={deadlineExtensionAssignment}
+                        onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
                         placeholder="Assignment"
                         aria-label="Assignment name"
                       />
@@ -727,8 +744,8 @@ export default function App() {
                       <input
                         id="deadline-extension-confirmed-by"
                         type="text"
-                        value={messageAssignee}
-                        onChange={(e) => setMessageAssignee(e.target.value)}
+                        value={deadlineExtensionConfirmedBy}
+                        onChange={(e) => setDeadlineExtensionConfirmedBy(e.target.value)}
                         placeholder="Confirmed by"
                         aria-label="Confirmed by"
                       />
@@ -747,8 +764,10 @@ export default function App() {
                     >
                       <i className="las la-copy" aria-hidden="true"></i> Copy
                     </button>
-                    {copyStatus === 'copied' && <span className="copyStatus">Copied.</span>}
-                    {copyStatus === 'failed' && (
+                    {deadlineExtensionCopyState === 'copied' && (
+                      <span className="copyStatus">Copied.</span>
+                    )}
+                    {deadlineExtensionCopyState === 'failed' && (
                       <span className="copyStatus">Copy failed. Please copy manually.</span>
                     )}
                   </div>
@@ -758,73 +777,92 @@ export default function App() {
           </div>
       </div>
 
-      <div className="message" data-state={isStatusPanelOpen ? 'open' : 'closed'}>
+      <div className="message" data-state={isNextAssignmentPanelOpen ? 'open' : 'closed'}>
           <button
             type="button"
             className="messageHeader"
-            onClick={() => setIsStatusPanelOpen((prev) => !prev)}
-            aria-expanded={isStatusPanelOpen}
-            aria-controls="status-panel"
+            onClick={() => setIsNextAssignmentPanelOpen((prev) => !prev)}
+            aria-expanded={isNextAssignmentPanelOpen}
+            aria-controls="next-assignment-message-panel"
           >
             <span className="messageTitle">Next assignment message</span>
           </button>
           <div
-            id="status-panel"
+            id="next-assignment-message-panel"
             className="messagePanel"
-            data-state={isStatusPanelOpen ? 'open' : 'closed'}
-            aria-hidden={!isStatusPanelOpen}
+            data-state={isNextAssignmentPanelOpen ? 'open' : 'closed'}
+            aria-hidden={!isNextAssignmentPanelOpen}
           >
             <div className="messagePanelInner">
-              <fieldset disabled={!isStatusPanelOpen} className="messageFieldset">
+              <fieldset
+                disabled={!isNextAssignmentPanelOpen}
+                className="messageFieldset"
+              >
                 <div className="messageBody">
-                  <div className="statusFields">
+                  <div className="nextAssignmentMessageFields">
                     <div className="fieldGroup">
-                      <label className="fieldLabel" htmlFor="status-completed-assignment">
+                      <label
+                        className="fieldLabel"
+                        htmlFor="next-assignment-message-completed-assignment"
+                      >
                         Completed assignment
                       </label>
                       <input
-                        id="status-completed-assignment"
+                        id="next-assignment-message-completed-assignment"
                         type="text"
-                        value={messageAssignment}
-                        onChange={(e) => setMessageAssignment(e.target.value)}
+                        value={deadlineExtensionAssignment}
+                        onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
                         placeholder="Completed assignment"
                         aria-label="Completed assignment"
                       />
                     </div>
                     <div className="fieldGroup">
-                      <label className="fieldLabel" htmlFor="status-next-assignment">
+                      <label
+                        className="fieldLabel"
+                        htmlFor="next-assignment-message-next-assignment"
+                      >
                         Next assignment
                       </label>
                       <input
-                        id="status-next-assignment"
+                        id="next-assignment-message-next-assignment"
                         type="text"
-                        value={statusNextAssignment}
-                        onChange={(e) => setStatusNextAssignment(e.target.value)}
+                        value={nextAssignment}
+                        onChange={(e) => setNextAssignment(e.target.value)}
                         placeholder="Next assignment"
                         aria-label="Next assignment"
                       />
                     </div>
-                    <div className="fieldGroup statusConfirmBy">
-                      <label className="fieldLabel" htmlFor="status-confirmed-by">
+                    <div className="fieldGroup nextAssignmentMessageConfirmedBy">
+                      <label
+                        className="fieldLabel"
+                        htmlFor="next-assignment-message-confirmed-by"
+                      >
                         Confirmed by
                       </label>
                       <input
-                        id="status-confirmed-by"
+                        id="next-assignment-message-confirmed-by"
                         type="text"
-                        value={statusAssignee}
-                        onChange={(e) => setStatusAssignee(e.target.value)}
+                        value={nextAssignmentConfirmedBy}
+                        onChange={(e) => setNextAssignmentConfirmedBy(e.target.value)}
                         placeholder="Confirmed by"
-                        aria-label="Status confirmed by"
+                        aria-label="Next assignment message confirmed by"
                       />
                     </div>
-                    <div className="fieldGroup statusStartAt">
-                      <label className="fieldLabel" htmlFor="status-start-at">
+                    <div className="fieldGroup nextAssignmentStartAt">
+                      <label
+                        className="fieldLabel"
+                        htmlFor="next-assignment-message-start-at"
+                      >
                         Start time
                       </label>
                       <input
-                        id="status-start-at"
+                        id="next-assignment-message-start-at"
                         type="datetime-local"
-                        value={statusStartAt ? toDatetimeLocalValue(statusStartAt) : ''}
+                        value={
+                          nextAssignmentStartAt
+                            ? toDatetimeLocalValue(nextAssignmentStartAt)
+                            : ''
+                        }
                         disabled
                         readOnly
                         aria-label="Start time"
@@ -832,20 +870,23 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="messagePreview" aria-label="Status message preview">
-                    {statusMessage || 'Fill all fields to generate a status message.'}
+                  <div className="messagePreview" aria-label="Next assignment message preview">
+                    {nextAssignmentMessage ||
+                      'Fill all fields to generate a next assignment message.'}
                   </div>
 
                   <div className="messageActions">
                     <button
-                      onClick={onCopyStatusMessage}
-                      disabled={!statusMessage}
+                      onClick={onCopyNextAssignmentMessage}
+                      disabled={!nextAssignmentMessage}
                       className="btn-primary"
                     >
                       <i className="las la-copy" aria-hidden="true"></i> Copy
                     </button>
-                    {statusCopyStatus === 'copied' && <span className="copyStatus">Copied.</span>}
-                    {statusCopyStatus === 'failed' && (
+                    {nextAssignmentCopyState === 'copied' && (
+                      <span className="copyStatus">Copied.</span>
+                    )}
+                    {nextAssignmentCopyState === 'failed' && (
                       <span className="copyStatus">Copy failed. Please copy manually.</span>
                     )}
                   </div>

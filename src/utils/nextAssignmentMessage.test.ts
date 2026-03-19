@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatStatusMessage } from './statusMessage'
+import { formatNextAssignmentMessage } from './nextAssignmentMessage'
 
-describe('formatStatusMessage', () => {
-  it('formats a full status message with metadata', () => {
+describe('formatNextAssignmentMessage', () => {
+  it('formats a full next assignment message with metadata', () => {
     const start = new Date(2026, 0, 13, 16, 10)
     const deadline = new Date(2026, 0, 16, 9, 10)
-    const message = formatStatusMessage({
+    const message = formatNextAssignmentMessage({
       completedAssignment: '"三"人文講堂',
       nextAssignment: '6集仁心慧語 (呂紹睿)',
       assignee: 'Emily Ding',
@@ -22,7 +22,7 @@ describe('formatStatusMessage', () => {
   it('formats without metadata', () => {
     const start = new Date(2026, 0, 13, 10, 5)
     const deadline = new Date(2026, 0, 14, 9, 0)
-    const message = formatStatusMessage({
+    const message = formatNextAssignmentMessage({
       completedAssignment: '人文講堂',
       nextAssignment: '仁心慧語',
       assignee: 'Alex',
@@ -38,7 +38,7 @@ describe('formatStatusMessage', () => {
   it('matches a long-form completion message format', () => {
     const start = new Date(2026, 2, 3, 11, 40)
     const deadline = new Date(2026, 2, 7, 11, 40)
-    const message = formatStatusMessage({
+    const message = formatNextAssignmentMessage({
       completedAssignment:
         '7集人物專訪(勇氣來自日常選擇，善意可以被練習，家庭支持能帶來安全感，分享經驗讓人彼此靠近，面對挫折要保持彈性，初入職場需要持續學習，長期投入才看得見成果，反覆練習會讓表達更穩定)',
       nextAssignment: '深度訪談 (如何在壓力下保持清晰思考 - 王小明)',

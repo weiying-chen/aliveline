@@ -1,6 +1,6 @@
 import { formatMessageDate } from './deadlineHistory'
 
-export type StatusMessageOptions = {
+export type NextAssignmentMessageOptions = {
   completedAssignment: string
   nextAssignment: string
   assignee: string
@@ -8,7 +8,7 @@ export type StatusMessageOptions = {
   deadline: Date
 }
 
-export function formatStatusMessage(options: StatusMessageOptions) {
+export function formatNextAssignmentMessage(options: NextAssignmentMessageOptions) {
   const completedAssignment = options.completedAssignment.trim()
   const nextAssignment = options.nextAssignment.trim()
   const assignee = options.assignee.trim()

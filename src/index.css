@@ -331,18 +331,18 @@ input[readonly] {
   margin: 0 0 var(--space-3);
 }
 
-.statusFields {
+.nextAssignmentMessageFields {
   display: grid;
   gap: var(--space-2);
   margin: 0 0 var(--space-3);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.statusFields .statusStartAt {
+.nextAssignmentMessageFields .nextAssignmentStartAt {
   grid-column: 1 / -1;
 }
 
-.statusFields .statusConfirmBy {
+.nextAssignmentMessageFields .nextAssignmentMessageConfirmedBy {
   grid-column: 1 / -1;
 }
 
@@ -458,7 +458,7 @@ input[readonly] {
 }
 
 @media (max-width: 640px) {
-  .statusFields {
+  .nextAssignmentMessageFields {
     grid-template-columns: 1fr;
   }
 
