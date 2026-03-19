@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
-import {
-  getAssignmentAfterDeadlineChange,
-  shouldConfirmKeepingAssignment,
-} from './utils/assignmentReview'
+import { getAssignmentAfterDeadlineChange } from './utils/assignmentReview'
 import { formatStatusMessage } from './utils/statusMessage'
 import { syncStatusStartWithDeadline } from './utils/statusStart'
 import {
@@ -372,14 +369,7 @@ export default function App() {
       setPreviousChangedAt(new Date())
       setPreviousTasks(options?.tasks ?? [])
     }
-    if (shouldConfirmKeepingAssignment(messageAssignment)) {
-      const keepSameAssignment = window.confirm(
-        `Deadline changed. Keep the same assignment name?\n\n${messageAssignment.trim()}`
-      )
-      setMessageAssignment(
-        getAssignmentAfterDeadlineChange(messageAssignment, keepSameAssignment)
-      )
-    }
+    setMessageAssignment(getAssignmentAfterDeadlineChange(messageAssignment))
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
       setTasks([])

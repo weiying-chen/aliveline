@@ -1,28 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  getAssignmentAfterDeadlineChange,
-  shouldConfirmKeepingAssignment,
-} from './assignmentReview'
-
-describe('shouldConfirmKeepingAssignment', () => {
-  it('requires confirmation when the current assignment is not blank', () => {
-    expect(shouldConfirmKeepingAssignment('Existing assignment')).toBe(true)
-  })
-
-  it('does not require confirmation when the assignment is blank', () => {
-    expect(shouldConfirmKeepingAssignment('   ')).toBe(false)
-  })
-})
+import { getAssignmentAfterDeadlineChange } from './assignmentReview'
 
 describe('getAssignmentAfterDeadlineChange', () => {
-  it('keeps the current assignment when the user confirms it', () => {
-    expect(getAssignmentAfterDeadlineChange('Existing assignment', true)).toBe(
-      'Existing assignment'
-    )
+  it('clears the assignment after a deadline change', () => {
+    expect(getAssignmentAfterDeadlineChange('Existing assignment')).toBe('')
   })
 
-  it('clears the assignment when the user does not keep it', () => {
-    expect(getAssignmentAfterDeadlineChange('Existing assignment', false)).toBe('')
+  it('still returns an empty string when the assignment is already blank', () => {
+    expect(getAssignmentAfterDeadlineChange('   ')).toBe('')
   })
 })
