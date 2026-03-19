@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
+import { reduceAssignmentReviewState } from './utils/assignmentReview'
 import { formatStatusMessage } from './utils/statusMessage'
 import { syncStatusStartWithDeadline } from './utils/statusStart'
 import {
@@ -45,6 +46,7 @@ const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
+const LS_ASSIGNMENT_REVIEW_REQUIRED_KEY = 'aliveline:assignment-review-required'
 
 function readStoredDate(key: string) {
   const saved = localStorage.getItem(key)
@@ -119,6 +121,9 @@ export default function App() {
   const [recentActiveIndex, setRecentActiveIndex] = useState<number>(-1)
   const [messageAssignment, setMessageAssignment] = useState(
     () => localStorage.getItem(LS_MESSAGE_ASSIGNMENT_KEY) ?? ''
+  )
+  const [isAssignmentReviewRequired, setIsAssignmentReviewRequired] = useState(() =>
+    readStoredBool(LS_ASSIGNMENT_REVIEW_REQUIRED_KEY, false)
   )
   const [messageAssignee, setMessageAssignee] = useState(
     () => localStorage.getItem(LS_MESSAGE_ASSIGNEE_KEY) ?? ''
@@ -203,6 +208,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(LS_MESSAGE_ASSIGNMENT_KEY, messageAssignment)
   }, [messageAssignment])
+
+  useEffect(() => {
+    localStorage.setItem(LS_ASSIGNMENT_REVIEW_REQUIRED_KEY, String(isAssignmentReviewRequired))
+  }, [isAssignmentReviewRequired])
 
   useEffect(() => {
     const todayKey = dateKey(now)
@@ -369,10 +378,35 @@ export default function App() {
       setPreviousTasks(options?.tasks ?? [])
     }
     setDeadline(nextDeadline)
+    setIsAssignmentReviewRequired((current) =>
+      reduceAssignmentReviewState(current, {
+        type: 'deadlineChanged',
+        assignment: messageAssignment,
+      })
+    )
     if (options?.resetDrafts) {
       setTasks([])
       setChangeBaseDeadline(null)
     }
+  }
+
+  const onChangeMessageAssignment = (value: string) => {
+    setMessageAssignment(value)
+    setIsAssignmentReviewRequired((current) =>
+      reduceAssignmentReviewState(current, { type: 'assignmentEdited' })
+    )
+  }
+
+  const confirmKeepingAssignment = () => {
+    if (!isAssignmentReviewRequired || !messageAssignment.trim()) return true
+    const shouldKeep = window.confirm(
+      `Deadline changed. Keep the same assignment name?\n\n${messageAssignment.trim()}`
+    )
+    if (!shouldKeep) return false
+    setIsAssignmentReviewRequired((current) =>
+      reduceAssignmentReviewState(current, { type: 'assignmentConfirmed' })
+    )
+    return true
   }
 
   const onSetDeadline = (v: string) => {
@@ -438,6 +472,7 @@ export default function App() {
 
   const onCopyDeadlineExtensionMessage = async () => {
     if (!deadlineExtensionMessage) return
+    if (!confirmKeepingAssignment()) return
     try {
       await navigator.clipboard.writeText(deadlineExtensionMessage)
       setCopyStatus('copied')
@@ -448,6 +483,7 @@ export default function App() {
 
   const onCopyStatusMessage = async () => {
     if (!statusMessage) return
+    if (!confirmKeepingAssignment()) return
     try {
       await navigator.clipboard.writeText(statusMessage)
       setStatusCopyStatus('copied')
@@ -709,7 +745,7 @@ export default function App() {
                         id="deadline-extension-assignment"
                         type="text"
                         value={messageAssignment}
-                        onChange={(e) => setMessageAssignment(e.target.value)}
+                        onChange={(e) => onChangeMessageAssignment(e.target.value)}
                         placeholder="Assignment"
                         aria-label="Assignment name"
                       />
@@ -780,7 +816,7 @@ export default function App() {
                         id="status-completed-assignment"
                         type="text"
                         value={messageAssignment}
-                        onChange={(e) => setMessageAssignment(e.target.value)}
+                        onChange={(e) => onChangeMessageAssignment(e.target.value)}
                         placeholder="Completed assignment"
                         aria-label="Completed assignment"
                       />
