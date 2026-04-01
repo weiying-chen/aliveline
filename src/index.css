@@ -416,6 +416,22 @@ input[readonly] {
   text-align: left;
 }
 
+.taskInfo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.taskName {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.taskFinishAt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .taskRemoveButton {
   min-width: 40px;
   width: 40px;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
+import { formatDeadlineExtensionMessage, type TaskEntry } from './utils/deadlineHistory'
 import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
 import { syncNextAssignmentMessageStartWithDeadline } from './utils/nextAssignmentMessageStart'
@@ -13,7 +13,11 @@ import {
   toDatetimeLocalValue,
 } from './utils/time'
 import { updateRecentTaskNames } from './utils/taskHistory'
-import { minutesFromTimeParts } from './utils/taskTime'
+import {
+  calculateTaskFinishTimes,
+  formatTaskTimeWithDuration,
+  minutesFromTimeParts,
+} from './utils/taskTime'
 import {
   addWorkMinutes,
   atLocalTime,
@@ -252,6 +256,10 @@ export default function App() {
   const showDeadlineExtensionReminder = useMemo(
     () => shouldShowDeadlineExtensionReminder(now, deadline, tasks.length > 0),
     [deadline, now, tasks.length]
+  )
+  const taskFinishTimes = useMemo(
+    () => calculateTaskFinishTimes(now, tasks),
+    [now, tasks]
   )
 
   useEffect(() => {
@@ -688,8 +696,10 @@ export default function App() {
           <div className="taskList">
             {tasks.map((entry, index) => (
               <div key={`${entry.text}-${index}`} className="taskRow">
-                <span>{entry.text}</span>
-                <span>{formatDuration(entry.minutes)}</span>
+                <div className="taskInfo">
+                  <span className="taskName">{entry.text}</span>
+                </div>
+                <span>{formatTaskTimeWithDuration(taskFinishTimes[index], entry.minutes)}</span>
                 <button
                   onClick={() => removeTaskEntry(index)}
                   aria-label="Remove task"
