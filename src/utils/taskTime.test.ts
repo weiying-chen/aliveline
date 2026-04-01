@@ -5,6 +5,8 @@ import {
   formatTaskTimeWithDuration,
   minutesFromTimeParts,
   normalizeTaskTimeParts,
+  stepHoursText,
+  stepMinutesText,
 } from './taskTime'
 
 describe('minutesFromTimeParts', () => {
@@ -30,6 +32,11 @@ describe('minutesFromTimeParts', () => {
     expect(minutesFromTimeParts('1', '30')).toBe(90)
   })
 
+  it('rounds to the nearest 10 minutes', () => {
+    expect(minutesFromTimeParts('1', '6')).toBe(70)
+    expect(minutesFromTimeParts('1', '4')).toBe(60)
+  })
+
   it('handles decimal hours', () => {
     expect(minutesFromTimeParts('1.5', '')).toBe(90)
   })
@@ -44,7 +51,7 @@ describe('normalizeTaskTimeParts', () => {
     expect(normalizeTaskTimeParts('', '120')).toEqual({ hoursText: '2', minutesText: '0' })
   })
 
-  it('leaves values unchanged when minutes are below 60', () => {
+  it('leaves minutes unchanged under 60', () => {
     expect(normalizeTaskTimeParts('1', '59')).toEqual({ hoursText: '1', minutesText: '59' })
   })
 
@@ -54,6 +61,14 @@ describe('normalizeTaskTimeParts', () => {
 
   it('clamps to zero when borrowing would go below 0 total minutes', () => {
     expect(normalizeTaskTimeParts('0', '-1')).toEqual({ hoursText: '0', minutesText: '0' })
+  })
+
+  it('keeps raw carried minutes when typing over 60', () => {
+    expect(normalizeTaskTimeParts('1', '66')).toEqual({ hoursText: '2', minutesText: '6' })
+  })
+
+  it('keeps raw minutes under 60 without snapping', () => {
+    expect(normalizeTaskTimeParts('1', '56')).toEqual({ hoursText: '1', minutesText: '56' })
   })
 })
 
@@ -86,5 +101,33 @@ describe('formatTaskTimeWithDuration', () => {
   it('combines finish time and duration for the right-side task label', () => {
     const finishAt = new Date(2025, 0, 2, 13, 38)
     expect(formatTaskTimeWithDuration(finishAt, 60)).toBe('Due 1:38 PM • 1h')
+  })
+})
+
+describe('stepMinutesText', () => {
+  it('steps up by 10 from an arbitrary typed value', () => {
+    expect(stepMinutesText('48', 10)).toBe('58')
+  })
+
+  it('steps down by 10 from an arbitrary typed value', () => {
+    expect(stepMinutesText('48', -10)).toBe('38')
+  })
+
+  it('treats empty input as zero when stepping', () => {
+    expect(stepMinutesText('', 10)).toBe('10')
+  })
+})
+
+describe('stepHoursText', () => {
+  it('steps up by 1 hour', () => {
+    expect(stepHoursText('2', 1)).toBe('3')
+  })
+
+  it('clamps at 0 when stepping down', () => {
+    expect(stepHoursText('0', -1)).toBe('0')
+  })
+
+  it('treats empty input as zero when stepping', () => {
+    expect(stepHoursText('', 1)).toBe('1')
   })
 })

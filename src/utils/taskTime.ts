@@ -6,6 +6,8 @@ export type TaskMinutesEntry = {
   minutes: number
 }
 
+const MINUTE_STEP = 10
+
 function isNonNegativeIntegerText(value: string) {
   return /^\d+$/.test(value)
 }
@@ -26,7 +28,7 @@ export function minutesFromTimeParts(hoursText: string, minutesText: string) {
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null
   if (hours < 0 || minutes < 0) return null
 
-  const total = Math.round(hours * 60 + minutes)
+  const total = Math.round((hours * 60 + minutes) / MINUTE_STEP) * MINUTE_STEP
   return total > 0 ? total : null
 }
 
@@ -69,4 +71,16 @@ export function calculateTaskFinishTimes(start: Date, tasks: TaskMinutesEntry[])
 
 export function formatTaskTimeWithDuration(finishAt: Date, minutes: number) {
   return `Due ${fmtTime(finishAt)} • ${formatDuration(minutes)}`
+}
+
+export function stepMinutesText(current: string, delta: number) {
+  const trimmed = current.trim()
+  const base = trimmed.length > 0 && /^-?\d+$/.test(trimmed) ? Number(trimmed) : 0
+  return String(base + delta)
+}
+
+export function stepHoursText(current: string, delta: number) {
+  const trimmed = current.trim()
+  const base = trimmed.length > 0 && /^\d+$/.test(trimmed) ? Number(trimmed) : 0
+  return String(Math.max(0, base + delta))
 }

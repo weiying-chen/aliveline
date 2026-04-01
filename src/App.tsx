@@ -17,7 +17,8 @@ import {
   calculateTaskFinishTimes,
   formatTaskTimeWithDuration,
   minutesFromTimeParts,
-  normalizeTaskTimeParts,
+  stepHoursText,
+  stepMinutesText,
 } from './utils/taskTime'
 import {
   addWorkMinutes,
@@ -521,9 +522,15 @@ export default function App() {
   }
 
   const onTaskMinutesChange = (value: string) => {
-    const normalized = normalizeTaskTimeParts(taskHours, value)
-    setTaskHours(normalized.hoursText)
-    setTaskMinutes(normalized.minutesText)
+    setTaskMinutes(value)
+  }
+
+  const onStepTaskHours = (delta: number) => {
+    setTaskHours((prev) => stepHoursText(prev, delta))
+  }
+
+  const onStepTaskMinutes = (delta: number) => {
+    setTaskMinutes((prev) => stepMinutesText(prev, delta))
   }
 
   return (
@@ -661,31 +668,95 @@ export default function App() {
               <label className="fieldLabel" htmlFor="task-hours">
                 Hours
               </label>
-              <input
-                id="task-hours"
-                type="number"
-                min="0"
-                step="1"
-                value={taskHours}
-                onChange={(e) => setTaskHours(e.target.value)}
-                placeholder="Hours"
-                aria-label="Hours"
-              />
+              <div className="taskHoursInputWrap">
+                <input
+                  id="task-hours"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={taskHours}
+                  onChange={(e) => setTaskHours(e.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault()
+                      onStepTaskHours(1)
+                      return
+                    }
+
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault()
+                      onStepTaskHours(-1)
+                    }
+                  }}
+                  placeholder="Hours"
+                  aria-label="Hours"
+                />
+                <div className="taskHoursStepButtons">
+                  <button
+                    type="button"
+                    className="taskStepButton"
+                    data-dir="up"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => onStepTaskHours(1)}
+                    aria-label="Increase hours by 1"
+                  />
+                  <button
+                    type="button"
+                    className="taskStepButton"
+                    data-dir="down"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => onStepTaskHours(-1)}
+                    aria-label="Decrease hours by 1"
+                  />
+                </div>
+              </div>
             </div>
             <div className="fieldGroup">
               <label className="fieldLabel" htmlFor="task-minutes">
                 Minutes
               </label>
-              <input
-                id="task-minutes"
-                type="number"
-                min="-59"
-                step="1"
-                value={taskMinutes}
-                onChange={(e) => onTaskMinutesChange(e.target.value)}
-                placeholder="Minutes"
-                aria-label="Minutes"
-              />
+              <div className="taskMinutesInputWrap">
+                <input
+                  id="task-minutes"
+                  type="number"
+                  min="-60"
+                  step="1"
+                  value={taskMinutes}
+                  onChange={(e) => onTaskMinutesChange(e.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault()
+                      onStepTaskMinutes(10)
+                      return
+                    }
+
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault()
+                      onStepTaskMinutes(-10)
+                    }
+                  }}
+                  placeholder="Minutes"
+                  aria-label="Minutes"
+                />
+                <div className="taskMinutesStepButtons">
+                  <button
+                    type="button"
+                    className="taskStepButton"
+                    data-dir="up"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => onStepTaskMinutes(10)}
+                    aria-label="Increase minutes by 10"
+                  />
+                  <button
+                    type="button"
+                    className="taskStepButton"
+                    data-dir="down"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => onStepTaskMinutes(-10)}
+                    aria-label="Decrease minutes by 10"
+                  />
+                </div>
+              </div>
             </div>
             <div className="fieldGroup">
               <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">

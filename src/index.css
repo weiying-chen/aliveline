@@ -398,6 +398,80 @@ input[readonly] {
   outline: none;
 }
 
+.taskMinutesInputWrap {
+  position: relative;
+}
+
+.taskHoursInputWrap {
+  position: relative;
+}
+
+.taskHoursInputWrap input {
+  width: 100%;
+  padding-right: 30px;
+}
+
+.taskMinutesInputWrap input {
+  width: 100%;
+  padding-right: 30px;
+}
+
+.taskHoursStepButtons,
+.taskMinutesStepButtons {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+}
+
+.taskStepButton {
+  min-width: 22px;
+  width: 22px;
+  height: 12px;
+  padding: 0;
+  background: transparent;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 6l4 4 4-4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px 12px;
+  color: var(--fg);
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.taskStepButton[data-dir='up'] {
+  transform: rotate(180deg);
+}
+
+.taskStepButton:hover {
+  box-shadow: none;
+  background-color: transparent;
+}
+
+.taskStepButton:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.taskHoursInputWrap input::-webkit-outer-spin-button,
+.taskHoursInputWrap input::-webkit-inner-spin-button,
+.taskMinutesInputWrap input::-webkit-outer-spin-button,
+.taskMinutesInputWrap input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.taskHoursInputWrap input[type='number'],
+.taskMinutesInputWrap input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 .taskList {
   display: grid;
   gap: var(--space-2);
