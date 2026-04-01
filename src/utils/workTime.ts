@@ -142,19 +142,27 @@ export function shouldShowEarlyFinishReminder(now: Date, deadline: Date) {
   const deadlineDay = new Date(deadline)
   deadlineDay.setHours(0, 0, 0, 0)
 
-  if (dayStart.getTime() !== deadlineDay.getTime()) return false
-
   const reminderStart = atLocalTime(dayStart, firstBlock(WORK_BLOCKS).start)
   const reminderEnd = new Date(reminderStart)
   reminderEnd.setMinutes(reminderEnd.getMinutes() + 60)
 
+  const isWithinReminderWindow = now.getTime() >= reminderStart.getTime() && now.getTime() < reminderEnd.getTime()
+  if (!isWithinReminderWindow) return false
+
   const finishCutoff = atLocalTime(dayStart, lastBlock(WORK_BLOCKS).end)
 
-  return (
-    now.getTime() >= reminderStart.getTime() &&
-    now.getTime() < reminderEnd.getTime() &&
-    deadline.getTime() <= finishCutoff.getTime()
-  )
+  const isSameDay = dayStart.getTime() === deadlineDay.getTime()
+  if (isSameDay) {
+    return deadline.getTime() <= finishCutoff.getTime()
+  }
+
+  const nextDay = new Date(dayStart)
+  nextDay.setDate(nextDay.getDate() + 1)
+  const isNextDayDeadline = nextDay.getTime() === deadlineDay.getTime()
+  if (!isNextDayDeadline) return false
+
+  const nextDayReminderCutoff = atLocalTime(deadlineDay, { h: 9, m: 0 })
+  return deadline.getTime() < nextDayReminderCutoff.getTime()
 }
 
 export function shouldShowDeadlineExtensionReminder(

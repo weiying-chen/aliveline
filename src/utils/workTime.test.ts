@@ -129,11 +129,18 @@ describe('shouldShowEarlyFinishReminder', () => {
     expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(true)
   })
 
-  it('does not show when deadline is on another day', () => {
+  it('does not show when a next-day deadline is at or after 9:00', () => {
     const now = at(8, 10)
-    const deadline = at(8, 40)
+    const deadline = at(9, 0)
     deadline.setDate(deadline.getDate() + 1)
     expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(false)
+  })
+
+  it('shows the previous day between 8:00 and 9:00 when next-day deadline is before 9:00', () => {
+    const now = at(8, 10)
+    const deadline = at(8, 15)
+    deadline.setDate(deadline.getDate() + 1)
+    expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(true)
   })
 
   it('does not show on weekends', () => {
