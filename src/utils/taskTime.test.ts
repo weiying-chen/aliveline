@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { calculateTaskFinishTimes, formatTaskTimeWithDuration, minutesFromTimeParts } from './taskTime'
+import {
+  calculateTaskFinishTimes,
+  formatTaskTimeWithDuration,
+  minutesFromTimeParts,
+  normalizeTaskTimeParts,
+} from './taskTime'
 
 describe('minutesFromTimeParts', () => {
   it('returns null when both fields are empty', () => {
@@ -27,6 +32,28 @@ describe('minutesFromTimeParts', () => {
 
   it('handles decimal hours', () => {
     expect(minutesFromTimeParts('1.5', '')).toBe(90)
+  })
+})
+
+describe('normalizeTaskTimeParts', () => {
+  it('carries extra minutes into hours', () => {
+    expect(normalizeTaskTimeParts('1', '75')).toEqual({ hoursText: '2', minutesText: '15' })
+  })
+
+  it('supports carry when hours field is empty', () => {
+    expect(normalizeTaskTimeParts('', '120')).toEqual({ hoursText: '2', minutesText: '0' })
+  })
+
+  it('leaves values unchanged when minutes are below 60', () => {
+    expect(normalizeTaskTimeParts('1', '59')).toEqual({ hoursText: '1', minutesText: '59' })
+  })
+
+  it('borrows an hour when minutes go below 0', () => {
+    expect(normalizeTaskTimeParts('2', '-1')).toEqual({ hoursText: '1', minutesText: '59' })
+  })
+
+  it('clamps to zero when borrowing would go below 0 total minutes', () => {
+    expect(normalizeTaskTimeParts('0', '-1')).toEqual({ hoursText: '0', minutesText: '0' })
   })
 })
 

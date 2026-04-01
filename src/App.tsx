@@ -17,6 +17,7 @@ import {
   calculateTaskFinishTimes,
   formatTaskTimeWithDuration,
   minutesFromTimeParts,
+  normalizeTaskTimeParts,
 } from './utils/taskTime'
 import {
   addWorkMinutes,
@@ -519,6 +520,12 @@ export default function App() {
     }
   }
 
+  const onTaskMinutesChange = (value: string) => {
+    const normalized = normalizeTaskTimeParts(taskHours, value)
+    setTaskHours(normalized.hoursText)
+    setTaskMinutes(normalized.minutesText)
+  }
+
   return (
     <div className="app">
       <div className="deadlineSection">
@@ -658,6 +665,7 @@ export default function App() {
                 id="task-hours"
                 type="number"
                 min="0"
+                step="1"
                 value={taskHours}
                 onChange={(e) => setTaskHours(e.target.value)}
                 placeholder="Hours"
@@ -671,9 +679,10 @@ export default function App() {
               <input
                 id="task-minutes"
                 type="number"
-                min="0"
+                min="-59"
+                step="1"
                 value={taskMinutes}
-                onChange={(e) => setTaskMinutes(e.target.value)}
+                onChange={(e) => onTaskMinutesChange(e.target.value)}
                 placeholder="Minutes"
                 aria-label="Minutes"
               />
