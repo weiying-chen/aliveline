@@ -30,6 +30,23 @@ function formatTaskLine(task: TaskEntry) {
   return `${trimmed} ${formatDurationForMessage(task.minutes)}`
 }
 
+function aggregateTasksForMessage(tasks: TaskEntry[]) {
+  const totals = new Map<string, number>()
+  const orderedNames: string[] = []
+
+  for (const task of tasks) {
+    const name = task.text.trim()
+    if (!name || task.minutes <= 0) continue
+    if (!totals.has(name)) orderedNames.push(name)
+    totals.set(name, (totals.get(name) ?? 0) + task.minutes)
+  }
+
+  return orderedNames.map((name) => ({
+    text: name,
+    minutes: totals.get(name) ?? 0,
+  }))
+}
+
 export function formatDuration(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60)
   const minutes = totalMinutes % 60
@@ -53,8 +70,7 @@ export function formatDeadlineExtensionMessage({
   assignment,
   assignee,
 }: DeadlineExtensionMessageOptions) {
-  const sanitizedTasks =
-    tasks?.filter((item) => item.text.trim().length > 0 && item.minutes > 0) ?? []
+  const sanitizedTasks = aggregateTasksForMessage(tasks ?? [])
   const totalMinutes = sanitizedTasks.reduce((sum, item) => sum + item.minutes, 0)
   const taskLines = sanitizedTasks.map(formatTaskLine).filter((line) => line.length > 0).join('\n')
   const prefix =
