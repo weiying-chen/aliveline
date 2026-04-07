@@ -83,6 +83,11 @@ export function stepMinutesText(current: string, delta: number) {
   return String(base + delta)
 }
 
+export function applyMinutesDeltaWithCarry(hoursText: string, minutesText: string, delta: number) {
+  const nextMinutes = stepMinutesText(minutesText, delta)
+  return normalizeTaskTimeParts(hoursText, nextMinutes)
+}
+
 export function stepHoursText(current: string, delta: number) {
   const trimmed = current.trim()
   const base = trimmed.length > 0 && /^\d+$/.test(trimmed) ? Number(trimmed) : 0

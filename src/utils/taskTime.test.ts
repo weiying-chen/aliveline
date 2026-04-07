@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  applyMinutesDeltaWithCarry,
   calculateTaskFinishTimes,
   formatTaskTimeWithDuration,
   minutesFromTimeParts,
@@ -133,6 +134,22 @@ describe('stepMinutesText', () => {
 
   it('treats empty input as zero when stepping', () => {
     expect(stepMinutesText('', 10)).toBe('10')
+  })
+})
+
+describe('applyMinutesDeltaWithCarry', () => {
+  it('carries into hours when stepping minutes above 59', () => {
+    expect(applyMinutesDeltaWithCarry('1', '58', 10)).toEqual({
+      hoursText: '2',
+      minutesText: '8',
+    })
+  })
+
+  it('borrows from hours when stepping minutes below 0', () => {
+    expect(applyMinutesDeltaWithCarry('2', '0', -10)).toEqual({
+      hoursText: '1',
+      minutesText: '50',
+    })
   })
 })
 

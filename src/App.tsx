@@ -14,12 +14,13 @@ import {
 } from './utils/time'
 import { updateRecentTaskNames } from './utils/taskHistory'
 import {
+  applyMinutesDeltaWithCarry,
   calculateTaskFinishTimes,
   formatTaskTimeWithDuration,
   minutesFromTimeParts,
+  normalizeTaskTimeParts,
   pickTaskFinishStart,
   stepHoursText,
-  stepMinutesText,
 } from './utils/taskTime'
 import {
   addWorkMinutes,
@@ -527,7 +528,9 @@ export default function App() {
   }
 
   const onTaskMinutesChange = (value: string) => {
-    setTaskMinutes(value)
+    const normalized = normalizeTaskTimeParts(taskHours, value)
+    setTaskHours(normalized.hoursText)
+    setTaskMinutes(normalized.minutesText)
   }
 
   const onStepTaskHours = (delta: number) => {
@@ -535,7 +538,9 @@ export default function App() {
   }
 
   const onStepTaskMinutes = (delta: number) => {
-    setTaskMinutes((prev) => stepMinutesText(prev, delta))
+    const normalized = applyMinutesDeltaWithCarry(taskHours, taskMinutes, delta)
+    setTaskHours(normalized.hoursText)
+    setTaskMinutes(normalized.minutesText)
   }
 
   return (
