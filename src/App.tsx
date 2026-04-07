@@ -19,6 +19,7 @@ import {
   formatTaskTimeWithDuration,
   minutesFromTimeParts,
   normalizeTaskTimeParts,
+  pickTaskBatchBase,
   pickTaskFinishStart,
   stepHoursText,
 } from './utils/taskTime'
@@ -504,9 +505,9 @@ export default function App() {
     }
     setRecentTasks((prev) => updateRecentTaskNames(prev, entry.text))
     const nextTasks = [...tasks, entry]
-    const baseDeadline = changeBaseDeadline ?? deadline
+    const baseDeadline = pickTaskBatchBase(now, changeBaseDeadline)
     if (!changeBaseDeadline) {
-      setChangeBaseDeadline(deadline)
+      setChangeBaseDeadline(baseDeadline)
     }
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)

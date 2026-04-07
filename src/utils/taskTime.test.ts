@@ -6,6 +6,7 @@ import {
   formatTaskTimeWithDuration,
   minutesFromTimeParts,
   normalizeTaskTimeParts,
+  pickTaskBatchBase,
   pickTaskFinishStart,
   stepHoursText,
   stepMinutesText,
@@ -113,6 +114,19 @@ describe('pickTaskFinishStart', () => {
     const deadline = new Date(2025, 0, 2, 12, 30)
 
     expect(pickTaskFinishStart(deadline, null).getTime()).toBe(deadline.getTime())
+  })
+})
+
+describe('pickTaskBatchBase', () => {
+  it('uses now when starting a new task batch', () => {
+    const now = new Date(2025, 0, 2, 10, 24)
+    expect(pickTaskBatchBase(now, null).getTime()).toBe(now.getTime())
+  })
+
+  it('keeps the existing base while editing an active task batch', () => {
+    const now = new Date(2025, 0, 2, 10, 24)
+    const changeBaseDeadline = new Date(2025, 0, 2, 8, 30)
+    expect(pickTaskBatchBase(now, changeBaseDeadline).getTime()).toBe(changeBaseDeadline.getTime())
   })
 })
 

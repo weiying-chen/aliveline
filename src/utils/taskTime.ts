@@ -73,6 +73,10 @@ export function pickTaskFinishStart(deadline: Date, changeBaseDeadline: Date | n
   return changeBaseDeadline ?? deadline
 }
 
+export function pickTaskBatchBase(now: Date, changeBaseDeadline: Date | null) {
+  return changeBaseDeadline ?? now
+}
+
 export function formatTaskTimeWithDuration(finishAt: Date, minutes: number) {
   return `Due ${fmtTime(finishAt)} • ${formatDuration(minutes)}`
 }
