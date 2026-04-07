@@ -17,6 +17,7 @@ import {
   calculateTaskFinishTimes,
   formatTaskTimeWithDuration,
   minutesFromTimeParts,
+  pickTaskFinishStart,
   stepHoursText,
   stepMinutesText,
 } from './utils/taskTime'
@@ -259,9 +260,13 @@ export default function App() {
     () => shouldShowDeadlineExtensionReminder(now, deadline, tasks.length > 0),
     [deadline, now, tasks.length]
   )
+  const taskFinishStart = useMemo(
+    () => pickTaskFinishStart(deadline, changeBaseDeadline),
+    [changeBaseDeadline, deadline]
+  )
   const taskFinishTimes = useMemo(
-    () => calculateTaskFinishTimes(now, tasks),
-    [now, tasks]
+    () => calculateTaskFinishTimes(taskFinishStart, tasks),
+    [taskFinishStart, tasks]
   )
 
   useEffect(() => {

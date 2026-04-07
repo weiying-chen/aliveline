@@ -5,6 +5,7 @@ import {
   formatTaskTimeWithDuration,
   minutesFromTimeParts,
   normalizeTaskTimeParts,
+  pickTaskFinishStart,
   stepHoursText,
   stepMinutesText,
 } from './taskTime'
@@ -94,6 +95,23 @@ describe('calculateTaskFinishTimes', () => {
       new Date(2025, 0, 2, 13, 30).getTime(),
       new Date(2025, 0, 2, 16, 30).getTime(),
     ])
+  })
+})
+
+describe('pickTaskFinishStart', () => {
+  it('uses the change base deadline when present so task due times stay fixed', () => {
+    const deadline = new Date(2025, 0, 2, 14, 24)
+    const changeBaseDeadline = new Date(2025, 0, 2, 8, 30)
+
+    expect(pickTaskFinishStart(deadline, changeBaseDeadline).getTime()).toBe(
+      changeBaseDeadline.getTime()
+    )
+  })
+
+  it('falls back to the current deadline when there is no base', () => {
+    const deadline = new Date(2025, 0, 2, 12, 30)
+
+    expect(pickTaskFinishStart(deadline, null).getTime()).toBe(deadline.getTime())
   })
 })
 

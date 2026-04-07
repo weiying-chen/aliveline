@@ -69,6 +69,10 @@ export function calculateTaskFinishTimes(start: Date, tasks: TaskMinutesEntry[])
   })
 }
 
+export function pickTaskFinishStart(deadline: Date, changeBaseDeadline: Date | null) {
+  return changeBaseDeadline ?? deadline
+}
+
 export function formatTaskTimeWithDuration(finishAt: Date, minutes: number) {
   return `Due ${fmtTime(finishAt)} • ${formatDuration(minutes)}`
 }
