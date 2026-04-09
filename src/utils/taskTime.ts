@@ -69,8 +69,8 @@ export function calculateTaskFinishTimes(start: Date, tasks: TaskMinutesEntry[])
   })
 }
 
-export function pickTaskFinishStart(deadline: Date, changeBaseDeadline: Date | null) {
-  return changeBaseDeadline ?? deadline
+export function pickTaskFinishStart(now: Date, changeBaseDeadline: Date | null) {
+  return changeBaseDeadline ?? now
 }
 
 export function pickTaskBatchBase(now: Date, changeBaseDeadline: Date | null) {

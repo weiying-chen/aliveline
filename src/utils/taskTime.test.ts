@@ -102,18 +102,18 @@ describe('calculateTaskFinishTimes', () => {
 
 describe('pickTaskFinishStart', () => {
   it('uses the change base deadline when present so task due times stay fixed', () => {
-    const deadline = new Date(2025, 0, 2, 14, 24)
+    const now = new Date(2025, 0, 2, 14, 24)
     const changeBaseDeadline = new Date(2025, 0, 2, 8, 30)
 
-    expect(pickTaskFinishStart(deadline, changeBaseDeadline).getTime()).toBe(
+    expect(pickTaskFinishStart(now, changeBaseDeadline).getTime()).toBe(
       changeBaseDeadline.getTime()
     )
   })
 
-  it('falls back to the current deadline when there is no base', () => {
-    const deadline = new Date(2025, 0, 2, 12, 30)
+  it('falls back to now when there is no base', () => {
+    const now = new Date(2025, 0, 2, 12, 30)
 
-    expect(pickTaskFinishStart(deadline, null).getTime()).toBe(deadline.getTime())
+    expect(pickTaskFinishStart(now, null).getTime()).toBe(now.getTime())
   })
 })
 

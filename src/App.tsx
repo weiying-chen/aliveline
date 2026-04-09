@@ -24,7 +24,6 @@ import {
   stepHoursText,
 } from './utils/taskTime'
 import {
-  addWorkMinutes,
   atLocalTime,
   isInWorkTime,
   nextWorkStart,
@@ -263,8 +262,8 @@ export default function App() {
     [deadline, now, tasks.length]
   )
   const taskFinishStart = useMemo(
-    () => pickTaskFinishStart(deadline, changeBaseDeadline),
-    [changeBaseDeadline, deadline]
+    () => pickTaskFinishStart(now, changeBaseDeadline),
+    [changeBaseDeadline, now]
   )
   const taskFinishTimes = useMemo(
     () => calculateTaskFinishTimes(taskFinishStart, tasks),
@@ -511,7 +510,6 @@ export default function App() {
     }
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)
-    setDeadline(addWorkMinutes(baseDeadline, nextTasks.reduce((sum, item) => sum + item.minutes, 0)))
     setTaskName('')
     setTaskHours('')
     setTaskMinutes('')
@@ -521,11 +519,6 @@ export default function App() {
     const nextTasks = tasks.filter((_, i) => i !== index)
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)
-    if (changeBaseDeadline) {
-      setDeadline(
-        addWorkMinutes(changeBaseDeadline, nextTasks.reduce((sum, item) => sum + item.minutes, 0))
-      )
-    }
   }
 
   const onTaskMinutesChange = (value: string) => {
