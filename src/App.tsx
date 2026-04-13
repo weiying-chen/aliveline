@@ -297,7 +297,19 @@ export default function App() {
     const minutesLeft = Math.max(0, Math.round(adjustedWorkMsLeft / 60000))
     return addWorkMinutes(now, minutesLeft)
   }, [adjustedWorkMsLeft, now])
+  const adjustedPreviousDeadline = useMemo(() => {
+    if (!previousDeadline) return null
+    if (previousDeadline.getTime() <= now.getTime()) return previousDeadline
+    const previousWorkMsLeft = workMsBetween(now, previousDeadline)
+    const adjustedPreviousWorkMsLeft = Math.max(
+      0,
+      Math.round(previousWorkMsLeft * (1 - REDUCTION_RATIO))
+    )
+    const minutesLeft = Math.max(0, Math.round(adjustedPreviousWorkMsLeft / 60000))
+    return addWorkMinutes(now, minutesLeft)
+  }, [now, previousDeadline])
   const displayDeadline = isAdjustedView ? adjustedDeadline : deadline
+  const displayPreviousDeadline = isAdjustedView ? adjustedPreviousDeadline : previousDeadline
   const workStartAt = useMemo(() => (isInWorkTime(now) ? now : nextWorkStart(now)), [now])
   const showEarlyFinishReminder = useMemo(
     () => shouldShowEarlyFinishReminder(now, deadline),
@@ -492,8 +504,10 @@ export default function App() {
     if (tasks.length === 0) return ''
     const messageTasks = isAdjustedView ? adjustedTasks : tasks
     const messageDeadline = isAdjustedView ? adjustedDeadline : deadline
+    const messagePreviousDeadline =
+      isAdjustedView && adjustedPreviousDeadline ? adjustedPreviousDeadline : previousDeadline
     return formatDeadlineExtensionMessage({
-      previous: previousDeadline,
+      previous: messagePreviousDeadline,
       next: messageDeadline,
       tasks: messageTasks,
       assignment: deadlineExtensionAssignment,
@@ -501,6 +515,7 @@ export default function App() {
     })
   }, [
     adjustedDeadline,
+    adjustedPreviousDeadline,
     adjustedTasks,
     deadline,
     deadlineExtensionConfirmedBy,
@@ -639,7 +654,17 @@ export default function App() {
           <div className="block">
             <div className="label">Previous deadline</div>
             <div className="previous">
-              {previousDeadline ? fmtDateTimeWithWeekday(previousDeadline) : '—'}
+              <button
+                type="button"
+                className="valueToggle previousValue"
+                aria-label="Toggle schedule display from previous deadline"
+                onClick={toggleAdjustedView}
+              >
+                <span aria-label="Previous deadline display">
+                  {displayPreviousDeadline ? fmtDateTimeWithWeekday(displayPreviousDeadline) : '—'}
+                  {isAdjustedView && displayPreviousDeadline ? ADJUSTED_SUFFIX : ''}
+                </span>
+              </button>
             </div>
           </div>
 

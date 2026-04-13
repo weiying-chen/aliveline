@@ -72,15 +72,18 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: /add task/i }))
 
     const toggle = screen.getByRole('button', { name: 'Toggle original and adjusted schedule' })
+    const previousBefore = screen.getByLabelText('Previous deadline display').textContent
     const deadlineValueBefore = screen.getByLabelText('Current deadline display').textContent
     const remainingBefore = screen.getByLabelText('Remaining work time display').textContent
 
+    expect(previousBefore).not.toContain('(-20%)')
     expect(deadlineValueBefore).not.toContain('(-20%)')
     expect(remainingBefore).not.toContain('(-20%)')
     expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('2h')
 
     fireEvent.click(toggle)
 
+    expect(screen.getByLabelText('Previous deadline display').textContent).toContain('(-20%)')
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('(-20%)')
     expect(screen.getByLabelText('Remaining work time display').textContent).toContain('(-20%)')
     expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('(-20%)')
