@@ -77,10 +77,11 @@ export function formatDeadlineExtensionMessage({
     taskLines.length > 0
       ? `今日做其他事時間是 ${formatDurationForMessage(totalMinutes)}\n\n${taskLines}\n\n`
       : ''
-  const deltaMinutes = Math.floor(Math.abs(next.getTime() - previous.getTime()) / 60000)
-  const action = next.getTime() < previous.getTime() ? '提前' : '延後'
   const assignmentPrefix = assignment?.trim() ? `${assignment.trim()}，` : ''
   const assigneeText = assignee?.trim() ? `，請${assignee.trim()}幫我確認` : ''
 
-  return prefix + `${assignmentPrefix}deadline${action}${formatDurationForMessage(deltaMinutes)}${assigneeText}，謝謝。`
+  return (
+    prefix +
+    `${assignmentPrefix}deadline由${formatMessageDate(previous)}，提前至${formatMessageDate(next)}${assigneeText}，謝謝。`
+  )
 }

@@ -29,7 +29,7 @@ describe('formatDeadlineExtensionMessage', () => {
       '今日做其他事時間是 1時\n\n' +
         '討論小編文 45分\n' +
         '其他任務 15分\n\n' +
-        '心靈講座（看見自己的天才 - 盧蘇偉），deadline延後45分，請Syharn Shen幫我確認，謝謝。'
+        '心靈講座（看見自己的天才 - 盧蘇偉），deadline由1/8（三）14:25，提前至1/8（三）15:10，請Syharn Shen幫我確認，謝謝。'
     )
   })
 
@@ -38,7 +38,7 @@ describe('formatDeadlineExtensionMessage', () => {
     const next = new Date(2025, 0, 8, 14, 25)
     const message = formatDeadlineExtensionMessage({ previous, next })
 
-    expect(message).toBe('deadline提前45分，謝謝。')
+    expect(message).toBe('deadline由1/8（三）15:10，提前至1/8（三）14:25，謝謝。')
   })
 
   it('merges repeated task names by summing minutes in message lines', () => {
@@ -61,7 +61,7 @@ describe('formatDeadlineExtensionMessage', () => {
       '今日做其他事時間是 7時10分\n\n' +
         '英文新聞+錄音 5時10分\n' +
         '小編文 2時\n\n' +
-        'deadline延後5時10分，謝謝。'
+        'deadline由1/8（三）14:25，提前至1/8（三）19:35，謝謝。'
     )
   })
 
@@ -70,6 +70,6 @@ describe('formatDeadlineExtensionMessage', () => {
     const next = new Date(2025, 0, 8, 13, 5)
     const message = formatDeadlineExtensionMessage({ previous, next })
 
-    expect(message).toBe('deadline延後2時30分，謝謝。')
+    expect(message).toBe('deadline由1/8（三）10:35，提前至1/8（三）13:05，謝謝。')
   })
 })

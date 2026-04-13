@@ -25,6 +25,7 @@ import {
 } from './utils/taskTime'
 import {
   atLocalTime,
+  addWorkMinutes,
   isInWorkTime,
   nextWorkStart,
   shouldShowEarlyFinishReminder,
@@ -504,12 +505,17 @@ export default function App() {
     }
     setRecentTasks((prev) => updateRecentTaskNames(prev, entry.text))
     const nextTasks = [...tasks, entry]
-    const baseDeadline = pickTaskBatchBase(now, changeBaseDeadline)
+    const baseDeadline = pickTaskBatchBase(deadline, changeBaseDeadline)
     if (!changeBaseDeadline) {
       setChangeBaseDeadline(baseDeadline)
+      setPreviousDeadline(baseDeadline)
+      setPreviousChangedAt(new Date())
     }
+    const totalMinutes = nextTasks.reduce((sum, task) => sum + task.minutes, 0)
+    const nextDeadline = addWorkMinutes(baseDeadline, totalMinutes)
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)
+    setDeadline(nextDeadline)
     setTaskName('')
     setTaskHours('')
     setTaskMinutes('')
@@ -519,6 +525,16 @@ export default function App() {
     const nextTasks = tasks.filter((_, i) => i !== index)
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)
+    if (nextTasks.length === 0 && changeBaseDeadline) {
+      setDeadline(changeBaseDeadline)
+      setChangeBaseDeadline(null)
+      return
+    }
+
+    if (changeBaseDeadline) {
+      const totalMinutes = nextTasks.reduce((sum, task) => sum + task.minutes, 0)
+      setDeadline(addWorkMinutes(changeBaseDeadline, totalMinutes))
+    }
   }
 
   const onTaskMinutesChange = (value: string) => {
