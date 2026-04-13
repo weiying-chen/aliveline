@@ -60,4 +60,41 @@ describe('App deadline behavior', () => {
     expect(preview.textContent).not.toContain('延後0分')
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
   })
+
+  it('toggles original and adjusted values in place for planning fields', () => {
+    render(<App />)
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    const toggle = screen.getByRole('button', { name: 'Toggle original and adjusted schedule' })
+    const deadlineValueBefore = screen.getByLabelText('Current deadline display').textContent
+    const remainingBefore = screen.getByLabelText('Remaining work time display').textContent
+
+    expect(deadlineValueBefore).not.toContain('(-20%)')
+    expect(remainingBefore).not.toContain('(-20%)')
+    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('2h')
+
+    fireEvent.click(toggle)
+
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('(-20%)')
+    expect(screen.getByLabelText('Remaining work time display').textContent).toContain('(-20%)')
+    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('(-20%)')
+    expect(screen.getByLabelText('Current deadline display').textContent).not.toBe(deadlineValueBefore)
+  })
+
+  it('persists the schedule view mode in local storage', () => {
+    render(<App />)
+    const toggle = screen.getByRole('button', { name: 'Toggle original and adjusted schedule' })
+
+    fireEvent.click(toggle)
+    expect(localStorage.getItem('aliveline:schedule-view')).toBe('adjusted')
+
+    fireEvent.click(toggle)
+    expect(localStorage.getItem('aliveline:schedule-view')).toBe('original')
+  })
 })

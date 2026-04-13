@@ -520,6 +520,23 @@ input[readonly] {
   line-height: 1;
 }
 
+.valueToggle {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  height: auto;
+  min-width: 0;
+  box-shadow: none;
+}
+
+.valueToggle:hover,
+.valueToggle:focus-visible {
+  box-shadow: none;
+}
+
 .taskList .taskRow:last-child {
   margin-bottom: 0;
 }
@@ -560,7 +577,7 @@ input[readonly] {
     grid-template-columns: 1fr auto;
   }
 
-  .taskRow button {
+  .taskRow .taskRemoveButton {
     grid-column: 1 / -1;
   }
 }

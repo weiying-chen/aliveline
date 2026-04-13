@@ -51,11 +51,15 @@ const LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY = 'aliveline:next-assignment-confirmed
 const LS_NEXT_ASSIGNMENT_START_KEY = 'aliveline:next-assignment-start-iso'
 const LS_PANEL_TASKS_OPEN_KEY = 'aliveline:panel-tasks-open'
 const LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY = 'aliveline:panel-next-assignment-message-open'
+const LS_SCHEDULE_VIEW_MODE_KEY = 'aliveline:schedule-view'
+const LS_SCHEDULE_VIEW_ADJUSTED_KEY = 'aliveline:schedule-view-adjusted'
 const LS_DAILY_CLEAR_KEY = 'aliveline:daily-clear'
 const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
+const REDUCTION_RATIO = 0.2
+const ADJUSTED_SUFFIX = ' (-20%)'
 
 function readStoredDate(key: string) {
   const saved = localStorage.getItem(key)
@@ -98,6 +102,20 @@ function readStoredBool(key: string, fallback: boolean) {
   const saved = localStorage.getItem(key)
   if (saved === null) return fallback
   return saved === 'true'
+}
+
+type ScheduleViewMode = 'original' | 'adjusted'
+
+function readStoredScheduleViewMode() {
+  const savedMode = localStorage.getItem(LS_SCHEDULE_VIEW_MODE_KEY)
+  if (savedMode === 'original' || savedMode === 'adjusted') {
+    return savedMode
+  }
+
+  const savedAdjusted = localStorage.getItem(LS_SCHEDULE_VIEW_ADJUSTED_KEY)
+  if (savedAdjusted === 'true') return 'adjusted'
+  if (savedAdjusted === 'false') return 'original'
+  return 'original'
 }
 
 export default function App() {
@@ -162,6 +180,10 @@ export default function App() {
   const [isNextAssignmentPanelOpen, setIsNextAssignmentPanelOpen] = useState(() =>
     readStoredBool(LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY, false)
   )
+  const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>(() =>
+    readStoredScheduleViewMode()
+  )
+  const isAdjustedView = scheduleViewMode === 'adjusted'
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -265,7 +287,17 @@ export default function App() {
   }, [now])
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
-  const parts = useMemo(() => msToParts(workMsLeft), [workMsLeft])
+  const adjustedWorkMsLeft = useMemo(
+    () => Math.max(0, Math.round(workMsLeft * (1 - REDUCTION_RATIO))),
+    [workMsLeft]
+  )
+  const displayWorkMsLeft = isAdjustedView ? adjustedWorkMsLeft : workMsLeft
+  const parts = useMemo(() => msToParts(displayWorkMsLeft), [displayWorkMsLeft])
+  const adjustedDeadline = useMemo(() => {
+    const minutesLeft = Math.max(0, Math.round(adjustedWorkMsLeft / 60000))
+    return addWorkMinutes(now, minutesLeft)
+  }, [adjustedWorkMsLeft, now])
+  const displayDeadline = isAdjustedView ? adjustedDeadline : deadline
   const workStartAt = useMemo(() => (isInWorkTime(now) ? now : nextWorkStart(now)), [now])
   const showEarlyFinishReminder = useMemo(
     () => shouldShowEarlyFinishReminder(now, deadline),
@@ -283,6 +315,22 @@ export default function App() {
     () => calculateTaskFinishTimes(taskFinishStart, tasks),
     [taskFinishStart, tasks]
   )
+  const adjustedTasks = useMemo(
+    () =>
+      tasks.map((task) => ({
+        ...task,
+        minutes: Math.max(1, Math.round(task.minutes * (1 - REDUCTION_RATIO))),
+      })),
+    [tasks]
+  )
+  const adjustedTaskFinishTimes = useMemo(
+    () => calculateTaskFinishTimes(taskFinishStart, adjustedTasks),
+    [adjustedTasks, taskFinishStart]
+  )
+
+  const toggleAdjustedView = () => {
+    setScheduleViewMode((prev) => (prev === 'original' ? 'adjusted' : 'original'))
+  }
 
   useEffect(() => {
     if (!showEarlyFinishReminder) return
@@ -373,6 +421,11 @@ export default function App() {
       String(isNextAssignmentPanelOpen)
     )
   }, [isNextAssignmentPanelOpen])
+
+  useEffect(() => {
+    localStorage.setItem(LS_SCHEDULE_VIEW_MODE_KEY, scheduleViewMode)
+    localStorage.removeItem(LS_SCHEDULE_VIEW_ADJUSTED_KEY)
+  }, [scheduleViewMode])
 
   useEffect(() => {
     if (nextAssignmentStartAt) {
@@ -588,14 +641,36 @@ export default function App() {
 
           <div className="block">
             <div className="label">Deadline</div>
-            <div className="deadline">{fmtDateTimeWithWeekday(deadline)}</div>
+            <div className="deadline">
+              <button
+                type="button"
+                className="valueToggle deadlineValue"
+                aria-label="Toggle original and adjusted schedule"
+                onClick={toggleAdjustedView}
+              >
+                <span aria-label="Current deadline display">
+                  {fmtDateTimeWithWeekday(displayDeadline)}
+                  {isAdjustedView ? ADJUSTED_SUFFIX : ''}
+                </span>
+              </button>
+            </div>
           </div>
 
           <div className="block">
             <div className="label">Remaining (work time)</div>
             <div className="remaining">
-              {parts.days > 0 && `${parts.days}d `}
-              {parts.hours}h {parts.minutes}m {parts.seconds}s
+              <button
+                type="button"
+                className="valueToggle remainingValue"
+                aria-label="Toggle schedule display from remaining work time"
+                onClick={toggleAdjustedView}
+              >
+                <span aria-label="Remaining work time display">
+                  {parts.days > 0 && `${parts.days}d `}
+                  {parts.hours}h {parts.minutes}m {parts.seconds}s
+                  {isAdjustedView ? ADJUSTED_SUFFIX : ''}
+                </span>
+              </button>
             </div>
           </div>
           {showEarlyFinishReminder && (
@@ -821,7 +896,18 @@ export default function App() {
                 <div className="taskInfo">
                   <span className="taskName">{entry.text}</span>
                 </div>
-                <span>{formatTaskTimeWithDuration(taskFinishTimes[index], entry.minutes)}</span>
+                <button
+                  type="button"
+                  className="valueToggle taskDueValue"
+                  aria-label="Toggle schedule display from task due time"
+                  onClick={toggleAdjustedView}
+                >
+                  <span aria-label="Task due time display">
+                    {isAdjustedView
+                      ? `${formatTaskTimeWithDuration(adjustedTaskFinishTimes[index], adjustedTasks[index].minutes)}${ADJUSTED_SUFFIX}`
+                      : formatTaskTimeWithDuration(taskFinishTimes[index], entry.minutes)}
+                  </span>
+                </button>
                 <button
                   onClick={() => removeTaskEntry(index)}
                   aria-label="Remove task"
