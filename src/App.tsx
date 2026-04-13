@@ -490,19 +490,23 @@ export default function App() {
     if (!deadlineExtensionAssignment.trim()) return ''
     if (!deadlineExtensionConfirmedBy.trim()) return ''
     if (tasks.length === 0) return ''
+    const messageTasks = isAdjustedView ? adjustedTasks : tasks
+    const messageDeadline = isAdjustedView ? adjustedDeadline : deadline
     return formatDeadlineExtensionMessage({
       previous: previousDeadline,
-      next: deadline,
-      tasks: tasks.length > 0 ? tasks : previousTasks,
+      next: messageDeadline,
+      tasks: messageTasks,
       assignment: deadlineExtensionAssignment,
       assignee: deadlineExtensionConfirmedBy,
     })
   }, [
+    adjustedDeadline,
+    adjustedTasks,
     deadline,
     deadlineExtensionConfirmedBy,
     deadlineExtensionAssignment,
+    isAdjustedView,
     previousDeadline,
-    previousTasks,
     tasks,
   ])
 

@@ -97,4 +97,37 @@ describe('App deadline behavior', () => {
     fireEvent.click(toggle)
     expect(localStorage.getItem('aliveline:schedule-view')).toBe('original')
   })
+
+  it('updates deadline extension preview content in adjusted view', () => {
+    render(<App />)
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2099-04-10T12:00' } })
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    fireEvent.change(screen.getByLabelText('Assignment name'), {
+      target: { value: '3集大愛真健康' },
+    })
+    fireEvent.change(
+      screen.getByLabelText('Confirmed by', {
+        selector: 'input#deadline-extension-confirmed-by',
+      }),
+      {
+        target: { value: 'Emily Ding' },
+      }
+    )
+
+    const preview = screen.getByLabelText('Deadline extension message preview')
+    expect(preview.textContent).toContain('今日做其他事時間是 2時')
+    expect(preview.textContent).toContain('小編文 2時')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
+
+    expect(preview.textContent).toContain('今日做其他事時間是 1時36分')
+    expect(preview.textContent).toContain('小編文 1時36分')
+    expect(preview.textContent).not.toContain('(-20%)')
+  })
 })
