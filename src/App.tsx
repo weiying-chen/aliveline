@@ -43,6 +43,7 @@ const LS_PREV_TASKS_KEY = 'aliveline:previous-tasks'
 const LS_TASKS_KEY = 'aliveline:tasks'
 const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
+const LS_TASK_FINISH_BASE_KEY = 'aliveline:task-finish-base-iso'
 const LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY = 'aliveline:deadline-extension-assignment'
 const LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY = 'aliveline:deadline-extension-confirmed-by'
 const LS_NEXT_ASSIGNMENT_KEY = 'aliveline:next-assignment'
@@ -121,6 +122,9 @@ export default function App() {
   )
   const [changeBaseDeadline, setChangeBaseDeadline] = useState<Date | null>(() =>
     readStoredDate(LS_CHANGE_BASE_KEY)
+  )
+  const [taskFinishBase, setTaskFinishBase] = useState<Date | null>(() =>
+    readStoredDate(LS_TASK_FINISH_BASE_KEY)
   )
   const [taskName, setTaskName] = useState('')
   const [taskHours, setTaskHours] = useState('')
@@ -219,6 +223,14 @@ export default function App() {
   }, [changeBaseDeadline])
 
   useEffect(() => {
+    if (taskFinishBase) {
+      localStorage.setItem(LS_TASK_FINISH_BASE_KEY, taskFinishBase.toISOString())
+    } else {
+      localStorage.removeItem(LS_TASK_FINISH_BASE_KEY)
+    }
+  }, [taskFinishBase])
+
+  useEffect(() => {
     localStorage.setItem(LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY, deadlineExtensionAssignment)
   }, [deadlineExtensionAssignment])
 
@@ -248,6 +260,7 @@ export default function App() {
     setTaskHours('')
     setTaskMinutes('')
     setChangeBaseDeadline(null)
+    setTaskFinishBase(null)
     setPreviousTasks([])
   }, [now])
 
@@ -263,8 +276,8 @@ export default function App() {
     [deadline, now, tasks.length]
   )
   const taskFinishStart = useMemo(
-    () => pickTaskFinishStart(now, changeBaseDeadline),
-    [changeBaseDeadline, now]
+    () => pickTaskFinishStart(now, taskFinishBase),
+    [now, taskFinishBase]
   )
   const taskFinishTimes = useMemo(
     () => calculateTaskFinishTimes(taskFinishStart, tasks),
@@ -387,6 +400,7 @@ export default function App() {
       setPreviousTasks([])
       setTasks([])
       setChangeBaseDeadline(null)
+      setTaskFinishBase(null)
       return
     }
     if (sameDeadline) return
@@ -405,6 +419,7 @@ export default function App() {
     if (options?.resetDrafts) {
       setTasks([])
       setChangeBaseDeadline(null)
+      setTaskFinishBase(null)
     }
   }
 
@@ -506,10 +521,14 @@ export default function App() {
     setRecentTasks((prev) => updateRecentTaskNames(prev, entry.text))
     const nextTasks = [...tasks, entry]
     const baseDeadline = pickTaskBatchBase(deadline, changeBaseDeadline)
+    const dueBase = pickTaskBatchBase(now, taskFinishBase)
     if (!changeBaseDeadline) {
       setChangeBaseDeadline(baseDeadline)
       setPreviousDeadline(baseDeadline)
       setPreviousChangedAt(new Date())
+    }
+    if (!taskFinishBase) {
+      setTaskFinishBase(dueBase)
     }
     const totalMinutes = nextTasks.reduce((sum, task) => sum + task.minutes, 0)
     const nextDeadline = addWorkMinutes(baseDeadline, totalMinutes)
@@ -525,9 +544,12 @@ export default function App() {
     const nextTasks = tasks.filter((_, i) => i !== index)
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)
-    if (nextTasks.length === 0 && changeBaseDeadline) {
-      setDeadline(changeBaseDeadline)
+    if (nextTasks.length === 0) {
+      if (changeBaseDeadline) {
+        setDeadline(changeBaseDeadline)
+      }
       setChangeBaseDeadline(null)
+      setTaskFinishBase(null)
       return
     }
 
