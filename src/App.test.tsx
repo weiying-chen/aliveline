@@ -56,8 +56,11 @@ describe('App deadline behavior', () => {
     )
 
     const preview = screen.getByLabelText('Deadline extension message preview')
-    expect(preview.textContent).toContain('deadline由4/10（五）12:00，延後至4/10（五）15:00')
-    expect(preview.textContent).not.toContain('延後0分')
+    expect(preview.textContent).toBe(
+      '今日做其他事時間是 2時\n\n' +
+        '英文新聞+錄音 2時\n\n' +
+        '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）15:00，請Emily Ding幫我確認，謝謝。'
+    )
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
   })
 
@@ -132,5 +135,31 @@ describe('App deadline behavior', () => {
     expect(preview.textContent).toContain('今日做其他事時間是 1時36分')
     expect(preview.textContent).toContain('小編文 1時36分')
     expect(preview.textContent).not.toContain('(-20%)')
+  })
+
+  it('shows next assignment message preview using full template', () => {
+    render(<App />)
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    fireEvent.change(screen.getByLabelText('Completed assignment'), {
+      target: { value: '3集大愛真健康' },
+    })
+    fireEvent.change(screen.getByLabelText('Next assignment'), {
+      target: { value: '仁心慧語 (呂紹睿)' },
+    })
+    fireEvent.change(screen.getByLabelText('Next assignment message confirmed by'), {
+      target: { value: 'Emily Ding' },
+    })
+
+    const preview = screen.getByLabelText('Next assignment message preview')
+    expect(preview.textContent).toBe(
+      '已完成3集大愛真健康，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）15:00起算，謝謝。'
+    )
   })
 })
