@@ -56,7 +56,7 @@ describe('App deadline behavior', () => {
     )
 
     const preview = screen.getByLabelText('Deadline extension message preview')
-    expect(preview.textContent).toContain('deadline由4/10（五）12:00，提前至4/10（五）15:00')
+    expect(preview.textContent).toContain('deadline由4/10（五）12:00，延後至4/10（五）15:00')
     expect(preview.textContent).not.toContain('延後0分')
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
   })

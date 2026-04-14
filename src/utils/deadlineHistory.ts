@@ -79,9 +79,10 @@ export function formatDeadlineExtensionMessage({
       : ''
   const assignmentPrefix = assignment?.trim() ? `${assignment.trim()}，` : ''
   const assigneeText = assignee?.trim() ? `，請${assignee.trim()}幫我確認` : ''
+  const transitionText = next.getTime() >= previous.getTime() ? '延後至' : '提前至'
 
   return (
     prefix +
-    `${assignmentPrefix}deadline由${formatMessageDate(previous)}，提前至${formatMessageDate(next)}${assigneeText}，謝謝。`
+    `${assignmentPrefix}deadline由${formatMessageDate(previous)}，${transitionText}${formatMessageDate(next)}${assigneeText}，謝謝。`
   )
 }
