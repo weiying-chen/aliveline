@@ -183,6 +183,9 @@ export default function App() {
   const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>(() =>
     readStoredScheduleViewMode()
   )
+  const [adjustedAnchorAtDeadlineChange, setAdjustedAnchorAtDeadlineChange] = useState(
+    () => new Date()
+  )
   const isAdjustedView = scheduleViewMode === 'adjusted'
 
   useEffect(() => {
@@ -288,15 +291,18 @@ export default function App() {
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
   const adjustedDeadline = useMemo(() => {
-    if (!previousDeadline) return deadline
-    if (deadline.getTime() <= previousDeadline.getTime()) return deadline
-    const totalWorkMs = workMsBetween(previousDeadline, deadline)
+    const anchor =
+      previousDeadline && previousDeadline.getTime() < deadline.getTime()
+        ? previousDeadline
+        : adjustedAnchorAtDeadlineChange
+    if (deadline.getTime() <= anchor.getTime()) return deadline
+    const totalWorkMs = workMsBetween(anchor, deadline)
     const adjustedMinutes = Math.max(
       0,
       Math.round((totalWorkMs / 60000) * (1 - REDUCTION_RATIO))
     )
-    return addWorkMinutes(previousDeadline, adjustedMinutes)
-  }, [deadline, previousDeadline])
+    return addWorkMinutes(anchor, adjustedMinutes)
+  }, [adjustedAnchorAtDeadlineChange, deadline, previousDeadline])
   const adjustedWorkMsLeft = useMemo(
     () => workMsBetween(now, adjustedDeadline),
     [adjustedDeadline, now]
@@ -450,6 +456,10 @@ export default function App() {
     setNextAssignmentStartAt((prev) =>
       syncNextAssignmentMessageStartWithDeadline(prev, deadline)
     )
+  }, [deadline])
+
+  useEffect(() => {
+    setAdjustedAnchorAtDeadlineChange(new Date())
   }, [deadline])
 
   const updateDeadline = (

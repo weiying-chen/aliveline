@@ -187,4 +187,22 @@ describe('App deadline behavior', () => {
     const adjustedAfter = screen.getByLabelText('Current deadline display').textContent
     expect(adjustedAfter).toBe(adjustedBefore)
   })
+
+  it('shows a changed adjusted deadline even when previous equals current', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
+    render(<App />)
+
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-15T13:00' } })
+
+    const original = screen.getByLabelText('Current deadline display').textContent ?? ''
+    const originalTime = original.replace(' (-20%)', '')
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
+    const adjusted = screen.getByLabelText('Current deadline display').textContent ?? ''
+    const adjustedTime = adjusted.replace(' (-20%)', '')
+
+    expect(adjustedTime).not.toBe(originalTime)
+    expect(adjusted).toContain('(-20%)')
+  })
 })
