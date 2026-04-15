@@ -287,27 +287,26 @@ export default function App() {
   }, [now])
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
+  const adjustedDeadline = useMemo(() => {
+    if (!previousDeadline) return deadline
+    if (deadline.getTime() <= previousDeadline.getTime()) return deadline
+    const totalWorkMs = workMsBetween(previousDeadline, deadline)
+    const adjustedMinutes = Math.max(
+      0,
+      Math.round((totalWorkMs / 60000) * (1 - REDUCTION_RATIO))
+    )
+    return addWorkMinutes(previousDeadline, adjustedMinutes)
+  }, [deadline, previousDeadline])
   const adjustedWorkMsLeft = useMemo(
-    () => Math.max(0, Math.round(workMsLeft * (1 - REDUCTION_RATIO))),
-    [workMsLeft]
+    () => workMsBetween(now, adjustedDeadline),
+    [adjustedDeadline, now]
   )
   const displayWorkMsLeft = isAdjustedView ? adjustedWorkMsLeft : workMsLeft
   const parts = useMemo(() => msToParts(displayWorkMsLeft), [displayWorkMsLeft])
-  const adjustedDeadline = useMemo(() => {
-    const minutesLeft = Math.max(0, Math.round(adjustedWorkMsLeft / 60000))
-    return addWorkMinutes(now, minutesLeft)
-  }, [adjustedWorkMsLeft, now])
   const adjustedPreviousDeadline = useMemo(() => {
     if (!previousDeadline) return null
-    if (previousDeadline.getTime() <= now.getTime()) return previousDeadline
-    const previousWorkMsLeft = workMsBetween(now, previousDeadline)
-    const adjustedPreviousWorkMsLeft = Math.max(
-      0,
-      Math.round(previousWorkMsLeft * (1 - REDUCTION_RATIO))
-    )
-    const minutesLeft = Math.max(0, Math.round(adjustedPreviousWorkMsLeft / 60000))
-    return addWorkMinutes(now, minutesLeft)
-  }, [now, previousDeadline])
+    return previousDeadline
+  }, [previousDeadline])
   const displayDeadline = isAdjustedView ? adjustedDeadline : deadline
   const displayPreviousDeadline = isAdjustedView ? adjustedPreviousDeadline : previousDeadline
   const workStartAt = useMemo(() => (isInWorkTime(now) ? now : nextWorkStart(now)), [now])

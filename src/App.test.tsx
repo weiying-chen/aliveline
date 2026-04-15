@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import App from './App'
 
@@ -11,6 +11,7 @@ describe('App deadline behavior', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     cleanup()
   })
 
@@ -161,5 +162,29 @@ describe('App deadline behavior', () => {
     expect(preview.textContent).toBe(
       '已完成3集大愛真健康，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）15:00起算，謝謝。'
     )
+  })
+
+  it('keeps adjusted deadline fixed instead of drifting with now', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
+    render(<App />)
+
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-15T13:00' } })
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
+    const adjustedBefore = screen.getByLabelText('Current deadline display').textContent
+
+    act(() => {
+      vi.advanceTimersByTime(30 * 60 * 1000)
+    })
+
+    const adjustedAfter = screen.getByLabelText('Current deadline display').textContent
+    expect(adjustedAfter).toBe(adjustedBefore)
   })
 })
