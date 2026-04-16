@@ -53,6 +53,7 @@ const LS_PANEL_TASKS_OPEN_KEY = 'aliveline:panel-tasks-open'
 const LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY = 'aliveline:panel-next-assignment-message-open'
 const LS_SCHEDULE_VIEW_MODE_KEY = 'aliveline:schedule-view'
 const LS_SCHEDULE_VIEW_ADJUSTED_KEY = 'aliveline:schedule-view-adjusted'
+const LS_ADJUSTED_ANCHOR_KEY = 'aliveline:adjusted-anchor-iso'
 const LS_DAILY_CLEAR_KEY = 'aliveline:daily-clear'
 const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
@@ -184,7 +185,7 @@ export default function App() {
     readStoredScheduleViewMode()
   )
   const [adjustedAnchorAtDeadlineChange, setAdjustedAnchorAtDeadlineChange] = useState(
-    () => new Date()
+    () => readStoredDate(LS_ADJUSTED_ANCHOR_KEY) ?? new Date()
   )
   const isAdjustedView = scheduleViewMode === 'adjusted'
 
@@ -445,6 +446,10 @@ export default function App() {
   }, [scheduleViewMode])
 
   useEffect(() => {
+    localStorage.setItem(LS_ADJUSTED_ANCHOR_KEY, adjustedAnchorAtDeadlineChange.toISOString())
+  }, [adjustedAnchorAtDeadlineChange])
+
+  useEffect(() => {
     if (nextAssignmentStartAt) {
       localStorage.setItem(LS_NEXT_ASSIGNMENT_START_KEY, nextAssignmentStartAt.toISOString())
     } else {
@@ -456,10 +461,6 @@ export default function App() {
     setNextAssignmentStartAt((prev) =>
       syncNextAssignmentMessageStartWithDeadline(prev, deadline)
     )
-  }, [deadline])
-
-  useEffect(() => {
-    setAdjustedAnchorAtDeadlineChange(new Date())
   }, [deadline])
 
   const updateDeadline = (
@@ -489,6 +490,7 @@ export default function App() {
     }
     setDeadlineExtensionAssignment(clearTextAfterDeadlineChange(deadlineExtensionAssignment))
     setNextAssignment(clearTextAfterDeadlineChange(nextAssignment))
+    setAdjustedAnchorAtDeadlineChange(new Date())
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
       setTasks([])
@@ -615,6 +617,7 @@ export default function App() {
     const nextDeadline = addWorkMinutes(baseDeadline, totalMinutes)
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)
+    setAdjustedAnchorAtDeadlineChange(new Date())
     setDeadline(nextDeadline)
     setTaskName('')
     setTaskHours('')
@@ -627,6 +630,7 @@ export default function App() {
     setPreviousTasks(nextTasks)
     if (nextTasks.length === 0) {
       if (changeBaseDeadline) {
+        setAdjustedAnchorAtDeadlineChange(new Date())
         setDeadline(changeBaseDeadline)
       }
       setChangeBaseDeadline(null)
@@ -636,6 +640,7 @@ export default function App() {
 
     if (changeBaseDeadline) {
       const totalMinutes = nextTasks.reduce((sum, task) => sum + task.minutes, 0)
+      setAdjustedAnchorAtDeadlineChange(new Date())
       setDeadline(addWorkMinutes(changeBaseDeadline, totalMinutes))
     }
   }

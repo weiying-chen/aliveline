@@ -205,4 +205,25 @@ describe('App deadline behavior', () => {
     expect(adjustedTime).not.toBe(originalTime)
     expect(adjusted).toContain('(-20%)')
   })
+
+  it('keeps adjusted deadline stable after reload', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
+    const first = render(<App />)
+
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-20T08:55' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
+    const adjustedBefore = screen.getByLabelText('Current deadline display').textContent
+
+    first.unmount()
+
+    act(() => {
+      vi.advanceTimersByTime(24 * 60 * 60 * 1000)
+    })
+
+    render(<App />)
+    const adjustedAfter = screen.getByLabelText('Current deadline display').textContent
+    expect(adjustedAfter).toBe(adjustedBefore)
+  })
 })
