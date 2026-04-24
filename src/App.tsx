@@ -292,10 +292,7 @@ export default function App() {
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
   const adjustedDeadline = useMemo(() => {
-    const anchor =
-      previousDeadline && previousDeadline.getTime() < deadline.getTime()
-        ? previousDeadline
-        : adjustedAnchorAtDeadlineChange
+    const anchor = adjustedAnchorAtDeadlineChange
     if (deadline.getTime() <= anchor.getTime()) return deadline
     const totalWorkMs = workMsBetween(anchor, deadline)
     const adjustedMinutes = Math.max(
@@ -303,7 +300,7 @@ export default function App() {
       Math.round((totalWorkMs / 60000) * (1 - REDUCTION_RATIO))
     )
     return addWorkMinutes(anchor, adjustedMinutes)
-  }, [adjustedAnchorAtDeadlineChange, deadline, previousDeadline])
+  }, [adjustedAnchorAtDeadlineChange, deadline])
   const adjustedWorkMsLeft = useMemo(
     () => workMsBetween(now, adjustedDeadline),
     [adjustedDeadline, now]

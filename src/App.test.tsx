@@ -206,6 +206,26 @@ describe('App deadline behavior', () => {
     expect(adjusted).toContain('(-20%)')
   })
 
+  it('applies -20% to total remaining work after adding tasks', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
+    render(<App />)
+
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-15T16:00' } })
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
+
+    const adjustedRemaining = screen.getByLabelText('Remaining work time display').textContent ?? ''
+    expect(adjustedRemaining).toContain('5h 36m')
+    expect(adjustedRemaining).toContain('(-20%)')
+  })
+
   it('keeps adjusted deadline stable after reload', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
