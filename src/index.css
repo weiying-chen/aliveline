@@ -208,6 +208,26 @@ input[readonly] {
   margin-bottom: 0;
 }
 
+.historyExportSection {
+  margin-bottom: var(--space-3);
+}
+
+.historyExportMonthField {
+  margin-bottom: var(--space-2);
+}
+
+.historyExportMeta {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: var(--space-2);
+}
+
+.historyExportActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 .taskSectionTitle {
   font-size: 16px;
   font-weight: 600;

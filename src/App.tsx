@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import {
+  buildAssignmentHistoryEntry,
+  exportAssignmentHistoryCsv,
+  exportAssignmentHistoryJson,
+  filterAssignmentHistoryEntriesByMonth,
+  sumAssignmentHistoryEntryMinutes,
+  type AssignmentHistoryEntry,
+} from './utils/assignmentHistory'
 import { formatDeadlineExtensionMessage, type TaskEntry } from './utils/deadlineHistory'
 import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
@@ -49,11 +57,13 @@ const LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY = 'aliveline:deadline-extension-con
 const LS_NEXT_ASSIGNMENT_KEY = 'aliveline:next-assignment'
 const LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY = 'aliveline:next-assignment-confirmed-by'
 const LS_NEXT_ASSIGNMENT_START_KEY = 'aliveline:next-assignment-start-iso'
+const LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY = 'aliveline:panel-assignment-history-open'
 const LS_PANEL_TASKS_OPEN_KEY = 'aliveline:panel-tasks-open'
 const LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY = 'aliveline:panel-next-assignment-message-open'
 const LS_SCHEDULE_VIEW_MODE_KEY = 'aliveline:schedule-view'
 const LS_SCHEDULE_VIEW_ADJUSTED_KEY = 'aliveline:schedule-view-adjusted'
 const LS_ADJUSTED_ANCHOR_KEY = 'aliveline:adjusted-anchor-iso'
+const LS_ASSIGNMENT_HISTORY_KEY = 'aliveline:assignment-history'
 const LS_DAILY_CLEAR_KEY = 'aliveline:daily-clear'
 const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
@@ -105,6 +115,26 @@ function readStoredBool(key: string, fallback: boolean) {
   return saved === 'true'
 }
 
+function readStoredAssignmentHistory() {
+  const saved = localStorage.getItem(LS_ASSIGNMENT_HISTORY_KEY)
+  if (!saved) return [] as AssignmentHistoryEntry[]
+  try {
+    const parsed = JSON.parse(saved) as AssignmentHistoryEntry[]
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((item) => {
+      if (!item || typeof item !== 'object') return false
+      if (typeof item.createdAtIso !== 'string') return false
+      if (typeof item.assignment !== 'string') return false
+      if (typeof item.deadlineIso !== 'string') return false
+      if (!Array.isArray(item.tasks)) return false
+      if (!Number.isFinite(item.totalMinutes)) return false
+      return true
+    })
+  } catch {
+    return []
+  }
+}
+
 type ScheduleViewMode = 'original' | 'adjusted'
 
 function readStoredScheduleViewMode() {
@@ -117,6 +147,18 @@ function readStoredScheduleViewMode() {
   if (savedAdjusted === 'true') return 'adjusted'
   if (savedAdjusted === 'false') return 'original'
   return 'original'
+}
+
+function downloadTextFile(fileName: string, content: string, contentType: string) {
+  const blob = new Blob([content], { type: contentType })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 export default function App() {
@@ -175,6 +217,9 @@ export default function App() {
   const [nextAssignmentCopyState, setNextAssignmentCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle')
+  const [isAssignmentHistoryPanelOpen, setIsAssignmentHistoryPanelOpen] = useState(() =>
+    readStoredBool(LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY, false)
+  )
   const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(() =>
     readStoredBool(LS_PANEL_TASKS_OPEN_KEY, false)
   )
@@ -183,6 +228,12 @@ export default function App() {
   )
   const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>(() =>
     readStoredScheduleViewMode()
+  )
+  const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryEntry[]>(() =>
+    readStoredAssignmentHistory()
+  )
+  const [historyMonth, setHistoryMonth] = useState(() =>
+    `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`
   )
   const [adjustedAnchorAtDeadlineChange, setAdjustedAnchorAtDeadlineChange] = useState(
     () => readStoredDate(LS_ADJUSTED_ANCHOR_KEY) ?? new Date()
@@ -342,6 +393,27 @@ export default function App() {
     () => calculateTaskFinishTimes(taskFinishStart, adjustedTasks),
     [adjustedTasks, taskFinishStart]
   )
+  const selectedHistoryMonth = useMemo(() => {
+    const match = /^(\d{4})-(\d{2})$/.exec(historyMonth)
+    if (!match) return null
+    const year = Number(match[1])
+    const month = Number(match[2])
+    if (!Number.isInteger(year) || !Number.isInteger(month)) return null
+    if (month < 1 || month > 12) return null
+    return { year, month }
+  }, [historyMonth])
+  const monthlyAssignmentHistory = useMemo(() => {
+    if (!selectedHistoryMonth) return assignmentHistory
+    return filterAssignmentHistoryEntriesByMonth(
+      assignmentHistory,
+      selectedHistoryMonth.year,
+      selectedHistoryMonth.month
+    )
+  }, [assignmentHistory, selectedHistoryMonth])
+  const monthlyHistoryMinutes = useMemo(
+    () => sumAssignmentHistoryEntryMinutes(monthlyAssignmentHistory),
+    [monthlyAssignmentHistory]
+  )
 
   const toggleAdjustedView = () => {
     setScheduleViewMode((prev) => (prev === 'original' ? 'adjusted' : 'original'))
@@ -427,6 +499,13 @@ export default function App() {
   }, [nextAssignmentConfirmedBy])
 
   useEffect(() => {
+    localStorage.setItem(
+      LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY,
+      String(isAssignmentHistoryPanelOpen)
+    )
+  }, [isAssignmentHistoryPanelOpen])
+
+  useEffect(() => {
     localStorage.setItem(LS_PANEL_TASKS_OPEN_KEY, String(isTasksPanelOpen))
   }, [isTasksPanelOpen])
 
@@ -445,6 +524,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(LS_ADJUSTED_ANCHOR_KEY, adjustedAnchorAtDeadlineChange.toISOString())
   }, [adjustedAnchorAtDeadlineChange])
+
+  useEffect(() => {
+    localStorage.setItem(LS_ASSIGNMENT_HISTORY_KEY, JSON.stringify(assignmentHistory))
+  }, [assignmentHistory])
 
   useEffect(() => {
     if (nextAssignmentStartAt) {
@@ -575,6 +658,18 @@ export default function App() {
     if (!deadlineExtensionMessage) return
     try {
       await navigator.clipboard.writeText(deadlineExtensionMessage)
+      const messageTasks = isAdjustedView ? adjustedTasks : tasks
+      const messageDeadline = isAdjustedView ? adjustedDeadline : deadline
+      const next = buildAssignmentHistoryEntry({
+        assignment: deadlineExtensionAssignment,
+        deadline: messageDeadline,
+        confirmedBy: deadlineExtensionConfirmedBy,
+        nextAssignment,
+        nextAssignmentConfirmedBy,
+        scheduleView: isAdjustedView ? 'adjusted' : 'original',
+        tasks: messageTasks,
+      })
+      setAssignmentHistory((prev) => [next, ...prev])
       setDeadlineExtensionCopyState('copied')
     } catch {
       setDeadlineExtensionCopyState('failed')
@@ -656,6 +751,22 @@ export default function App() {
     const normalized = applyMinutesDeltaWithCarry(taskHours, taskMinutes, delta)
     setTaskHours(normalized.hoursText)
     setTaskMinutes(normalized.minutesText)
+  }
+
+  const onExportAssignmentHistoryCsv = () => {
+    const content = exportAssignmentHistoryCsv(monthlyAssignmentHistory)
+    const suffix = selectedHistoryMonth
+      ? `${selectedHistoryMonth.year}-${pad2(selectedHistoryMonth.month)}`
+      : 'all'
+    downloadTextFile(`assignment-history-${suffix}.csv`, content, 'text/csv;charset=utf-8')
+  }
+
+  const onExportAssignmentHistoryJson = () => {
+    const content = exportAssignmentHistoryJson(monthlyAssignmentHistory)
+    const suffix = selectedHistoryMonth
+      ? `${selectedHistoryMonth.year}-${pad2(selectedHistoryMonth.month)}`
+      : 'all'
+    downloadTextFile(`assignment-history-${suffix}.json`, content, 'application/json;charset=utf-8')
   }
 
   return (
@@ -1153,6 +1264,53 @@ export default function App() {
             </div>
           </div>
       </div>
+      <div className="message" data-state={isAssignmentHistoryPanelOpen ? 'open' : 'closed'}>
+          <button
+            type="button"
+            className="messageHeader"
+            onClick={() => setIsAssignmentHistoryPanelOpen((prev) => !prev)}
+            aria-expanded={isAssignmentHistoryPanelOpen}
+            aria-controls="assignment-history-panel"
+          >
+            <span className="messageTitle">Assignment history export</span>
+          </button>
+          <div
+            id="assignment-history-panel"
+            className="messagePanel"
+            data-state={isAssignmentHistoryPanelOpen ? 'open' : 'closed'}
+            aria-hidden={!isAssignmentHistoryPanelOpen}
+          >
+            <div className="messagePanelInner">
+              <fieldset disabled={!isAssignmentHistoryPanelOpen} className="messageFieldset">
+                <div className="historyExportSection">
+                  <div className="fieldGroup historyExportMonthField">
+                    <label className="fieldLabel" htmlFor="assignment-history-month">
+                      Month
+                    </label>
+                    <input
+                      id="assignment-history-month"
+                      type="month"
+                      value={historyMonth}
+                      onChange={(e) => setHistoryMonth(e.target.value)}
+                      aria-label="Month"
+                    />
+                  </div>
+                  <div className="historyExportMeta">
+                    {monthlyAssignmentHistory.length} assignments, {(monthlyHistoryMinutes / 60).toFixed(2)} hours
+                  </div>
+                  <div className="historyExportActions">
+                    <button onClick={onExportAssignmentHistoryCsv} className="btn-secondary">
+                      <i className="las la-file-csv" aria-hidden="true"></i> Export CSV
+                    </button>
+                    <button onClick={onExportAssignmentHistoryJson} className="btn-secondary">
+                      <i className="las la-file-code" aria-hidden="true"></i> Export JSON
+                    </button>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

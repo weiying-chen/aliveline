@@ -295,4 +295,25 @@ describe('App deadline behavior', () => {
     const adjusted = readHoursMinutes('Remaining work time display')
     expect(adjusted).toEqual({ hours: 7, minutes: 12 })
   })
+
+  it('renders assignment history export as an accordion panel', () => {
+    render(<App />)
+
+    const header = screen.getByRole('button', { name: 'Assignment history export' })
+    expect(header.getAttribute('aria-expanded')).toBe('false')
+
+    fireEvent.click(header)
+    expect(header.getAttribute('aria-expanded')).toBe('true')
+
+    fireEvent.click(header)
+    expect(header.getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('shows a month label in assignment history export', () => {
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
+    expect(screen.getByLabelText('Month')).toBeTruthy()
+  })
+
 })
