@@ -5,6 +5,18 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 import App from './App'
 
+function readHoursMinutes(label: string) {
+  const text = screen.getByLabelText(label).textContent ?? ''
+  const match = text.match(/(\d+)h (\d+)m/)
+  if (!match) {
+    throw new Error(`Unable to parse hours/minutes from: ${text}`)
+  }
+  return {
+    hours: Number(match[1]),
+    minutes: Number(match[2]),
+  }
+}
+
 describe('App deadline behavior', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -245,5 +257,42 @@ describe('App deadline behavior', () => {
     render(<App />)
     const adjustedAfter = screen.getByLabelText('Current deadline display').textContent
     expect(adjustedAfter).toBe(adjustedBefore)
+  })
+
+  it('applies -20% to remaining work that spans multiple workdays', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 3, 24, 15, 0, 0))
+    render(<App />)
+
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-28T11:00' } })
+
+    const original = readHoursMinutes('Remaining work time display')
+    expect(original).toEqual({ hours: 13, minutes: 0 })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
+    const adjusted = readHoursMinutes('Remaining work time display')
+    expect(adjusted).toEqual({ hours: 10, minutes: 24 })
+  })
+
+  it('keeps -20% total reduction after adding tasks across days', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 3, 24, 15, 0, 0))
+    render(<App />)
+
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-24T16:00' } })
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Cross-day task' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '8' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    const original = readHoursMinutes('Remaining work time display')
+    expect(original).toEqual({ hours: 9, minutes: 0 })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
+    const adjusted = readHoursMinutes('Remaining work time display')
+    expect(adjusted).toEqual({ hours: 7, minutes: 12 })
   })
 })
