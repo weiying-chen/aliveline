@@ -47,7 +47,6 @@ describe('filterAssignmentHistoryEntriesByMonth', () => {
         nextAssignment: '',
         nextAssignmentConfirmedBy: '',
         scheduleView: 'original',
-        source: 'deadline_extension_copy',
         tasks: [],
         totalMinutes: 0,
       },
@@ -59,7 +58,6 @@ describe('filterAssignmentHistoryEntriesByMonth', () => {
         nextAssignment: '',
         nextAssignmentConfirmedBy: '',
         scheduleView: 'original',
-        source: 'deadline_extension_copy',
         tasks: [],
         totalMinutes: 60,
       },
@@ -81,7 +79,6 @@ describe('sumAssignmentHistoryEntryMinutes', () => {
         nextAssignment: '',
         nextAssignmentConfirmedBy: '',
         scheduleView: 'original',
-        source: 'deadline_extension_copy',
         tasks: [],
         totalMinutes: 30,
       },
@@ -93,7 +90,6 @@ describe('sumAssignmentHistoryEntryMinutes', () => {
         nextAssignment: '',
         nextAssignmentConfirmedBy: '',
         scheduleView: 'original',
-        source: 'deadline_extension_copy',
         tasks: [],
         totalMinutes: 90,
       },
@@ -113,7 +109,6 @@ describe('exportAssignmentHistoryCsv', () => {
         nextAssignment: '',
         nextAssignmentConfirmedBy: '',
         scheduleView: 'original',
-        source: 'deadline_extension_copy',
         tasks: [
           { text: 'Task A', minutes: 30 },
           { text: 'Task B', minutes: 60 },
@@ -123,10 +118,10 @@ describe('exportAssignmentHistoryCsv', () => {
     ])
 
     expect(csv).toContain(
-      'created_at,assignment,deadline,confirmed_by,next_assignment,next_assignment_confirmed_by,total_minutes,total_hours,schedule_view,source,tasks'
+      'created_at,assignment,deadline,confirmed_by,next_assignment,next_assignment_confirmed_by,total_minutes,total_hours,schedule_view,tasks'
     )
     expect(csv).toContain(
-      '2026-04-01T08:00:00.000Z,Alpha,2026-04-02T09:00:00.000Z,Emily,,,90,1.50,original,deadline_extension_copy,Task A (30m); Task B (60m)'
+      '2026-04-01T08:00:00.000Z,Alpha,2026-04-02T09:00:00.000Z,Emily,,,90,1.50,original,Task A (30m); Task B (60m)'
     )
   })
 })
@@ -142,7 +137,6 @@ describe('exportAssignmentHistoryJson', () => {
         nextAssignment: '',
         nextAssignmentConfirmedBy: '',
         scheduleView: 'original',
-        source: 'deadline_extension_copy',
         tasks: [],
         totalMinutes: 90,
       },
@@ -150,5 +144,24 @@ describe('exportAssignmentHistoryJson', () => {
 
     expect(json).toContain('"assignment": "Alpha"')
     expect(json).toContain('\n  {\n')
+  })
+
+  it('drops legacy source field from exported json', () => {
+    const json = exportAssignmentHistoryJson([
+      {
+        createdAtIso: '2026-04-01T08:00:00.000Z',
+        assignment: 'Alpha',
+        deadlineIso: '2026-04-02T09:00:00.000Z',
+        confirmedBy: 'Emily',
+        nextAssignment: '',
+        nextAssignmentConfirmedBy: '',
+        scheduleView: 'original',
+        tasks: [],
+        totalMinutes: 90,
+        source: 'deadline_extension_copy',
+      } as AssignmentHistoryEntry & { source: string },
+    ])
+
+    expect(json).not.toContain('"source"')
   })
 })

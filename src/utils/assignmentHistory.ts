@@ -8,7 +8,6 @@ export type AssignmentHistoryEntry = {
   nextAssignment: string
   nextAssignmentConfirmedBy: string
   scheduleView: 'original' | 'adjusted'
-  source: 'deadline_extension_copy'
   tasks: TaskEntry[]
   totalMinutes: number
 }
@@ -21,7 +20,6 @@ type AssignmentHistoryEntryBuildInput = {
   nextAssignment?: string
   nextAssignmentConfirmedBy?: string
   scheduleView?: 'original' | 'adjusted'
-  source?: 'deadline_extension_copy'
   tasks: TaskEntry[]
 }
 type AssignmentHistoryBuildInput = AssignmentHistoryEntryBuildInput
@@ -57,7 +55,6 @@ export function buildAssignmentHistoryEntry(
     nextAssignment: input.nextAssignment?.trim() ?? '',
     nextAssignmentConfirmedBy: input.nextAssignmentConfirmedBy?.trim() ?? '',
     scheduleView: input.scheduleView ?? 'original',
-    source: input.source ?? 'deadline_extension_copy',
     tasks,
     totalMinutes,
   }
@@ -106,7 +103,6 @@ export function exportAssignmentHistoryCsv(entries: AssignmentHistoryEntry[]) {
     'total_minutes',
     'total_hours',
     'schedule_view',
-    'source',
     'tasks',
   ].join(',')
 
@@ -124,7 +120,6 @@ export function exportAssignmentHistoryCsv(entries: AssignmentHistoryEntry[]) {
       String(entry.totalMinutes),
       (entry.totalMinutes / 60).toFixed(2),
       entry.scheduleView,
-      entry.source,
       tasksText,
     ]
     return cells.map(escapeCsvCell).join(',')
@@ -134,5 +129,20 @@ export function exportAssignmentHistoryCsv(entries: AssignmentHistoryEntry[]) {
 }
 
 export function exportAssignmentHistoryJson(entries: AssignmentHistoryEntry[]) {
-  return JSON.stringify(entries, null, 2)
+  const sanitized = entries.map((entry) => ({
+    createdAtIso: entry.createdAtIso,
+    assignment: entry.assignment,
+    deadlineIso: entry.deadlineIso,
+    confirmedBy: entry.confirmedBy,
+    nextAssignment: entry.nextAssignment,
+    nextAssignmentConfirmedBy: entry.nextAssignmentConfirmedBy,
+    scheduleView: entry.scheduleView,
+    tasks: entry.tasks.map((task) => ({
+      text: task.text,
+      minutes: task.minutes,
+    })),
+    totalMinutes: entry.totalMinutes,
+  }))
+
+  return JSON.stringify(sanitized, null, 2)
 }
