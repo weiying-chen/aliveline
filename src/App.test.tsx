@@ -316,4 +316,17 @@ describe('App deadline behavior', () => {
     expect(screen.getByLabelText('Month')).toBeTruthy()
   })
 
+  it('uses shared muted meta text style for counting and history summary', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-15T06:00:00'))
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
+
+    expect(screen.getByText(/Counting from/).classList.contains('metaTextMutedSm')).toBe(true)
+    expect(screen.getByText(/assignments, .* hours/).classList.contains('metaTextMutedSm')).toBe(
+      true
+    )
+  })
+
 })

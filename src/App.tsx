@@ -829,7 +829,9 @@ export default function App() {
           )}
           {showDeadlineExtensionReminder && <div className="reminder">Reminder: post the deadline extension message.</div>}
           {!isInWorkTime(now) && (
-            <div className="overdue">Counting from {fmtDateTimeWithWeekday(workStartAt)}.</div>
+            <div className="overdue metaTextMutedSm">
+              Counting from {fmtDateTimeWithWeekday(workStartAt)}.
+            </div>
           )}
         </div>
 
@@ -1295,7 +1297,7 @@ export default function App() {
                       aria-label="Month"
                     />
                   </div>
-                  <div className="historyExportMeta">
+                  <div className="historyExportMeta metaTextMutedSm">
                     {monthlyAssignmentHistory.length} assignments, {(monthlyHistoryMinutes / 60).toFixed(2)} hours
                   </div>
                   <div className="historyExportActions">

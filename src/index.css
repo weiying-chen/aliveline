@@ -86,8 +86,6 @@ body {
 
 .overdue {
   margin-top: 10px;
-  font-size: 13px;
-  color: var(--muted);
 }
 
 .reminder {
@@ -217,9 +215,12 @@ input[readonly] {
 }
 
 .historyExportMeta {
+  margin-bottom: var(--space-2);
+}
+
+.metaTextMutedSm {
   font-size: 13px;
   color: var(--muted);
-  margin-bottom: var(--space-2);
 }
 
 .historyExportActions {
