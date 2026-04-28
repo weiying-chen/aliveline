@@ -340,6 +340,7 @@ export default function App() {
     setChangeBaseDeadline(null)
     setTaskFinishBase(null)
     setPreviousTasks([])
+    setAdjustedAnchorAtDeadlineChange(now)
   }, [now])
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
@@ -557,6 +558,7 @@ export default function App() {
       setTasks([])
       setChangeBaseDeadline(null)
       setTaskFinishBase(null)
+      setAdjustedAnchorAtDeadlineChange(new Date())
       return
     }
     if (sameDeadline) return
@@ -571,9 +573,9 @@ export default function App() {
     }
     setDeadlineExtensionAssignment(clearTextAfterDeadlineChange(deadlineExtensionAssignment))
     setNextAssignment(clearTextAfterDeadlineChange(nextAssignment))
-    setAdjustedAnchorAtDeadlineChange(new Date())
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
+      setAdjustedAnchorAtDeadlineChange(new Date())
       setTasks([])
       setChangeBaseDeadline(null)
       setTaskFinishBase(null)
@@ -710,7 +712,6 @@ export default function App() {
     const nextDeadline = addWorkMinutes(baseDeadline, totalMinutes)
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)
-    setAdjustedAnchorAtDeadlineChange(new Date())
     setDeadline(nextDeadline)
     setTaskName('')
     setTaskHours('')
@@ -723,7 +724,6 @@ export default function App() {
     setPreviousTasks(nextTasks)
     if (nextTasks.length === 0) {
       if (changeBaseDeadline) {
-        setAdjustedAnchorAtDeadlineChange(new Date())
         setDeadline(changeBaseDeadline)
       }
       setChangeBaseDeadline(null)
@@ -733,7 +733,6 @@ export default function App() {
 
     if (changeBaseDeadline) {
       const totalMinutes = nextTasks.reduce((sum, task) => sum + task.minutes, 0)
-      setAdjustedAnchorAtDeadlineChange(new Date())
       setDeadline(addWorkMinutes(changeBaseDeadline, totalMinutes))
     }
   }

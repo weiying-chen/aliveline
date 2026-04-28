@@ -310,6 +310,28 @@ describe('App deadline behavior', () => {
     expect(adjusted).toEqual({ hours: 0, minutes: 20 })
   })
 
+  it('keeps a stable adjusted anchor when tasks are added later', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
+    render(<App />)
+
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-15T13:00' } })
+
+    act(() => {
+      vi.advanceTimersByTime(60 * 60 * 1000)
+    })
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Late added task' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
+    const adjustedDeadline = screen.getByLabelText('Current deadline display').textContent ?? ''
+    expect(adjustedDeadline).toContain('2:10 PM')
+  })
+
   it('renders assignment history export as an accordion panel', () => {
     render(<App />)
 
