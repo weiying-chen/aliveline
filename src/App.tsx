@@ -70,7 +70,6 @@ const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
 const REDUCTION_RATIO = 0.2
-const MINUTE_STEP = 10
 const ADJUSTED_SUFFIX = ' (-20%)'
 
 function readStoredDate(key: string) {
@@ -82,10 +81,6 @@ function readStoredDate(key: string) {
 
 function dateKey(d: Date) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-}
-
-function roundToMinuteStep(minutes: number) {
-  return Math.round(minutes / MINUTE_STEP) * MINUTE_STEP
 }
 
 function readStoredEntries(key: string) {
@@ -353,7 +348,7 @@ export default function App() {
     const totalWorkMs = workMsBetween(anchor, deadline)
     const adjustedMinutes = Math.max(
       0,
-      roundToMinuteStep((totalWorkMs / 60000) * (1 - REDUCTION_RATIO))
+      Math.round((totalWorkMs / 60000) * (1 - REDUCTION_RATIO))
     )
     return addWorkMinutes(anchor, adjustedMinutes)
   }, [adjustedAnchorAtDeadlineChange, deadline])
@@ -390,7 +385,7 @@ export default function App() {
     () =>
       tasks.map((task) => ({
         ...task,
-        minutes: Math.max(MINUTE_STEP, roundToMinuteStep(task.minutes * (1 - REDUCTION_RATIO))),
+        minutes: Math.max(1, Math.round(task.minutes * (1 - REDUCTION_RATIO))),
       })),
     [tasks]
   )
