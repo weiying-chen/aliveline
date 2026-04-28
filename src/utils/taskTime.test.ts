@@ -8,6 +8,7 @@ import {
   normalizeTaskTimeParts,
   pickTaskBatchBase,
   pickTaskFinishStart,
+  roundMinutesToStep,
   stepHoursText,
   stepMinutesText,
 } from './taskTime'
@@ -176,5 +177,13 @@ describe('stepHoursText', () => {
 
   it('treats empty input as zero when stepping', () => {
     expect(stepHoursText('', 1)).toBe('1')
+  })
+})
+
+describe('roundMinutesToStep', () => {
+  it('rounds to the nearest 10-minute step', () => {
+    expect(roundMinutesToStep(16)).toBe(20)
+    expect(roundMinutesToStep(14)).toBe(10)
+    expect(roundMinutesToStep(96)).toBe(100)
   })
 })

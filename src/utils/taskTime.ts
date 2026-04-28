@@ -8,6 +8,10 @@ export type TaskMinutesEntry = {
 
 const MINUTE_STEP = 10
 
+export function roundMinutesToStep(minutes: number) {
+  return Math.round(minutes / MINUTE_STEP) * MINUTE_STEP
+}
+
 function isNonNegativeIntegerText(value: string) {
   return /^\d+$/.test(value)
 }
@@ -28,7 +32,7 @@ export function minutesFromTimeParts(hoursText: string, minutesText: string) {
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null
   if (hours < 0 || minutes < 0) return null
 
-  const total = Math.round((hours * 60 + minutes) / MINUTE_STEP) * MINUTE_STEP
+  const total = roundMinutesToStep(hours * 60 + minutes)
   return total > 0 ? total : null
 }
 

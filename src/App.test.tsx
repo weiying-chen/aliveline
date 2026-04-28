@@ -145,8 +145,8 @@ describe('App deadline behavior', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
 
-    expect(preview.textContent).toContain('今日做其他事時間是 1時36分')
-    expect(preview.textContent).toContain('小編文 1時36分')
+    expect(preview.textContent).toContain('今日做其他事時間是 1時40分')
+    expect(preview.textContent).toContain('小編文 1時40分')
     expect(preview.textContent).not.toContain('(-20%)')
   })
 
@@ -234,7 +234,7 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
 
     const adjustedRemaining = screen.getByLabelText('Remaining work time display').textContent ?? ''
-    expect(adjustedRemaining).toContain('5h 36m')
+    expect(adjustedRemaining).toContain('5h 40m')
     expect(adjustedRemaining).toContain('(-20%)')
   })
 
@@ -272,7 +272,7 @@ describe('App deadline behavior', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
     const adjusted = readHoursMinutes('Remaining work time display')
-    expect(adjusted).toEqual({ hours: 10, minutes: 24 })
+    expect(adjusted).toEqual({ hours: 10, minutes: 20 })
   })
 
   it('keeps -20% total reduction after adding tasks across days', () => {
@@ -293,7 +293,21 @@ describe('App deadline behavior', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
     const adjusted = readHoursMinutes('Remaining work time display')
-    expect(adjusted).toEqual({ hours: 7, minutes: 12 })
+    expect(adjusted).toEqual({ hours: 7, minutes: 10 })
+  })
+
+  it('uses the same 10-minute rounding as task time in adjusted mode', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
+    render(<App />)
+
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-15T10:20' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
+
+    const adjusted = readHoursMinutes('Remaining work time display')
+    expect(adjusted).toEqual({ hours: 0, minutes: 20 })
   })
 
   it('renders assignment history export as an accordion panel', () => {
