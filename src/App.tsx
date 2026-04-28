@@ -85,7 +85,7 @@ function dateKey(d: Date) {
 }
 
 function roundToMinuteStep(minutes: number) {
-  return Math.round(minutes / MINUTE_STEP) * MINUTE_STEP
+  return Math.floor(minutes / MINUTE_STEP) * MINUTE_STEP
 }
 
 function readStoredEntries(key: string) {
