@@ -70,7 +70,10 @@ const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
-const ADJUSTED_SCHEDULE_MULTIPLIER = 0.8
+const BASE_DEADLINE_MULTIPLIER = 1
+const ADJUSTED_DEADLINE_MULTIPLIER = 1
+const BASE_TASK_MULTIPLIER = 1
+const ADJUSTED_TASK_MULTIPLIER = 0.8
 const ADJUSTED_SUFFIX = ' (-20%)'
 
 function readStoredDate(key: string) {
@@ -344,13 +347,15 @@ export default function App() {
   }, [now])
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
+  const currentTaskMultiplier = isAdjustedView ? ADJUSTED_TASK_MULTIPLIER : BASE_TASK_MULTIPLIER
   const adjustedDeadline = useMemo(() => {
+    if (ADJUSTED_DEADLINE_MULTIPLIER === BASE_DEADLINE_MULTIPLIER) return deadline
     const anchor = adjustedAnchorAtDeadlineChange
     if (deadline.getTime() <= anchor.getTime()) return deadline
     const totalWorkMs = workMsBetween(anchor, deadline)
     const adjustedMinutes = Math.max(
       0,
-      roundMinutesToStep((totalWorkMs / 60000) * ADJUSTED_SCHEDULE_MULTIPLIER)
+      roundMinutesToStep((totalWorkMs / 60000) * ADJUSTED_DEADLINE_MULTIPLIER)
     )
     return addWorkMinutes(anchor, adjustedMinutes)
   }, [adjustedAnchorAtDeadlineChange, deadline])
@@ -387,9 +392,9 @@ export default function App() {
     () =>
       tasks.map((task) => ({
         ...task,
-        minutes: Math.max(1, roundMinutesToStep(task.minutes * ADJUSTED_SCHEDULE_MULTIPLIER)),
+        minutes: Math.max(1, roundMinutesToStep(task.minutes * currentTaskMultiplier)),
       })),
-    [tasks]
+    [currentTaskMultiplier, tasks]
   )
   const adjustedTaskFinishTimes = useMemo(
     () => calculateTaskFinishTimes(taskFinishStart, adjustedTasks),
