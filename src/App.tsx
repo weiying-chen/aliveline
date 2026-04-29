@@ -7,7 +7,7 @@ import {
   filterAssignmentHistoryEntriesByMonth,
   sumAssignmentHistoryEntryMinutes,
   type AssignmentHistoryEntry,
-} from './utils/assignmentHistory'
+} from './utils/assignmentHistoryUnified'
 import { fromLegacyAssignmentDraft, toLegacyAssignmentDraft } from './utils/assignmentAdapters'
 import { formatDeadlineExtensionMessage, type TaskEntry } from './utils/deadlineHistory'
 import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
@@ -172,14 +172,51 @@ function readStoredAssignmentHistory() {
   const saved = localStorage.getItem(LS_ASSIGNMENT_HISTORY_KEY)
   if (!saved) return [] as AssignmentHistoryEntry[]
   try {
-    const parsed = JSON.parse(saved) as AssignmentHistoryEntry[]
+    const parsed = JSON.parse(saved) as Array<Record<string, unknown>>
     if (!Array.isArray(parsed)) return []
-    return parsed.filter((item) => {
+    return parsed
+      .map((item) => {
+        if (
+          Array.isArray(item.assignments) &&
+          typeof item.rootAssignmentId === 'string' &&
+          typeof item.createdAtIso === 'string' &&
+          typeof item.deadlineIso === 'string' &&
+          Number.isFinite(item.totalMinutes)
+        ) {
+          return item as AssignmentHistoryEntry
+        }
+        if (
+          typeof item.assignment === 'string' &&
+          typeof item.createdAtIso === 'string' &&
+          typeof item.deadlineIso === 'string' &&
+          typeof item.confirmedBy === 'string' &&
+          Array.isArray(item.tasks)
+        ) {
+          return buildAssignmentHistoryEntry(
+            {
+              assignment: item.assignment,
+              deadline: new Date(item.deadlineIso),
+              confirmedBy: item.confirmedBy,
+              nextAssignment:
+                typeof item.nextAssignment === 'string' ? item.nextAssignment : '',
+              nextAssignmentConfirmedBy:
+                typeof item.nextAssignmentConfirmedBy === 'string'
+                  ? item.nextAssignmentConfirmedBy
+                  : '',
+              scheduleView: item.scheduleView === 'adjusted' ? 'adjusted' : 'original',
+              tasks: item.tasks as TaskEntry[],
+            },
+            new Date(item.createdAtIso)
+          )
+        }
+        return null
+      })
+      .filter((item): item is AssignmentHistoryEntry => item !== null)
+      .filter((item) => {
       if (!item || typeof item !== 'object') return false
       if (typeof item.createdAtIso !== 'string') return false
-      if (typeof item.assignment !== 'string') return false
       if (typeof item.deadlineIso !== 'string') return false
-      if (!Array.isArray(item.tasks)) return false
+      if (!Array.isArray(item.assignments)) return false
       if (!Number.isFinite(item.totalMinutes)) return false
       return true
     })

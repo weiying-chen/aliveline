@@ -448,8 +448,13 @@ describe('App deadline behavior', () => {
       const stored = localStorage.getItem('aliveline:assignment-history')
       expect(stored).toBeTruthy()
       const parsed = JSON.parse(stored ?? '[]')
-      expect(parsed[0].assignment).toBe('Main assignment')
-      expect(parsed[0].tasks).toEqual([{ text: 'Task A', minutes: 90 }])
+      const root = parsed[0].assignments.find(
+        (item: { id: string }) => item.id === parsed[0].rootAssignmentId
+      )
+      expect(root.title).toBe('Main assignment')
+      const task = parsed[0].assignments.find((item: { id: string }) => item.id === 'task-0')
+      expect(task.title).toBe('Task A')
+      expect(task.estimateMinutes).toBe(90)
     })
   })
 
