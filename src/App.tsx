@@ -297,17 +297,7 @@ export default function App() {
   )
   const isAdjustedView = scheduleViewMode === 'adjusted'
 
-  const projectionTasks = useMemo(() => {
-    if (!useUnifiedAssignmentsModel) return tasks
-    return toLegacyAssignmentDraft(
-      fromLegacyAssignmentDraft({
-        assignmentTitle: deadlineExtensionAssignment,
-        deadlineIso: deadline.toISOString(),
-        tasks,
-      }),
-      'legacy-root'
-    ).tasks
-  }, [deadline, deadlineExtensionAssignment, tasks, useUnifiedAssignmentsModel])
+  const projectionTasks = useMemo(() => tasks, [tasks])
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -673,21 +663,11 @@ export default function App() {
   const deadlineMessageInput = useMemo(() => {
     const messageTasks = isAdjustedView ? adjustedTasks : tasks
     const messageDeadline = isAdjustedView ? adjustedDeadline : deadline
-    if (!useUnifiedAssignmentsModel) {
-      return {
-        assignmentTitle: deadlineExtensionAssignment,
-        deadlineIso: messageDeadline.toISOString(),
-        tasks: messageTasks,
-      }
+    return {
+      assignmentTitle: deadlineExtensionAssignment,
+      deadlineIso: messageDeadline.toISOString(),
+      tasks: messageTasks,
     }
-    return toLegacyAssignmentDraft(
-      fromLegacyAssignmentDraft({
-        assignmentTitle: deadlineExtensionAssignment,
-        deadlineIso: messageDeadline.toISOString(),
-        tasks: messageTasks,
-      }),
-      'legacy-root'
-    )
   }, [
     adjustedDeadline,
     adjustedTasks,
@@ -695,7 +675,6 @@ export default function App() {
     deadlineExtensionAssignment,
     isAdjustedView,
     tasks,
-    useUnifiedAssignmentsModel,
   ])
 
   const deadlineExtensionMessage = useMemo(() => {
