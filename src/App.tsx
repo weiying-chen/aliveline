@@ -139,6 +139,17 @@ function readStoredAssignmentDraftV2() {
   }
 }
 
+function normalizeTasksViaUnified(deadline: Date, assignmentTitle: string, tasks: TaskEntry[]) {
+  return toLegacyAssignmentDraft(
+    fromLegacyAssignmentDraft({
+      assignmentTitle,
+      deadlineIso: deadline.toISOString(),
+      tasks,
+    }),
+    'legacy-root'
+  ).tasks
+}
+
 function readStoredStringList(key: string) {
   const saved = localStorage.getItem(key)
   if (!saved) return [] as string[]
@@ -787,7 +798,10 @@ export default function App() {
       minutes: Math.round(minutes),
     }
     setRecentTasks((prev) => updateRecentTaskNames(prev, entry.text))
-    const nextTasks = [...tasks, entry]
+    const nextTasks = normalizeTasksViaUnified(deadline, deadlineExtensionAssignment, [
+      ...tasks,
+      entry,
+    ])
     const baseDeadline = pickTaskBatchBase(deadline, changeBaseDeadline)
     const dueBase = pickTaskBatchBase(now, taskFinishBase)
     if (!changeBaseDeadline) {
@@ -809,7 +823,11 @@ export default function App() {
   }
 
   const removeTaskEntry = (index: number) => {
-    const nextTasks = tasks.filter((_, i) => i !== index)
+    const nextTasks = normalizeTasksViaUnified(
+      deadline,
+      deadlineExtensionAssignment,
+      tasks.filter((_, i) => i !== index)
+    )
     setTasks(nextTasks)
     setPreviousTasks(nextTasks)
     if (nextTasks.length === 0) {

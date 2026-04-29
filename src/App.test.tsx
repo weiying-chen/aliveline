@@ -479,4 +479,25 @@ describe('App deadline behavior', () => {
     )
   })
 
+  it('updates assignment draft v2 tasks when task list changes', () => {
+    render(<App />)
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+    fireEvent.change(screen.getByLabelText('Assignment name'), {
+      target: { value: 'Task mutation assignment' },
+    })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    let draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft-v2') ?? '{}')
+    expect(draft.tasks).toEqual([{ text: 'Task A', minutes: 80 }])
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove task' }))
+    draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft-v2') ?? '{}')
+    expect(draft.tasks).toEqual([])
+  })
+
 })
