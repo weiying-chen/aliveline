@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import App from './App'
 
@@ -396,6 +396,46 @@ describe('App deadline behavior', () => {
     expect(screen.getByText(/assignments, .* hours/).classList.contains('metaTextMutedSm')).toBe(
       true
     )
+  })
+
+  it('stores assignment history via unified model when feature flag is enabled', async () => {
+    localStorage.setItem('aliveline:feature-unified-assignments-model', 'true')
+    const clipboardWrite = vi.fn().mockResolvedValue(undefined)
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: clipboardWrite,
+      },
+    })
+
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '30' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.change(screen.getByLabelText('Assignment name'), {
+      target: { value: 'Main assignment' },
+    })
+    fireEvent.change(
+      screen.getByLabelText('Confirmed by', {
+        selector: 'input#deadline-extension-confirmed-by',
+      }),
+      { target: { value: 'Emily Ding' } }
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
+
+    expect(clipboardWrite).toHaveBeenCalledTimes(1)
+    await waitFor(() => {
+      const stored = localStorage.getItem('aliveline:assignment-history')
+      expect(stored).toBeTruthy()
+      const parsed = JSON.parse(stored ?? '[]')
+      expect(parsed[0].assignment).toBe('Main assignment')
+      expect(parsed[0].tasks).toEqual([{ text: 'Task A', minutes: 90 }])
+    })
   })
 
 })

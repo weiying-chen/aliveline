@@ -601,46 +601,56 @@ export default function App() {
     updateDeadline(new Date(), { resetDrafts: true })
   }
 
+  const deadlineMessageInput = useMemo(() => {
+    const messageTasks = isAdjustedView ? adjustedTasks : tasks
+    const messageDeadline = isAdjustedView ? adjustedDeadline : deadline
+    if (!useUnifiedAssignmentsModel) {
+      return {
+        assignmentTitle: deadlineExtensionAssignment,
+        deadlineIso: messageDeadline.toISOString(),
+        tasks: messageTasks,
+      }
+    }
+    return toLegacyAssignmentDraft(
+      fromLegacyAssignmentDraft({
+        assignmentTitle: deadlineExtensionAssignment,
+        deadlineIso: messageDeadline.toISOString(),
+        tasks: messageTasks,
+      }),
+      'legacy-root'
+    )
+  }, [
+    adjustedDeadline,
+    adjustedTasks,
+    deadline,
+    deadlineExtensionAssignment,
+    isAdjustedView,
+    tasks,
+    useUnifiedAssignmentsModel,
+  ])
+
   const deadlineExtensionMessage = useMemo(() => {
     if (!previousDeadline) return ''
     if (!deadlineExtensionAssignment.trim()) return ''
     if (!deadlineExtensionConfirmedBy.trim()) return ''
     if (tasks.length === 0) return ''
-    const messageTasks = isAdjustedView ? adjustedTasks : tasks
-    const messageDeadline = isAdjustedView ? adjustedDeadline : deadline
     const messagePreviousDeadline =
       isAdjustedView && adjustedPreviousDeadline ? adjustedPreviousDeadline : previousDeadline
-    const messageInput = useUnifiedAssignmentsModel
-      ? toLegacyAssignmentDraft(
-          fromLegacyAssignmentDraft({
-            assignmentTitle: deadlineExtensionAssignment,
-            deadlineIso: messageDeadline.toISOString(),
-            tasks: messageTasks,
-          }),
-          'legacy-root'
-        )
-      : {
-          assignmentTitle: deadlineExtensionAssignment,
-          tasks: messageTasks,
-        }
     return formatDeadlineExtensionMessage({
       previous: messagePreviousDeadline,
-      next: messageDeadline,
-      tasks: messageInput.tasks,
-      assignment: messageInput.assignmentTitle,
+      next: new Date(deadlineMessageInput.deadlineIso),
+      tasks: deadlineMessageInput.tasks,
+      assignment: deadlineMessageInput.assignmentTitle,
       assignee: deadlineExtensionConfirmedBy,
     })
   }, [
-    adjustedDeadline,
     adjustedPreviousDeadline,
-    adjustedTasks,
-    deadline,
     deadlineExtensionConfirmedBy,
     deadlineExtensionAssignment,
+    deadlineMessageInput,
     isAdjustedView,
     previousDeadline,
     tasks,
-    useUnifiedAssignmentsModel,
   ])
 
   const filteredRecentTaskItems = useMemo(() => {
@@ -685,16 +695,14 @@ export default function App() {
     if (!deadlineExtensionMessage) return
     try {
       await navigator.clipboard.writeText(deadlineExtensionMessage)
-      const messageTasks = isAdjustedView ? adjustedTasks : tasks
-      const messageDeadline = isAdjustedView ? adjustedDeadline : deadline
       const next = buildAssignmentHistoryEntry({
-        assignment: deadlineExtensionAssignment,
-        deadline: messageDeadline,
+        assignment: deadlineMessageInput.assignmentTitle,
+        deadline: new Date(deadlineMessageInput.deadlineIso),
         confirmedBy: deadlineExtensionConfirmedBy,
         nextAssignment,
         nextAssignmentConfirmedBy,
         scheduleView: isAdjustedView ? 'adjusted' : 'original',
-        tasks: messageTasks,
+        tasks: deadlineMessageInput.tasks,
       })
       setAssignmentHistory((prev) => [next, ...prev])
       setDeadlineExtensionCopyState('copied')
