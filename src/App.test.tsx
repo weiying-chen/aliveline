@@ -109,6 +109,21 @@ describe('App deadline behavior', () => {
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
   })
 
+  it('shows the same task due time when unified assignment model flag is enabled', () => {
+    localStorage.setItem('aliveline:feature-unified-assignments-model', 'true')
+    render(<App />)
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('2h')
+  })
+
   it('toggles original and adjusted values in place for planning fields', () => {
     render(<App />)
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement

@@ -249,6 +249,18 @@ export default function App() {
   )
   const isAdjustedView = scheduleViewMode === 'adjusted'
 
+  const projectionTasks = useMemo(() => {
+    if (!useUnifiedAssignmentsModel) return tasks
+    return toLegacyAssignmentDraft(
+      fromLegacyAssignmentDraft({
+        assignmentTitle: deadlineExtensionAssignment,
+        deadlineIso: deadline.toISOString(),
+        tasks,
+      }),
+      'legacy-root'
+    ).tasks
+  }, [deadline, deadlineExtensionAssignment, tasks, useUnifiedAssignmentsModel])
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
@@ -382,24 +394,24 @@ export default function App() {
     [deadline, now]
   )
   const showDeadlineExtensionReminder = useMemo(
-    () => shouldShowDeadlineExtensionReminder(now, deadline, tasks.length > 0),
-    [deadline, now, tasks.length]
+    () => shouldShowDeadlineExtensionReminder(now, deadline, projectionTasks.length > 0),
+    [deadline, now, projectionTasks.length]
   )
   const taskFinishStart = useMemo(
     () => pickTaskFinishStart(now, taskFinishBase),
     [now, taskFinishBase]
   )
   const taskFinishTimes = useMemo(
-    () => calculateTaskFinishTimes(taskFinishStart, tasks),
-    [taskFinishStart, tasks]
+    () => calculateTaskFinishTimes(taskFinishStart, projectionTasks),
+    [projectionTasks, taskFinishStart]
   )
   const adjustedTasks = useMemo(
     () =>
-      tasks.map((task) => ({
+      projectionTasks.map((task) => ({
         ...task,
         minutes: Math.max(1, roundMinutesToStep(task.minutes * currentTaskMultiplier)),
       })),
-    [currentTaskMultiplier, tasks]
+    [currentTaskMultiplier, projectionTasks]
   )
   const adjustedTaskFinishTimes = useMemo(
     () => calculateTaskFinishTimes(taskFinishStart, adjustedTasks),
