@@ -423,6 +423,7 @@ export default function App() {
       LS_DAILY_CLEAR_KEY,
       now.getTime() >= cutoff.getTime() ? todayKey : yesterdayKey
     )
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPreviousDeadline(deadline)
     setPreviousChangedAt(now)
     setTasks([])
@@ -433,7 +434,7 @@ export default function App() {
     setTaskFinishBase(null)
     setPreviousTasks([])
     setAdjustedAnchorAtDeadlineChange(now)
-  }, [now])
+  }, [deadline, now])
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
   const currentTaskMultiplier = isAdjustedView ? ADJUSTED_TASK_MULTIPLIER : BASE_TASK_MULTIPLIER
@@ -634,6 +635,7 @@ export default function App() {
   }, [nextAssignmentStartAt])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNextAssignmentStartAt((prev) =>
       syncNextAssignmentMessageStartWithDeadline(prev, deadline)
     )
@@ -733,10 +735,12 @@ export default function App() {
   }, [recentTasks, taskName])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRecentActiveIndex(filteredRecentTaskItems.length > 0 ? 0 : -1)
   }, [filteredRecentTaskItems])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDeadlineExtensionCopyState('idle')
   }, [deadlineExtensionMessage])
 
@@ -761,6 +765,7 @@ export default function App() {
   ])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNextAssignmentCopyState('idle')
   }, [nextAssignmentMessage])
 
