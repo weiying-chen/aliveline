@@ -505,4 +505,20 @@ describe('App deadline behavior', () => {
     expect(draft.tasks).toEqual([])
   })
 
+  it('does not persist legacy v1 draft keys', () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
+    fireEvent.change(screen.getByLabelText('Assignment name'), {
+      target: { value: 'Legacy key check' },
+    })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    expect(localStorage.getItem('aliveline:tasks')).toBeNull()
+    expect(localStorage.getItem('aliveline:deadline-extension-assignment')).toBeNull()
+    expect(localStorage.getItem('aliveline:assignment-draft-v2')).toBeTruthy()
+  })
+
 })

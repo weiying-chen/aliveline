@@ -50,11 +50,11 @@ const LS_DEADLINE_KEY = 'aliveline:deadline-iso'
 const LS_PREV_DEADLINE_KEY = 'aliveline:previous-deadline-iso'
 const LS_PREV_CHANGED_KEY = 'aliveline:previous-deadline-changed-iso'
 const LS_PREV_TASKS_KEY = 'aliveline:previous-tasks'
-const LS_TASKS_KEY = 'aliveline:tasks'
+const LS_TASKS_KEY = 'aliveline:tasks' // legacy fallback read only
 const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
 const LS_TASK_FINISH_BASE_KEY = 'aliveline:task-finish-base-iso'
-const LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY = 'aliveline:deadline-extension-assignment'
+const LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY = 'aliveline:deadline-extension-assignment' // legacy fallback read only
 const LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY = 'aliveline:deadline-extension-confirmed-by'
 const LS_NEXT_ASSIGNMENT_KEY = 'aliveline:next-assignment'
 const LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY = 'aliveline:next-assignment-confirmed-by'
@@ -380,10 +380,6 @@ export default function App() {
   }, [previousTasks])
 
   useEffect(() => {
-    localStorage.setItem(LS_TASKS_KEY, JSON.stringify(tasks))
-  }, [tasks])
-
-  useEffect(() => {
     localStorage.setItem(LS_RECENT_TASKS_KEY, JSON.stringify(recentTasks))
   }, [recentTasks])
 
@@ -402,10 +398,6 @@ export default function App() {
       localStorage.removeItem(LS_TASK_FINISH_BASE_KEY)
     }
   }, [taskFinishBase])
-
-  useEffect(() => {
-    localStorage.setItem(LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY, deadlineExtensionAssignment)
-  }, [deadlineExtensionAssignment])
 
   useEffect(() => {
     const nextDraft: AssignmentDraftV2 = {
