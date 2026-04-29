@@ -453,4 +453,30 @@ describe('App deadline behavior', () => {
     })
   })
 
+  it('boots from assignment draft v2 storage', () => {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = `${now.getMonth() + 1}`.padStart(2, '0')
+    const d = `${now.getDate()}`.padStart(2, '0')
+    localStorage.setItem('aliveline:daily-clear', `${y}-${m}-${d}`)
+    localStorage.setItem(
+      'aliveline:assignment-draft-v2',
+      JSON.stringify({
+        deadlineIso: '2026-04-10T12:00:00.000Z',
+        assignmentTitle: 'Boot assignment',
+        tasks: [{ text: 'Boot task', minutes: 50 }],
+      })
+    )
+
+    render(<App />)
+
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
+    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('50m')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
+    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
+      'Boot assignment'
+    )
+  })
+
 })

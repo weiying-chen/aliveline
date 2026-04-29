@@ -72,6 +72,7 @@ const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
 const LS_FEATURE_UNIFIED_ASSIGNMENTS_MODEL_KEY = 'aliveline:feature-unified-assignments-model'
+const LS_ASSIGNMENT_DRAFT_V2_KEY = 'aliveline:assignment-draft-v2'
 const BASE_DEADLINE_MULTIPLIER = 1
 const ADJUSTED_DEADLINE_MULTIPLIER = 1
 const BASE_TASK_MULTIPLIER = 1
@@ -100,6 +101,41 @@ function readStoredEntries(key: string) {
     )
   } catch {
     return []
+  }
+}
+
+function sanitizeTaskEntries(entries: unknown) {
+  if (!Array.isArray(entries)) return [] as TaskEntry[]
+  return entries.filter(
+    (item) => typeof item?.text === 'string' && Number.isFinite(item?.minutes) && item.minutes > 0
+  ) as TaskEntry[]
+}
+
+type AssignmentDraftV2 = {
+  deadlineIso: string
+  assignmentTitle: string
+  tasks: TaskEntry[]
+}
+
+function readStoredAssignmentDraftV2() {
+  const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_V2_KEY)
+  if (!saved) return null
+  try {
+    const parsed = JSON.parse(saved) as {
+      deadlineIso?: unknown
+      assignmentTitle?: unknown
+      tasks?: unknown
+    }
+    if (typeof parsed.deadlineIso !== 'string') return null
+    if (Number.isNaN(new Date(parsed.deadlineIso).getTime())) return null
+    if (typeof parsed.assignmentTitle !== 'string') return null
+    return {
+      deadlineIso: parsed.deadlineIso,
+      assignmentTitle: parsed.assignmentTitle,
+      tasks: sanitizeTaskEntries(parsed.tasks),
+    } as AssignmentDraftV2
+  } catch {
+    return null
   }
 }
 
@@ -169,9 +205,12 @@ function downloadTextFile(fileName: string, content: string, contentType: string
 
 export default function App() {
   const deadlineRef = useRef<PickerInput | null>(null)
+  const storedDraftV2 = useMemo(() => readStoredAssignmentDraftV2(), [])
 
   const [now, setNow] = useState(() => new Date())
-  const [deadline, setDeadline] = useState(() => readStoredDate(LS_DEADLINE_KEY) ?? new Date())
+  const [deadline, setDeadline] = useState(
+    () => readStoredDate(LS_DEADLINE_KEY) ?? (storedDraftV2 ? new Date(storedDraftV2.deadlineIso) : new Date())
+  )
   const [previousDeadline, setPreviousDeadline] = useState<Date | null>(() =>
     readStoredDate(LS_PREV_DEADLINE_KEY)
   )
@@ -181,9 +220,7 @@ export default function App() {
   const [previousTasks, setPreviousTasks] = useState<TaskEntry[]>(() =>
     readStoredEntries(LS_PREV_TASKS_KEY)
   )
-  const [tasks, setTasks] = useState<TaskEntry[]>(() =>
-    readStoredEntries(LS_TASKS_KEY)
-  )
+  const [tasks, setTasks] = useState<TaskEntry[]>(() => storedDraftV2?.tasks ?? readStoredEntries(LS_TASKS_KEY))
   const [recentTasks, setRecentTasks] = useState<string[]>(() =>
     readStoredStringList(LS_RECENT_TASKS_KEY)
   )
@@ -199,7 +236,7 @@ export default function App() {
   const [isRecentOpen, setIsRecentOpen] = useState(false)
   const [recentActiveIndex, setRecentActiveIndex] = useState<number>(-1)
   const [deadlineExtensionAssignment, setDeadlineExtensionAssignment] = useState(
-    () => localStorage.getItem(LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY) ?? ''
+    () => storedDraftV2?.assignmentTitle ?? localStorage.getItem(LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY) ?? ''
   )
   const [deadlineExtensionConfirmedBy, setDeadlineExtensionConfirmedBy] = useState(
     () => localStorage.getItem(LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY) ?? ''
@@ -331,6 +368,15 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY, deadlineExtensionAssignment)
   }, [deadlineExtensionAssignment])
+
+  useEffect(() => {
+    const nextDraft: AssignmentDraftV2 = {
+      deadlineIso: deadline.toISOString(),
+      assignmentTitle: deadlineExtensionAssignment,
+      tasks,
+    }
+    localStorage.setItem(LS_ASSIGNMENT_DRAFT_V2_KEY, JSON.stringify(nextDraft))
+  }, [deadline, deadlineExtensionAssignment, tasks])
 
   useEffect(() => {
     const todayKey = dateKey(now)
