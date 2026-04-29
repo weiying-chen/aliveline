@@ -77,6 +77,38 @@ describe('App deadline behavior', () => {
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
   })
 
+  it('shows the same deadline message when unified assignment model flag is enabled', () => {
+    localStorage.setItem('aliveline:feature-unified-assignments-model', 'true')
+    const { container } = render(<App />)
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+
+    fireEvent.change(screen.getByLabelText('Assignment name'), {
+      target: { value: '3集大愛真健康' },
+    })
+    fireEvent.change(
+      screen.getByLabelText('Confirmed by', {
+        selector: 'input#deadline-extension-confirmed-by',
+      }),
+      {
+        target: { value: 'Emily Ding' },
+      }
+    )
+
+    const preview = screen.getByLabelText('Deadline extension message preview')
+    expect(preview.textContent).toBe(
+      '今日做其他事時間是 2時\n\n' +
+        '英文新聞+錄音 2時\n\n' +
+        '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）15:00，請Emily Ding幫我確認，謝謝。'
+    )
+    expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
+  })
+
   it('toggles original and adjusted values in place for planning fields', () => {
     render(<App />)
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement

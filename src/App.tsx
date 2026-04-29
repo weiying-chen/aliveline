@@ -8,6 +8,7 @@ import {
   sumAssignmentHistoryEntryMinutes,
   type AssignmentHistoryEntry,
 } from './utils/assignmentHistory'
+import { fromLegacyAssignmentDraft, toLegacyAssignmentDraft } from './utils/assignmentAdapters'
 import { formatDeadlineExtensionMessage, type TaskEntry } from './utils/deadlineHistory'
 import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
@@ -70,6 +71,7 @@ const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
+const LS_FEATURE_UNIFIED_ASSIGNMENTS_MODEL_KEY = 'aliveline:feature-unified-assignments-model'
 const BASE_DEADLINE_MULTIPLIER = 1
 const ADJUSTED_DEADLINE_MULTIPLIER = 1
 const BASE_TASK_MULTIPLIER = 1
@@ -241,6 +243,9 @@ export default function App() {
   )
   const [adjustedAnchorAtDeadlineChange, setAdjustedAnchorAtDeadlineChange] = useState(
     () => readStoredDate(LS_ADJUSTED_ANCHOR_KEY) ?? new Date()
+  )
+  const [useUnifiedAssignmentsModel] = useState(() =>
+    readStoredBool(LS_FEATURE_UNIFIED_ASSIGNMENTS_MODEL_KEY, false)
   )
   const isAdjustedView = scheduleViewMode === 'adjusted'
 
@@ -605,11 +610,24 @@ export default function App() {
     const messageDeadline = isAdjustedView ? adjustedDeadline : deadline
     const messagePreviousDeadline =
       isAdjustedView && adjustedPreviousDeadline ? adjustedPreviousDeadline : previousDeadline
+    const messageInput = useUnifiedAssignmentsModel
+      ? toLegacyAssignmentDraft(
+          fromLegacyAssignmentDraft({
+            assignmentTitle: deadlineExtensionAssignment,
+            deadlineIso: messageDeadline.toISOString(),
+            tasks: messageTasks,
+          }),
+          'legacy-root'
+        )
+      : {
+          assignmentTitle: deadlineExtensionAssignment,
+          tasks: messageTasks,
+        }
     return formatDeadlineExtensionMessage({
       previous: messagePreviousDeadline,
       next: messageDeadline,
-      tasks: messageTasks,
-      assignment: deadlineExtensionAssignment,
+      tasks: messageInput.tasks,
+      assignment: messageInput.assignmentTitle,
       assignee: deadlineExtensionConfirmedBy,
     })
   }, [
@@ -622,6 +640,7 @@ export default function App() {
     isAdjustedView,
     previousDeadline,
     tasks,
+    useUnifiedAssignmentsModel,
   ])
 
   const filteredRecentTaskItems = useMemo(() => {
