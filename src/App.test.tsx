@@ -521,4 +521,59 @@ describe('App deadline behavior', () => {
     expect(localStorage.getItem('aliveline:assignment-draft-v2')).toBeTruthy()
   })
 
+  it('boots from v1 fallback when v2 is missing', () => {
+    localStorage.setItem('aliveline:tasks', JSON.stringify([{ text: 'Legacy task', minutes: 40 }]))
+    localStorage.setItem('aliveline:deadline-extension-assignment', 'Legacy assignment')
+    localStorage.setItem('aliveline:deadline-iso', '2026-04-11T08:00:00.000Z')
+    localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
+
+    render(<App />)
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-11')
+    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('40m')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
+    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
+      'Legacy assignment'
+    )
+  })
+
+  it('prefers v2 for tasks/title and keeps v1 deadline when both exist', () => {
+    localStorage.setItem(
+      'aliveline:assignment-draft-v2',
+      JSON.stringify({
+        deadlineIso: '2026-04-12T09:00:00.000Z',
+        assignmentTitle: 'V2 assignment',
+        tasks: [{ text: 'V2 task', minutes: 70 }],
+      })
+    )
+    localStorage.setItem('aliveline:tasks', JSON.stringify([{ text: 'V1 task', minutes: 20 }]))
+    localStorage.setItem('aliveline:deadline-extension-assignment', 'V1 assignment')
+    localStorage.setItem('aliveline:deadline-iso', '2026-04-13T08:00:00.000Z')
+    localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
+
+    render(<App />)
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-13')
+    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('1h 10m')
+    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
+    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
+      'V2 assignment'
+    )
+  })
+
+  it('falls back to v1 when v2 is malformed', () => {
+    localStorage.setItem('aliveline:assignment-draft-v2', '{"deadlineIso":123}')
+    localStorage.setItem('aliveline:tasks', JSON.stringify([{ text: 'V1 task', minutes: 25 }]))
+    localStorage.setItem('aliveline:deadline-extension-assignment', 'V1 fallback assignment')
+    localStorage.setItem('aliveline:deadline-iso', '2026-04-14T10:00:00.000Z')
+    localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
+
+    render(<App />)
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-14')
+    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('25m')
+    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
+    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
+      'V1 fallback assignment'
+    )
+  })
+
 })
