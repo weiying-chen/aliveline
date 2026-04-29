@@ -71,7 +71,6 @@ const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
-const LS_FEATURE_UNIFIED_ASSIGNMENTS_MODEL_KEY = 'aliveline:feature-unified-assignments-model'
 const LS_ASSIGNMENT_DRAFT_V2_KEY = 'aliveline:assignment-draft-v2'
 const BASE_DEADLINE_MULTIPLIER = 1
 const ADJUSTED_DEADLINE_MULTIPLIER = 1
@@ -328,9 +327,6 @@ export default function App() {
   )
   const [adjustedAnchorAtDeadlineChange, setAdjustedAnchorAtDeadlineChange] = useState(
     () => readStoredDate(LS_ADJUSTED_ANCHOR_KEY) ?? new Date()
-  )
-  const [useUnifiedAssignmentsModel] = useState(() =>
-    readStoredBool(LS_FEATURE_UNIFIED_ASSIGNMENTS_MODEL_KEY, false)
   )
   const isAdjustedView = scheduleViewMode === 'adjusted'
 

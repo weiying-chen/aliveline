@@ -77,8 +77,7 @@ describe('App deadline behavior', () => {
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
   })
 
-  it('shows the same deadline message when unified assignment model flag is enabled', () => {
-    localStorage.setItem('aliveline:feature-unified-assignments-model', 'true')
+  it('shows the same deadline message under unified model', () => {
     const { container } = render(<App />)
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
@@ -109,8 +108,7 @@ describe('App deadline behavior', () => {
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
   })
 
-  it('shows the same task due time when unified assignment model flag is enabled', () => {
-    localStorage.setItem('aliveline:feature-unified-assignments-model', 'true')
+  it('shows the same task due time under unified model', () => {
     render(<App />)
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
@@ -413,8 +411,7 @@ describe('App deadline behavior', () => {
     )
   })
 
-  it('stores assignment history via unified model when feature flag is enabled', async () => {
-    localStorage.setItem('aliveline:feature-unified-assignments-model', 'true')
+  it('stores assignment history via unified model', async () => {
     const clipboardWrite = vi.fn().mockResolvedValue(undefined)
     Object.assign(navigator, {
       clipboard: {
