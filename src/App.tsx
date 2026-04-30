@@ -47,9 +47,6 @@ import {
 type PickerInput = HTMLInputElement
 
 const LS_DEADLINE_KEY = 'aliveline:deadline-iso'
-const LS_PREV_DEADLINE_KEY = 'aliveline:previous-deadline-iso'
-const LS_PREV_CHANGED_KEY = 'aliveline:previous-deadline-changed-iso'
-const LS_PREV_TASKS_KEY = 'aliveline:previous-tasks'
 const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
 const LS_TASK_FINISH_BASE_KEY = 'aliveline:task-finish-base-iso'
@@ -85,20 +82,6 @@ function readStoredDate(key: string) {
 
 function dateKey(d: Date) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-}
-
-function readStoredEntries(key: string) {
-  const saved = localStorage.getItem(key)
-  if (!saved) return [] as TaskEntry[]
-  try {
-    const parsed = JSON.parse(saved) as TaskEntry[]
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (item) => typeof item?.text === 'string' && Number.isFinite(item?.minutes) && item.minutes > 0
-    )
-  } catch {
-    return []
-  }
 }
 
 function sanitizeTaskEntries(entries: unknown) {
@@ -219,15 +202,6 @@ export default function App() {
   const [deadline, setDeadline] = useState(
     () => readStoredDate(LS_DEADLINE_KEY) ?? (storedDraft ? new Date(storedDraft.deadlineIso) : new Date())
   )
-  const [previousDeadline, setPreviousDeadline] = useState<Date | null>(() =>
-    readStoredDate(LS_PREV_DEADLINE_KEY)
-  )
-  const [previousChangedAt, setPreviousChangedAt] = useState<Date | null>(() =>
-    readStoredDate(LS_PREV_CHANGED_KEY)
-  )
-  const [previousTasks, setPreviousTasks] = useState<TaskEntry[]>(() =>
-    readStoredEntries(LS_PREV_TASKS_KEY)
-  )
   const [tasks, setTasks] = useState<TaskEntry[]>(() => storedDraft?.tasks ?? [])
   const [recentTasks, setRecentTasks] = useState<string[]>(() =>
     readStoredStringList(LS_RECENT_TASKS_KEY)
@@ -319,24 +293,6 @@ export default function App() {
   }, [deadline])
 
   useEffect(() => {
-    if (previousDeadline) {
-      localStorage.setItem(LS_PREV_DEADLINE_KEY, previousDeadline.toISOString())
-    }
-  }, [previousDeadline])
-
-  useEffect(() => {
-    if (previousChangedAt) {
-      localStorage.setItem(LS_PREV_CHANGED_KEY, previousChangedAt.toISOString())
-    } else {
-      localStorage.removeItem(LS_PREV_CHANGED_KEY)
-    }
-  }, [previousChangedAt])
-
-  useEffect(() => {
-    localStorage.setItem(LS_PREV_TASKS_KEY, JSON.stringify(previousTasks))
-  }, [previousTasks])
-
-  useEffect(() => {
     localStorage.setItem(LS_RECENT_TASKS_KEY, JSON.stringify(recentTasks))
   }, [recentTasks])
 
@@ -385,15 +341,12 @@ export default function App() {
       now.getTime() >= cutoff.getTime() ? todayKey : yesterdayKey
     )
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPreviousDeadline(deadline)
-    setPreviousChangedAt(now)
     setTasks([])
     setTaskName('')
     setTaskHours('')
     setTaskMinutes('')
     setChangeBaseDeadline(null)
     setTaskFinishBase(null)
-    setPreviousTasks([])
     setAdjustedAnchorAtDeadlineChange(now)
   }, [deadline, now])
 
@@ -416,12 +369,7 @@ export default function App() {
   )
   const displayWorkMsLeft = isAdjustedView ? adjustedWorkMsLeft : workMsLeft
   const parts = useMemo(() => msToParts(displayWorkMsLeft), [displayWorkMsLeft])
-  const adjustedPreviousDeadline = useMemo(() => {
-    if (!previousDeadline) return null
-    return previousDeadline
-  }, [previousDeadline])
   const displayDeadline = isAdjustedView ? adjustedDeadline : deadline
-  const displayPreviousDeadline = isAdjustedView ? adjustedPreviousDeadline : previousDeadline
   const workStartAt = useMemo(() => (isInWorkTime(now) ? now : nextWorkStart(now)), [now])
   const showEarlyFinishReminder = useMemo(
     () => shouldShowEarlyFinishReminder(now, deadline),
@@ -606,12 +554,8 @@ export default function App() {
     nextDeadline: Date,
     options?: { tasks?: TaskEntry[]; resetDrafts?: boolean }
   ) => {
-    const shouldSyncPrevious = options?.resetDrafts
     const sameDeadline = nextDeadline.getTime() === deadline.getTime()
-    if (sameDeadline && shouldSyncPrevious) {
-      setPreviousDeadline(nextDeadline)
-      setPreviousChangedAt(null)
-      setPreviousTasks([])
+    if (sameDeadline && options?.resetDrafts) {
       setTasks([])
       setChangeBaseDeadline(null)
       setTaskFinishBase(null)
@@ -619,15 +563,6 @@ export default function App() {
       return
     }
     if (sameDeadline) return
-    if (shouldSyncPrevious) {
-      setPreviousDeadline(nextDeadline)
-      setPreviousChangedAt(null)
-      setPreviousTasks([])
-    } else {
-      setPreviousDeadline(deadline)
-      setPreviousChangedAt(new Date())
-      setPreviousTasks(options?.tasks ?? [])
-    }
     setDeadlineExtensionAssignment(clearTextAfterDeadlineChange(deadlineExtensionAssignment))
     setNextAssignment(clearTextAfterDeadlineChange(nextAssignment))
     setDeadline(nextDeadline)
@@ -666,12 +601,10 @@ export default function App() {
   ])
 
   const deadlineExtensionMessage = useMemo(() => {
-    if (!previousDeadline) return ''
     if (!deadlineExtensionAssignment.trim()) return ''
     if (!deadlineExtensionConfirmedBy.trim()) return ''
     if (tasks.length === 0) return ''
-    const messagePreviousDeadline =
-      isAdjustedView && adjustedPreviousDeadline ? adjustedPreviousDeadline : previousDeadline
+    const messagePreviousDeadline = changeBaseDeadline ?? (isAdjustedView ? adjustedDeadline : deadline)
     return formatDeadlineExtensionMessage({
       previous: messagePreviousDeadline,
       next: new Date(deadlineMessageInput.deadlineIso),
@@ -680,12 +613,13 @@ export default function App() {
       assignee: deadlineExtensionConfirmedBy,
     })
   }, [
-    adjustedPreviousDeadline,
+    adjustedDeadline,
+    deadline,
     deadlineExtensionConfirmedBy,
+    changeBaseDeadline,
     deadlineExtensionAssignment,
     deadlineMessageInput,
     isAdjustedView,
-    previousDeadline,
     tasks,
   ])
 
@@ -776,8 +710,6 @@ export default function App() {
     const dueBase = pickTaskBatchBase(now, taskFinishBase)
     if (!changeBaseDeadline) {
       setChangeBaseDeadline(baseDeadline)
-      setPreviousDeadline(baseDeadline)
-      setPreviousChangedAt(new Date())
     }
     if (!taskFinishBase) {
       setTaskFinishBase(dueBase)
@@ -785,7 +717,6 @@ export default function App() {
     const totalMinutes = nextTasks.reduce((sum, task) => sum + task.minutes, 0)
     const nextDeadline = addWorkMinutes(baseDeadline, totalMinutes)
     setTasks(nextTasks)
-    setPreviousTasks(nextTasks)
     setDeadline(nextDeadline)
     setTaskName('')
     setTaskHours('')
@@ -799,7 +730,6 @@ export default function App() {
       tasks.filter((_, i) => i !== index)
     )
     setTasks(nextTasks)
-    setPreviousTasks(nextTasks)
     if (nextTasks.length === 0) {
       if (changeBaseDeadline) {
         setDeadline(changeBaseDeadline)
@@ -847,27 +777,23 @@ export default function App() {
     downloadTextFile(`assignment-history-${suffix}.json`, content, 'application/json;charset=utf-8')
   }
 
+  const assignmentTitle = deadlineExtensionAssignment.trim() || 'Assignment'
+
   return (
     <div className="app">
-      <div className="deadlineSection">
-        <div className="main">
-          <div className="block">
-            <div className="label">Previous deadline</div>
-            <div className="previous">
-              <button
-                type="button"
-                className="valueToggle previousValue"
-                aria-label="Toggle schedule display from previous deadline"
-                onClick={toggleAdjustedView}
-              >
-                <span aria-label="Previous deadline display">
-                  {displayPreviousDeadline ? fmtDateTimeWithWeekday(displayPreviousDeadline) : '—'}
-                  {isAdjustedView && displayPreviousDeadline ? ADJUSTED_SUFFIX : ''}
-                </span>
-              </button>
-            </div>
-          </div>
+      <div className="pageTopBar">
+        <span className="pageTopBarTitle">All assignments</span>
+      </div>
 
+      <div className="assignmentHero">
+        <div className="assignmentHeroIntro">
+          <span className="assignmentHeroTag">Focus</span>
+          <h1 className="assignmentHeroTitle">{assignmentTitle}</h1>
+        </div>
+      </div>
+
+      <div className="deadlineSection assignmentOverviewCard">
+        <div className="main">
           <div className="block">
             <div className="label">Deadline</div>
             <div className="deadline">
@@ -934,7 +860,7 @@ export default function App() {
       </div>
 
       <div className="taskSection">
-        <div className="taskSectionTitle">Tasks</div>
+        <div className="taskSectionTitle">Affecting deadlines</div>
         <div className="taskFields">
             <div className="fieldGroup taskTextField">
               <label className="fieldLabel" htmlFor="task-name">
@@ -988,7 +914,7 @@ export default function App() {
                     id="task-recent-list"
                     className="taskRecent"
                     role="listbox"
-                    aria-label="Recent tasks"
+                    aria-label="Recent assignments"
                   >
                     {filteredRecentTaskItems.map((name) => (
                       <button
@@ -1115,7 +1041,7 @@ export default function App() {
                 disabled={!taskName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
                 className="btn-primary"
               >
-                <i className="las la-plus" aria-hidden="true"></i> Add task
+                <i className="las la-plus" aria-hidden="true"></i> Add assignment
               </button>
             </div>
           </div>
@@ -1130,10 +1056,10 @@ export default function App() {
                 <button
                   type="button"
                   className="valueToggle taskDueValue"
-                  aria-label="Toggle schedule display from task due time"
+                  aria-label="Toggle schedule display from assignment due time"
                   onClick={toggleAdjustedView}
                 >
-                  <span aria-label="Task due time display">
+                  <span aria-label="Assignment due time display">
                     {isAdjustedView
                       ? `${formatTaskTimeWithDuration(adjustedTaskFinishTimes[index], adjustedTasks[index].minutes)}${ADJUSTED_SUFFIX}`
                       : formatTaskTimeWithDuration(taskFinishTimes[index], entry.minutes)}
@@ -1141,7 +1067,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => removeTaskEntry(index)}
-                  aria-label="Remove task"
+                  aria-label="Remove assignment"
                   className="btn-secondary taskRemoveButton"
                 >
                   <i className="las la-trash" aria-hidden="true"></i>
