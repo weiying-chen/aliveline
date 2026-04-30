@@ -17,6 +17,13 @@ function readHoursMinutes(label: string) {
   }
 }
 
+function openAddAssignmentForm() {
+  const toggle = screen.getByRole('button', { name: 'Toggle assignment form' })
+  if (toggle.getAttribute('aria-expanded') !== 'true') {
+    fireEvent.click(toggle)
+  }
+}
+
 describe('App deadline behavior', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -36,6 +43,7 @@ describe('App deadline behavior', () => {
     expect(deadlineTextBefore).toContain('2026-04-10')
     expect(deadlineTextBefore).toContain('12:00 PM')
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -51,6 +59,7 @@ describe('App deadline behavior', () => {
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -82,6 +91,7 @@ describe('App deadline behavior', () => {
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -114,6 +124,7 @@ describe('App deadline behavior', () => {
       target: { value: '2026-04-10T12:00' },
     })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -127,6 +138,7 @@ describe('App deadline behavior', () => {
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -164,6 +176,7 @@ describe('App deadline behavior', () => {
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2099-04-10T12:00' } })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -197,6 +210,7 @@ describe('App deadline behavior', () => {
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -226,6 +240,7 @@ describe('App deadline behavior', () => {
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-15T13:00' } })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -268,6 +283,7 @@ describe('App deadline behavior', () => {
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-15T16:00' } })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -326,6 +342,7 @@ describe('App deadline behavior', () => {
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-24T16:00' } })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Cross-day task' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '8' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -365,6 +382,7 @@ describe('App deadline behavior', () => {
       vi.advanceTimersByTime(60 * 60 * 1000)
     })
 
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Late added task' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
@@ -421,6 +439,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
     })
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '30' } })
@@ -501,6 +520,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Assignment name'), {
       target: { value: 'Task mutation assignment' },
     })
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } })
@@ -525,6 +545,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Assignment name'), {
       target: { value: 'Legacy key check' },
     })
+    openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })

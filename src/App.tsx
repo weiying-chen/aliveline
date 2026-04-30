@@ -260,6 +260,7 @@ export default function App() {
   const [isNextAssignmentPanelOpen, setIsNextAssignmentPanelOpen] = useState(() =>
     readStoredBool(LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY, false)
   )
+  const [isAddAssignmentFormOpen, setIsAddAssignmentFormOpen] = useState(false)
   const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>(() =>
     readStoredScheduleViewMode()
   )
@@ -737,6 +738,7 @@ export default function App() {
     setTaskName('')
     setTaskHours('')
     setTaskMinutes('')
+    setIsAddAssignmentFormOpen(false)
   }
 
   const removeTaskEntry = (index: number) => {
@@ -869,8 +871,28 @@ export default function App() {
       </div>
 
       <div className="taskSection">
-        <div className="taskSectionTitle">Affecting deadlines</div>
-        <div className="taskFields">
+        <div className="taskSectionHeader">
+          <div className="taskSectionTitle">Affecting deadlines</div>
+          <button
+            type="button"
+            className="taskSectionAddButton"
+            aria-label="Toggle assignment form"
+            aria-expanded={isAddAssignmentFormOpen}
+            aria-controls="add-assignment-form-panel"
+            onClick={() => setIsAddAssignmentFormOpen((prev) => !prev)}
+          >
+            <i className={`las ${isAddAssignmentFormOpen ? 'la-minus' : 'la-plus'}`} aria-hidden="true"></i>
+          </button>
+        </div>
+        <div
+          id="add-assignment-form-panel"
+          className="messagePanel"
+          data-state={isAddAssignmentFormOpen ? 'open' : 'closed'}
+          aria-hidden={!isAddAssignmentFormOpen}
+        >
+          <div className="messagePanelInner">
+            <fieldset disabled={!isAddAssignmentFormOpen} className="messageFieldset">
+              <div className="taskFields">
             <div className="fieldGroup taskTextField">
               <label className="fieldLabel" htmlFor="task-name">
                 Name
@@ -1054,6 +1076,9 @@ export default function App() {
               </button>
             </div>
           </div>
+            </fieldset>
+          </div>
+        </div>
 
         {tasks.length > 0 && (
           <div className="taskList">
