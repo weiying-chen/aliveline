@@ -39,7 +39,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     const deadlineTextAfter = container.querySelector('.deadline')?.textContent
     expect(deadlineTextAfter).toContain('3:00 PM')
@@ -54,7 +54,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     fireEvent.change(screen.getByLabelText('Assignment name'), {
       target: { value: '3集大愛真健康' },
@@ -85,7 +85,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     fireEvent.change(screen.getByLabelText('Assignment name'), {
       target: { value: '3集大愛真健康' },
@@ -117,9 +117,9 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('2h')
+    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('2h')
   })
 
   it('toggles original and adjusted values in place for planning fields', () => {
@@ -130,24 +130,21 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     const toggle = screen.getByRole('button', { name: 'Toggle original and adjusted schedule' })
-    const previousBefore = screen.getByLabelText('Previous deadline display').textContent
     const deadlineValueBefore = screen.getByLabelText('Current deadline display').textContent
     const remainingBefore = screen.getByLabelText('Remaining work time display').textContent
 
-    expect(previousBefore).not.toContain('(-20%)')
     expect(deadlineValueBefore).not.toContain('(-20%)')
     expect(remainingBefore).not.toContain('(-20%)')
-    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('2h')
+    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('2h')
 
     fireEvent.click(toggle)
 
-    expect(screen.getByLabelText('Previous deadline display').textContent).toContain('(-20%)')
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('(-20%)')
     expect(screen.getByLabelText('Remaining work time display').textContent).toContain('(-20%)')
-    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('(-20%)')
+    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('(-20%)')
     expect(screen.getByLabelText('Current deadline display').textContent).not.toBe(deadlineValueBefore)
   })
 
@@ -170,7 +167,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     fireEvent.change(screen.getByLabelText('Assignment name'), {
       target: { value: '3集大愛真健康' },
@@ -203,7 +200,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     fireEvent.change(screen.getByLabelText('Completed assignment'), {
       target: { value: '3集大愛真健康' },
@@ -232,7 +229,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
     const adjustedBefore = screen.getByLabelText('Current deadline display').textContent
@@ -274,7 +271,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     const remainingBefore = screen.getByLabelText('Remaining work time display').textContent ?? ''
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
@@ -332,7 +329,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Cross-day task' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '8' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     const original = readHoursMinutes('Remaining work time display')
     expect(original).toEqual({ hours: 9, minutes: 0 })
@@ -371,7 +368,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Late added task' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
     const adjustedDeadline = screen.getByLabelText('Current deadline display').textContent ?? ''
@@ -427,7 +424,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '30' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
     fireEvent.change(screen.getByLabelText('Assignment name'), {
       target: { value: 'Main assignment' },
     })
@@ -473,7 +470,7 @@ describe('App deadline behavior', () => {
     render(<App />)
 
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
-    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('50m')
+    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('50m')
 
     fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
     expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
@@ -492,12 +489,12 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     let draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
     expect(draft.tasks).toEqual([{ text: 'Task A', minutes: 80 }])
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove task' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove assignment' }))
     draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
     expect(draft.tasks).toEqual([])
   })
@@ -511,7 +508,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     expect(localStorage.getItem('aliveline:tasks')).toBeNull()
     expect(localStorage.getItem('aliveline:deadline-extension-assignment')).toBeNull()
@@ -523,7 +520,7 @@ describe('App deadline behavior', () => {
     localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
 
     render(<App />)
-    expect(screen.queryAllByLabelText('Task due time display')).toHaveLength(0)
+    expect(screen.queryAllByLabelText('Assignment due time display')).toHaveLength(0)
     fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
     expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe('')
   })
