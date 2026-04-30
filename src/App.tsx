@@ -8,6 +8,7 @@ import {
   sumAssignmentHistoryEntryMinutes,
   type AssignmentHistoryEntry,
 } from './utils/assignmentHistoryUnified'
+import { AccordionItem } from './components/Accordion'
 import { fromLegacyAssignmentDraft, toLegacyAssignmentDraft } from './utils/assignmentAdapters'
 import type { Assignment } from './utils/assignmentModel'
 import { formatDeadlineExtensionMessage, type TaskEntry } from './utils/deadlineHistory'
@@ -1087,244 +1088,188 @@ export default function App() {
       </div>
 
       <div className="messagesSection">
-      <div className="message" data-state={isTasksPanelOpen ? 'open' : 'closed'}>
-          <button
-            type="button"
-            className="messageHeader"
-            onClick={() => setIsTasksPanelOpen((prev) => !prev)}
-            aria-expanded={isTasksPanelOpen}
-            aria-controls="tasks-panel"
-          >
-            <span className="messageTitle">Deadline extension message</span>
-          </button>
-          <div
-            id="tasks-panel"
-            className="messagePanel"
-            data-state={isTasksPanelOpen ? 'open' : 'closed'}
-            aria-hidden={!isTasksPanelOpen}
-          >
-            <div className="messagePanelInner">
-              <fieldset disabled={!isTasksPanelOpen} className="messageFieldset">
-                <div className="messageBody">
-                  <div className="messageFields">
-                    <div className="fieldGroup">
-                      <label className="fieldLabel" htmlFor="deadline-extension-assignment">
-                        Assignment
-                      </label>
-                      <input
-                        id="deadline-extension-assignment"
-                        type="text"
-                        value={deadlineExtensionAssignment}
-                        onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
-                        placeholder="Assignment"
-                        aria-label="Assignment name"
-                      />
-                    </div>
-                    <div className="fieldGroup">
-                      <label className="fieldLabel" htmlFor="deadline-extension-confirmed-by">
-                        Confirmed by
-                      </label>
-                      <input
-                        id="deadline-extension-confirmed-by"
-                        type="text"
-                        value={deadlineExtensionConfirmedBy}
-                        onChange={(e) => setDeadlineExtensionConfirmedBy(e.target.value)}
-                        placeholder="Confirmed by"
-                        aria-label="Confirmed by"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="messagePreview" aria-label="Deadline extension message preview">
-                    {deadlineExtensionMessage || 'Fill all fields to generate a deadline extension message preview.'}
-                  </div>
-
-                  <div className="messageActions">
-                    <button
-                      onClick={onCopyDeadlineExtensionMessage}
-                      disabled={!deadlineExtensionMessage}
-                      className="btn-primary"
-                    >
-                      <i className="las la-copy" aria-hidden="true"></i> Copy
-                    </button>
-                    {deadlineExtensionCopyState === 'copied' && (
-                      <span className="copyStatus">Copied.</span>
-                    )}
-                    {deadlineExtensionCopyState === 'failed' && (
-                      <span className="copyStatus">Copy failed. Please copy manually.</span>
-                    )}
-                  </div>
+        <AccordionItem
+          title="Deadline extension message"
+          isOpen={isTasksPanelOpen}
+          onToggle={() => setIsTasksPanelOpen((prev) => !prev)}
+          panelId="tasks-panel"
+        >
+          <fieldset disabled={!isTasksPanelOpen} className="messageFieldset">
+            <div className="messageBody">
+              <div className="messageFields">
+                <div className="fieldGroup">
+                  <label className="fieldLabel" htmlFor="deadline-extension-assignment">
+                    Assignment
+                  </label>
+                  <input
+                    id="deadline-extension-assignment"
+                    type="text"
+                    value={deadlineExtensionAssignment}
+                    onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
+                    placeholder="Assignment"
+                    aria-label="Assignment name"
+                  />
                 </div>
-              </fieldset>
-            </div>
-          </div>
-      </div>
-
-      <div className="message" data-state={isNextAssignmentPanelOpen ? 'open' : 'closed'}>
-          <button
-            type="button"
-            className="messageHeader"
-            onClick={() => setIsNextAssignmentPanelOpen((prev) => !prev)}
-            aria-expanded={isNextAssignmentPanelOpen}
-            aria-controls="next-assignment-message-panel"
-          >
-            <span className="messageTitle">Next assignment message</span>
-          </button>
-          <div
-            id="next-assignment-message-panel"
-            className="messagePanel"
-            data-state={isNextAssignmentPanelOpen ? 'open' : 'closed'}
-            aria-hidden={!isNextAssignmentPanelOpen}
-          >
-            <div className="messagePanelInner">
-              <fieldset
-                disabled={!isNextAssignmentPanelOpen}
-                className="messageFieldset"
-              >
-                <div className="messageBody">
-                  <div className="nextAssignmentMessageFields">
-                    <div className="fieldGroup">
-                      <label
-                        className="fieldLabel"
-                        htmlFor="next-assignment-message-completed-assignment"
-                      >
-                        Completed assignment
-                      </label>
-                      <input
-                        id="next-assignment-message-completed-assignment"
-                        type="text"
-                        value={deadlineExtensionAssignment}
-                        onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
-                        placeholder="Completed assignment"
-                        aria-label="Completed assignment"
-                      />
-                    </div>
-                    <div className="fieldGroup">
-                      <label
-                        className="fieldLabel"
-                        htmlFor="next-assignment-message-next-assignment"
-                      >
-                        Next assignment
-                      </label>
-                      <input
-                        id="next-assignment-message-next-assignment"
-                        type="text"
-                        value={nextAssignment}
-                        onChange={(e) => setNextAssignment(e.target.value)}
-                        placeholder="Next assignment"
-                        aria-label="Next assignment"
-                      />
-                    </div>
-                    <div className="fieldGroup nextAssignmentMessageConfirmedBy">
-                      <label
-                        className="fieldLabel"
-                        htmlFor="next-assignment-message-confirmed-by"
-                      >
-                        Confirmed by
-                      </label>
-                      <input
-                        id="next-assignment-message-confirmed-by"
-                        type="text"
-                        value={nextAssignmentConfirmedBy}
-                        onChange={(e) => setNextAssignmentConfirmedBy(e.target.value)}
-                        placeholder="Confirmed by"
-                        aria-label="Next assignment message confirmed by"
-                      />
-                    </div>
-                    <div className="fieldGroup nextAssignmentStartAt">
-                      <label
-                        className="fieldLabel"
-                        htmlFor="next-assignment-message-start-at"
-                      >
-                        Start time
-                      </label>
-                      <input
-                        id="next-assignment-message-start-at"
-                        type="datetime-local"
-                        value={
-                          nextAssignmentStartAt
-                            ? toDatetimeLocalValue(nextAssignmentStartAt)
-                            : ''
-                        }
-                        disabled
-                        readOnly
-                        aria-label="Start time"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="messagePreview" aria-label="Next assignment message preview">
-                    {nextAssignmentMessage ||
-                      'Fill all fields to generate a next assignment message.'}
-                  </div>
-
-                  <div className="messageActions">
-                    <button
-                      onClick={onCopyNextAssignmentMessage}
-                      disabled={!nextAssignmentMessage}
-                      className="btn-primary"
-                    >
-                      <i className="las la-copy" aria-hidden="true"></i> Copy
-                    </button>
-                    {nextAssignmentCopyState === 'copied' && (
-                      <span className="copyStatus">Copied.</span>
-                    )}
-                    {nextAssignmentCopyState === 'failed' && (
-                      <span className="copyStatus">Copy failed. Please copy manually.</span>
-                    )}
-                  </div>
+                <div className="fieldGroup">
+                  <label className="fieldLabel" htmlFor="deadline-extension-confirmed-by">
+                    Confirmed by
+                  </label>
+                  <input
+                    id="deadline-extension-confirmed-by"
+                    type="text"
+                    value={deadlineExtensionConfirmedBy}
+                    onChange={(e) => setDeadlineExtensionConfirmedBy(e.target.value)}
+                    placeholder="Confirmed by"
+                    aria-label="Confirmed by"
+                  />
                 </div>
-              </fieldset>
+              </div>
+
+              <div className="messagePreview" aria-label="Deadline extension message preview">
+                {deadlineExtensionMessage ||
+                  'Fill all fields to generate a deadline extension message preview.'}
+              </div>
+
+              <div className="messageActions">
+                <button
+                  onClick={onCopyDeadlineExtensionMessage}
+                  disabled={!deadlineExtensionMessage}
+                  className="btn-primary"
+                >
+                  <i className="las la-copy" aria-hidden="true"></i> Copy
+                </button>
+                {deadlineExtensionCopyState === 'copied' && (
+                  <span className="copyStatus">Copied.</span>
+                )}
+                {deadlineExtensionCopyState === 'failed' && (
+                  <span className="copyStatus">Copy failed. Please copy manually.</span>
+                )}
+              </div>
             </div>
-          </div>
-      </div>
-      <div className="message" data-state={isAssignmentHistoryPanelOpen ? 'open' : 'closed'}>
-          <button
-            type="button"
-            className="messageHeader"
-            onClick={() => setIsAssignmentHistoryPanelOpen((prev) => !prev)}
-            aria-expanded={isAssignmentHistoryPanelOpen}
-            aria-controls="assignment-history-panel"
-          >
-            <span className="messageTitle">Assignment history export</span>
-          </button>
-          <div
-            id="assignment-history-panel"
-            className="messagePanel"
-            data-state={isAssignmentHistoryPanelOpen ? 'open' : 'closed'}
-            aria-hidden={!isAssignmentHistoryPanelOpen}
-          >
-            <div className="messagePanelInner">
-              <fieldset disabled={!isAssignmentHistoryPanelOpen} className="messageFieldset">
-                <div className="historyExportSection">
-                  <div className="fieldGroup historyExportMonthField">
-                    <label className="fieldLabel" htmlFor="assignment-history-month">
-                      Month
-                    </label>
-                    <input
-                      id="assignment-history-month"
-                      type="month"
-                      value={historyMonth}
-                      onChange={(e) => setHistoryMonth(e.target.value)}
-                      aria-label="Month"
-                    />
-                  </div>
-                  <div className="historyExportMeta metaTextMutedSm">
-                    {monthlyAssignmentHistory.length} assignments, {(monthlyHistoryMinutes / 60).toFixed(2)} hours
-                  </div>
-                  <div className="historyExportActions">
-                    <button onClick={onExportAssignmentHistoryCsv} className="btn-secondary">
-                      <i className="las la-file-csv" aria-hidden="true"></i> Export CSV
-                    </button>
-                    <button onClick={onExportAssignmentHistoryJson} className="btn-secondary">
-                      <i className="las la-file-code" aria-hidden="true"></i> Export JSON
-                    </button>
-                  </div>
+          </fieldset>
+        </AccordionItem>
+
+        <AccordionItem
+          title="Next assignment message"
+          isOpen={isNextAssignmentPanelOpen}
+          onToggle={() => setIsNextAssignmentPanelOpen((prev) => !prev)}
+          panelId="next-assignment-message-panel"
+        >
+          <fieldset disabled={!isNextAssignmentPanelOpen} className="messageFieldset">
+            <div className="messageBody">
+              <div className="nextAssignmentMessageFields">
+                <div className="fieldGroup">
+                  <label
+                    className="fieldLabel"
+                    htmlFor="next-assignment-message-completed-assignment"
+                  >
+                    Completed assignment
+                  </label>
+                  <input
+                    id="next-assignment-message-completed-assignment"
+                    type="text"
+                    value={deadlineExtensionAssignment}
+                    onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
+                    placeholder="Completed assignment"
+                    aria-label="Completed assignment"
+                  />
                 </div>
-              </fieldset>
+                <div className="fieldGroup">
+                  <label className="fieldLabel" htmlFor="next-assignment-message-next-assignment">
+                    Next assignment
+                  </label>
+                  <input
+                    id="next-assignment-message-next-assignment"
+                    type="text"
+                    value={nextAssignment}
+                    onChange={(e) => setNextAssignment(e.target.value)}
+                    placeholder="Next assignment"
+                    aria-label="Next assignment"
+                  />
+                </div>
+                <div className="fieldGroup nextAssignmentMessageConfirmedBy">
+                  <label className="fieldLabel" htmlFor="next-assignment-message-confirmed-by">
+                    Confirmed by
+                  </label>
+                  <input
+                    id="next-assignment-message-confirmed-by"
+                    type="text"
+                    value={nextAssignmentConfirmedBy}
+                    onChange={(e) => setNextAssignmentConfirmedBy(e.target.value)}
+                    placeholder="Confirmed by"
+                    aria-label="Next assignment message confirmed by"
+                  />
+                </div>
+                <div className="fieldGroup nextAssignmentStartAt">
+                  <label className="fieldLabel" htmlFor="next-assignment-message-start-at">
+                    Start time
+                  </label>
+                  <input
+                    id="next-assignment-message-start-at"
+                    type="datetime-local"
+                    value={nextAssignmentStartAt ? toDatetimeLocalValue(nextAssignmentStartAt) : ''}
+                    disabled
+                    readOnly
+                    aria-label="Start time"
+                  />
+                </div>
+              </div>
+
+              <div className="messagePreview" aria-label="Next assignment message preview">
+                {nextAssignmentMessage || 'Fill all fields to generate a next assignment message.'}
+              </div>
+
+              <div className="messageActions">
+                <button
+                  onClick={onCopyNextAssignmentMessage}
+                  disabled={!nextAssignmentMessage}
+                  className="btn-primary"
+                >
+                  <i className="las la-copy" aria-hidden="true"></i> Copy
+                </button>
+                {nextAssignmentCopyState === 'copied' && <span className="copyStatus">Copied.</span>}
+                {nextAssignmentCopyState === 'failed' && (
+                  <span className="copyStatus">Copy failed. Please copy manually.</span>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
+          </fieldset>
+        </AccordionItem>
+
+        <AccordionItem
+          title="Assignment history export"
+          isOpen={isAssignmentHistoryPanelOpen}
+          onToggle={() => setIsAssignmentHistoryPanelOpen((prev) => !prev)}
+          panelId="assignment-history-panel"
+        >
+          <fieldset disabled={!isAssignmentHistoryPanelOpen} className="messageFieldset">
+            <div className="historyExportSection">
+              <div className="fieldGroup historyExportMonthField">
+                <label className="fieldLabel" htmlFor="assignment-history-month">
+                  Month
+                </label>
+                <input
+                  id="assignment-history-month"
+                  type="month"
+                  value={historyMonth}
+                  onChange={(e) => setHistoryMonth(e.target.value)}
+                  aria-label="Month"
+                />
+              </div>
+              <div className="historyExportMeta metaTextMutedSm">
+                {monthlyAssignmentHistory.length} assignments, {(monthlyHistoryMinutes / 60).toFixed(2)} hours
+              </div>
+              <div className="historyExportActions">
+                <button onClick={onExportAssignmentHistoryCsv} className="btn-secondary">
+                  <i className="las la-file-csv" aria-hidden="true"></i> Export CSV
+                </button>
+                <button onClick={onExportAssignmentHistoryJson} className="btn-secondary">
+                  <i className="las la-file-code" aria-hidden="true"></i> Export JSON
+                </button>
+              </div>
+            </div>
+          </fieldset>
+        </AccordionItem>
       </div>
     </div>
   )
