@@ -22,7 +22,7 @@ body {
   justify-content: flex-start;
 }
 
-.taskSection,
+.assignmentSection,
 .messagesSection,
 .deadlineSection {
   max-width: 640px;
@@ -250,7 +250,7 @@ input[readonly] {
 .message + .message {
 }
 
-.taskSection {
+.assignmentSection {
   margin-top: 0;
   margin-bottom: 24px;
   text-align: left;
@@ -284,24 +284,24 @@ input[readonly] {
   flex-wrap: wrap;
 }
 
-.taskSectionTitle {
+.assignmentSectionTitle {
   font-size: 16px;
   font-weight: 600;
   margin: 0 0 var(--space-2);
 }
 
-.taskSectionHeader {
+.assignmentSectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-2);
 }
 
-.taskSectionHeader .taskSectionTitle {
+.assignmentSectionHeader .assignmentSectionTitle {
   margin: 0;
 }
 
-.taskSectionAddButton {
+.assignmentSectionAddButton {
   min-width: 24px;
   width: 24px;
   height: 24px;
@@ -316,13 +316,13 @@ input[readonly] {
   justify-content: center;
 }
 
-.taskSectionAddButton i {
+.assignmentSectionAddButton i {
   font-size: 20px;
   line-height: 1;
 }
 
-.taskSectionAddButton:hover,
-.taskSectionAddButton:focus-visible {
+.assignmentSectionAddButton:hover,
+.assignmentSectionAddButton:focus-visible {
   color: var(--primary);
   box-shadow: none;
   outline: none;
@@ -460,23 +460,23 @@ input[readonly] {
   grid-column: 1 / -1;
 }
 
-.taskFields {
+.assignmentFields {
   display: grid;
   gap: var(--space-2);
   margin: 0 0 var(--space-3);
   grid-template-columns: 1fr 100px 120px auto;
 }
 
-.taskInputWrap {
+.assignmentInputWrap {
   position: relative;
   min-width: 0;
 }
 
-.taskInputWrap input {
+.assignmentInputWrap input {
   width: 100%;
 }
 
-.taskRecent {
+.assignmentRecent {
   position: absolute;
   left: 0;
   right: 0;
@@ -492,7 +492,7 @@ input[readonly] {
   z-index: 2;
 }
 
-.taskRecentItem {
+.assignmentRecentItem {
   border: 0;
   border-radius: 0;
   width: 100%;
@@ -504,34 +504,34 @@ input[readonly] {
   cursor: pointer;
 }
 
-.taskRecentItem:hover,
-.taskRecentItem:focus-visible,
-.taskRecentItem[data-state='active'] {
+.assignmentRecentItem:hover,
+.assignmentRecentItem:focus-visible,
+.assignmentRecentItem[data-state='active'] {
   background: var(--secondary);
   box-shadow: none;
   outline: none;
 }
 
-.taskMinutesInputWrap {
+.assignmentMinutesInputWrap {
   position: relative;
 }
 
-.taskHoursInputWrap {
+.assignmentHoursInputWrap {
   position: relative;
 }
 
-.taskHoursInputWrap input {
+.assignmentHoursInputWrap input {
   width: 100%;
   padding-right: 30px;
 }
 
-.taskMinutesInputWrap input {
+.assignmentMinutesInputWrap input {
   width: 100%;
   padding-right: 30px;
 }
 
-.taskHoursStepButtons,
-.taskMinutesStepButtons {
+.assignmentHoursStepButtons,
+.assignmentMinutesStepButtons {
   position: absolute;
   right: 4px;
   top: 50%;
@@ -542,7 +542,7 @@ input[readonly] {
   gap: 0;
 }
 
-.taskStepButton {
+.assignmentStepButton {
   min-width: 22px;
   width: 22px;
   height: 12px;
@@ -559,40 +559,40 @@ input[readonly] {
   box-shadow: none;
 }
 
-.taskStepButton[data-dir='up'] {
+.assignmentStepButton[data-dir='up'] {
   transform: rotate(180deg);
 }
 
-.taskStepButton:hover {
+.assignmentStepButton:hover {
   box-shadow: none;
   background-color: transparent;
 }
 
-.taskStepButton:focus-visible {
+.assignmentStepButton:focus-visible {
   outline: none;
   box-shadow: none;
 }
 
-.taskHoursInputWrap input::-webkit-outer-spin-button,
-.taskHoursInputWrap input::-webkit-inner-spin-button,
-.taskMinutesInputWrap input::-webkit-outer-spin-button,
-.taskMinutesInputWrap input::-webkit-inner-spin-button {
+.assignmentHoursInputWrap input::-webkit-outer-spin-button,
+.assignmentHoursInputWrap input::-webkit-inner-spin-button,
+.assignmentMinutesInputWrap input::-webkit-outer-spin-button,
+.assignmentMinutesInputWrap input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.taskHoursInputWrap input[type='number'],
-.taskMinutesInputWrap input[type='number'] {
+.assignmentHoursInputWrap input[type='number'],
+.assignmentMinutesInputWrap input[type='number'] {
   -moz-appearance: textfield;
 }
 
-.taskList {
+.assignmentList {
   display: grid;
   gap: var(--space-2);
   text-align: left;
 }
 
-.taskRow {
+.assignmentRow {
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: var(--space-2);
@@ -604,25 +604,25 @@ input[readonly] {
   text-align: left;
 }
 
-.taskInfo {
+.assignmentInfo {
   display: grid;
   gap: 2px;
   min-width: 0;
 }
 
-.taskName {
+.assignmentName {
   font-size: 18px;
   font-weight: 600;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
-.taskFinishAt {
+.assignmentFinishAt {
   font-size: 12px;
   color: var(--muted);
 }
 
-.taskRemoveButton {
+.assignmentRemoveButton {
   min-width: 40px;
   width: 40px;
   padding: 0;
@@ -631,7 +631,7 @@ input[readonly] {
   justify-content: center;
 }
 
-.taskRemoveButton i {
+.assignmentRemoveButton i {
   font-size: 18px;
   line-height: 1;
 }
@@ -653,7 +653,7 @@ input[readonly] {
   box-shadow: none;
 }
 
-.taskList .taskRow:last-child {
+.assignmentList .assignmentRow:last-child {
   margin-bottom: 0;
 }
 
@@ -693,15 +693,15 @@ input[readonly] {
     grid-template-columns: 1fr;
   }
 
-  .taskFields {
+  .assignmentFields {
     grid-template-columns: 1fr;
   }
 
-  .taskRow {
+  .assignmentRow {
     grid-template-columns: 1fr auto;
   }
 
-  .taskRow .taskRemoveButton {
+  .assignmentRow .assignmentRemoveButton {
     grid-column: 1 / -1;
   }
 }
