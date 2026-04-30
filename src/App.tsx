@@ -781,13 +781,8 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="pageTopBar">
-        <span className="pageTopBarTitle">All assignments</span>
-      </div>
-
       <div className="assignmentHero">
         <div className="assignmentHeroIntro">
-          <span className="assignmentHeroTag">Focus</span>
           <h1 className="assignmentHeroTitle">{assignmentTitle}</h1>
         </div>
       </div>
