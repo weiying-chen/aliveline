@@ -461,9 +461,24 @@ describe('App deadline behavior', () => {
     localStorage.setItem(
       'aliveline:assignment-draft',
       JSON.stringify({
-        deadlineIso: '2026-04-10T12:00:00.000Z',
-        assignmentTitle: 'Boot assignment',
-        tasks: [{ text: 'Boot task', minutes: 50 }],
+        rootAssignmentId: 'legacy-root',
+        assignments: [
+          {
+            id: 'legacy-root',
+            title: 'Boot assignment',
+            deadlineIso: '2026-04-10T12:00:00.000Z',
+            status: 'todo',
+            relations: [{ assignmentId: 'legacy-task-0', type: 'extends' }],
+          },
+          {
+            id: 'legacy-task-0',
+            title: 'Boot task',
+            deadlineIso: '2026-04-10T12:00:00.000Z',
+            status: 'todo',
+            estimateMinutes: 50,
+            relations: [],
+          },
+        ],
       })
     )
 
@@ -478,7 +493,7 @@ describe('App deadline behavior', () => {
     )
   })
 
-  it('updates assignment draft tasks when task list changes', () => {
+  it('updates assignment draft assignments when list changes', () => {
     render(<App />)
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
@@ -492,11 +507,16 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     let draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
-    expect(draft.tasks).toEqual([{ text: 'Task A', minutes: 80 }])
+    expect(draft.rootAssignmentId).toBe('legacy-root')
+    expect(Array.isArray(draft.assignments)).toBe(true)
+    const firstTask = draft.assignments.find((item: { id: string }) => item.id === 'legacy-task-0')
+    expect(firstTask?.title).toBe('Task A')
+    expect(firstTask?.estimateMinutes).toBe(80)
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove assignment' }))
     draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
-    expect(draft.tasks).toEqual([])
+    const assignmentIds = draft.assignments.map((item: { id: string }) => item.id)
+    expect(assignmentIds).toEqual(['legacy-root'])
   })
 
   it('does not persist legacy v1 draft keys', () => {

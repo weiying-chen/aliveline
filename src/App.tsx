@@ -9,6 +9,7 @@ import {
   type AssignmentHistoryEntry,
 } from './utils/assignmentHistoryUnified'
 import { fromLegacyAssignmentDraft, toLegacyAssignmentDraft } from './utils/assignmentAdapters'
+import type { Assignment } from './utils/assignmentModel'
 import { formatDeadlineExtensionMessage, type TaskEntry } from './utils/deadlineHistory'
 import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
@@ -92,6 +93,8 @@ function sanitizeTaskEntries(entries: unknown) {
 }
 
 type AssignmentDraftV2 = {
+  rootAssignmentId: string
+  assignments: Assignment[]
   deadlineIso: string
   assignmentTitle: string
   tasks: TaskEntry[]
@@ -102,17 +105,22 @@ function readStoredAssignmentDraft() {
   if (!saved) return null
   try {
     const parsed = JSON.parse(saved) as {
-      deadlineIso?: unknown
-      assignmentTitle?: unknown
-      tasks?: unknown
+      rootAssignmentId?: unknown
+      assignments?: unknown
     }
-    if (typeof parsed.deadlineIso !== 'string') return null
-    if (Number.isNaN(new Date(parsed.deadlineIso).getTime())) return null
-    if (typeof parsed.assignmentTitle !== 'string') return null
+    if (typeof parsed.rootAssignmentId !== 'string') return null
+    if (!Array.isArray(parsed.assignments)) return null
+    const legacyDraft = toLegacyAssignmentDraft(
+      parsed.assignments as Assignment[],
+      parsed.rootAssignmentId
+    )
+    if (Number.isNaN(new Date(legacyDraft.deadlineIso).getTime())) return null
     return {
-      deadlineIso: parsed.deadlineIso,
-      assignmentTitle: parsed.assignmentTitle,
-      tasks: sanitizeTaskEntries(parsed.tasks),
+      rootAssignmentId: parsed.rootAssignmentId,
+      assignments: parsed.assignments as Assignment[],
+      deadlineIso: legacyDraft.deadlineIso,
+      assignmentTitle: legacyDraft.assignmentTitle,
+      tasks: sanitizeTaskEntries(legacyDraft.tasks),
     } as AssignmentDraftV2
   } catch {
     return null
@@ -313,7 +321,14 @@ export default function App() {
   }, [taskFinishBase])
 
   useEffect(() => {
+    const assignments = fromLegacyAssignmentDraft({
+      assignmentTitle: deadlineExtensionAssignment,
+      deadlineIso: deadline.toISOString(),
+      tasks,
+    })
     const nextDraft: AssignmentDraftV2 = {
+      rootAssignmentId: 'legacy-root',
+      assignments,
       deadlineIso: deadline.toISOString(),
       assignmentTitle: deadlineExtensionAssignment,
       tasks,
@@ -781,13 +796,11 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="assignmentHero">
-        <div className="assignmentHeroIntro">
-          <h1 className="assignmentHeroTitle">{assignmentTitle}</h1>
-        </div>
-      </div>
-
       <div className="deadlineSection assignmentOverviewCard">
+        <div className="assignmentOverviewHeader">
+          <h1 className="assignmentOverviewTitle">{assignmentTitle}</h1>
+        </div>
+
         <div className="main">
           <div className="block">
             <div className="label">Deadline</div>
