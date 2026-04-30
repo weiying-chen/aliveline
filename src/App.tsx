@@ -10,8 +10,8 @@ import {
 } from './utils/assignmentHistoryUnified'
 import { AccordionItem } from './components/Accordion'
 import { fromLegacyAssignmentDraft, toLegacyAssignmentDraft } from './utils/assignmentAdapters'
-import type { Assignment } from './utils/assignmentModel'
-import { formatDeadlineExtensionMessage, type TaskEntry } from './utils/deadlineHistory'
+import { buildAssignment, type Assignment } from './utils/assignmentModel'
+import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
 import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
 import { syncNextAssignmentMessageStartWithDeadline } from './utils/nextAssignmentMessageStart'
@@ -27,7 +27,6 @@ import { updateRecentTaskNames } from './utils/taskHistory'
 import {
   applyMinutesDeltaWithCarry,
   calculateTaskFinishTimes,
-  formatTaskTimeWithDuration,
   minutesFromTimeParts,
   normalizeTaskTimeParts,
   pickTaskBatchBase,
@@ -139,6 +138,31 @@ function normalizeTasksViaUnified(deadline: Date, assignmentTitle: string, tasks
   ).tasks
 }
 
+function buildDraftAssignments(
+  deadline: Date,
+  assignmentTitle: string,
+  tasks: TaskEntry[],
+  taskFinishTimes: Date[]
+) {
+  const taskAssignments = tasks.map((task, index) =>
+    buildAssignment({
+      id: `legacy-task-${index}`,
+      title: task.text,
+      deadlineIso: (taskFinishTimes[index] ?? deadline).toISOString(),
+      estimateMinutes: task.minutes,
+    })
+  )
+
+  const root = buildAssignment({
+    id: 'legacy-root',
+    title: assignmentTitle,
+    deadlineIso: deadline.toISOString(),
+    relations: taskAssignments.map((task) => ({ assignmentId: task.id, type: 'extends' })),
+  })
+
+  return [root, ...taskAssignments]
+}
+
 function readStoredStringList(key: string) {
   const saved = localStorage.getItem(key)
   if (!saved) return [] as string[]
@@ -221,7 +245,7 @@ export default function App() {
   const [taskFinishBase, setTaskFinishBase] = useState<Date | null>(() =>
     readStoredDate(LS_TASK_FINISH_BASE_KEY)
   )
-  const [taskName, setTaskName] = useState('')
+  const [assignmentName, setTaskName] = useState('')
   const [taskHours, setTaskHours] = useState('')
   const [taskMinutes, setTaskMinutes] = useState('')
   const [isRecentOpen, setIsRecentOpen] = useState(false)
@@ -323,22 +347,6 @@ export default function App() {
   }, [taskFinishBase])
 
   useEffect(() => {
-    const assignments = fromLegacyAssignmentDraft({
-      assignmentTitle: deadlineExtensionAssignment,
-      deadlineIso: deadline.toISOString(),
-      tasks,
-    })
-    const nextDraft: AssignmentDraftV2 = {
-      rootAssignmentId: 'legacy-root',
-      assignments,
-      deadlineIso: deadline.toISOString(),
-      assignmentTitle: deadlineExtensionAssignment,
-      tasks,
-    }
-    localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
-  }, [deadline, deadlineExtensionAssignment, tasks])
-
-  useEffect(() => {
     const todayKey = dateKey(now)
     const savedKey = localStorage.getItem(LS_DAILY_CLEAR_KEY)
     if (savedKey === todayKey) return
@@ -412,10 +420,22 @@ export default function App() {
       })),
     [currentTaskMultiplier, projectionTasks]
   )
-  const adjustedTaskFinishTimes = useMemo(
-    () => calculateTaskFinishTimes(taskFinishStart, adjustedTasks),
-    [adjustedTasks, taskFinishStart]
-  )
+  useEffect(() => {
+    const assignments = buildDraftAssignments(
+      deadline,
+      deadlineExtensionAssignment,
+      tasks,
+      taskFinishTimes
+    )
+    const nextDraft: AssignmentDraftV2 = {
+      rootAssignmentId: 'legacy-root',
+      assignments,
+      deadlineIso: deadline.toISOString(),
+      assignmentTitle: deadlineExtensionAssignment,
+      tasks,
+    }
+    localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
+  }, [deadline, deadlineExtensionAssignment, tasks, taskFinishTimes])
   const selectedHistoryMonth = useMemo(() => {
     const match = /^(\d{4})-(\d{2})$/.exec(historyMonth)
     if (!match) return null
@@ -641,10 +661,10 @@ export default function App() {
   ])
 
   const filteredRecentTaskItems = useMemo(() => {
-    const needle = taskName.trim().toLowerCase()
+    const needle = assignmentName.trim().toLowerCase()
     if (!needle) return recentTasks
     return recentTasks.filter((item) => item.toLowerCase().includes(needle))
-  }, [recentTasks, taskName])
+  }, [recentTasks, assignmentName])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -713,9 +733,9 @@ export default function App() {
 
   const addTaskEntry = () => {
     const minutes = minutesFromTimeParts(taskHours, taskMinutes)
-    if (!taskName.trim() || minutes === null) return
+    if (!assignmentName.trim() || minutes === null) return
     const entry: TaskEntry = {
-      text: taskName.trim(),
+      text: assignmentName.trim(),
       minutes: Math.round(minutes),
     }
     setRecentTasks((prev) => updateRecentTaskNames(prev, entry.text))
@@ -870,12 +890,12 @@ export default function App() {
         </div>
       </div>
 
-      <div className="taskSection">
-        <div className="taskSectionHeader">
-          <div className="taskSectionTitle">Affecting deadlines</div>
+      <div className="assignmentSection">
+        <div className="assignmentSectionHeader">
+          <div className="assignmentSectionTitle">Affecting deadlines</div>
           <button
             type="button"
-            className="taskSectionAddButton"
+            className="assignmentSectionAddButton"
             aria-label="Toggle assignment form"
             aria-expanded={isAddAssignmentFormOpen}
             aria-controls="add-assignment-form-panel"
@@ -892,16 +912,16 @@ export default function App() {
         >
           <div className="messagePanelInner">
             <fieldset disabled={!isAddAssignmentFormOpen} className="messageFieldset">
-              <div className="taskFields">
-            <div className="fieldGroup taskTextField">
+              <div className="assignmentFields">
+            <div className="fieldGroup assignmentTextField">
               <label className="fieldLabel" htmlFor="task-name">
                 Name
               </label>
-              <div className="taskInputWrap">
+              <div className="assignmentInputWrap">
                 <input
                   id="task-name"
                   type="text"
-                  value={taskName}
+                  value={assignmentName}
                   onChange={(e) => {
                     const nextValue = e.target.value
                     setTaskName(nextValue)
@@ -943,7 +963,7 @@ export default function App() {
                 {isRecentOpen && filteredRecentTaskItems.length > 0 && (
                   <div
                     id="task-recent-list"
-                    className="taskRecent"
+                    className="assignmentRecent"
                     role="listbox"
                     aria-label="Recent assignments"
                   >
@@ -951,7 +971,7 @@ export default function App() {
                       <button
                         key={name}
                         type="button"
-                        className="taskRecentItem"
+                        className="assignmentRecentItem"
                         data-state={
                           name === filteredRecentTaskItems[recentActiveIndex] ? 'active' : 'idle'
                         }
@@ -973,7 +993,7 @@ export default function App() {
               <label className="fieldLabel" htmlFor="task-hours">
                 Hours
               </label>
-              <div className="taskHoursInputWrap">
+              <div className="assignmentHoursInputWrap">
                 <input
                   id="task-hours"
                   type="number"
@@ -996,10 +1016,10 @@ export default function App() {
                   placeholder="Hours"
                   aria-label="Hours"
                 />
-                <div className="taskHoursStepButtons">
+                <div className="assignmentHoursStepButtons">
                   <button
                     type="button"
-                    className="taskStepButton"
+                    className="assignmentStepButton"
                     data-dir="up"
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => onStepTaskHours(1)}
@@ -1007,7 +1027,7 @@ export default function App() {
                   />
                   <button
                     type="button"
-                    className="taskStepButton"
+                    className="assignmentStepButton"
                     data-dir="down"
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => onStepTaskHours(-1)}
@@ -1020,7 +1040,7 @@ export default function App() {
               <label className="fieldLabel" htmlFor="task-minutes">
                 Minutes
               </label>
-              <div className="taskMinutesInputWrap">
+              <div className="assignmentMinutesInputWrap">
                 <input
                   id="task-minutes"
                   type="number"
@@ -1043,10 +1063,10 @@ export default function App() {
                   placeholder="Minutes"
                   aria-label="Minutes"
                 />
-                <div className="taskMinutesStepButtons">
+                <div className="assignmentMinutesStepButtons">
                   <button
                     type="button"
-                    className="taskStepButton"
+                    className="assignmentStepButton"
                     data-dir="up"
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => onStepTaskMinutes(10)}
@@ -1054,7 +1074,7 @@ export default function App() {
                   />
                   <button
                     type="button"
-                    className="taskStepButton"
+                    className="assignmentStepButton"
                     data-dir="down"
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => onStepTaskMinutes(-10)}
@@ -1069,7 +1089,7 @@ export default function App() {
               </span>
               <button
                 onClick={addTaskEntry}
-                disabled={!taskName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
+                disabled={!assignmentName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
                 className="btn-primary"
               >
                 <i className="las la-plus" aria-hidden="true"></i> Add assignment
@@ -1081,28 +1101,28 @@ export default function App() {
         </div>
 
         {tasks.length > 0 && (
-          <div className="taskList">
+          <div className="assignmentList">
             {tasks.map((entry, index) => (
-              <div key={`${entry.text}-${index}`} className="taskRow">
-                <div className="taskInfo">
-                  <span className="taskName">{entry.text}</span>
+              <div key={`${entry.text}-${index}`} className="assignmentRow">
+                <div className="assignmentInfo">
+                  <span className="assignmentName">{entry.text}</span>
                 </div>
                 <button
                   type="button"
-                  className="valueToggle taskDueValue"
+                  className="valueToggle assignmentDueValue"
                   aria-label="Toggle schedule display from assignment due time"
                   onClick={toggleAdjustedView}
                 >
                   <span aria-label="Assignment due time display">
                     {isAdjustedView
-                      ? `${formatTaskTimeWithDuration(adjustedTaskFinishTimes[index], adjustedTasks[index].minutes)}${ADJUSTED_SUFFIX}`
-                      : formatTaskTimeWithDuration(taskFinishTimes[index], entry.minutes)}
+                      ? `${formatDuration(adjustedTasks[index].minutes)}${ADJUSTED_SUFFIX}`
+                      : formatDuration(entry.minutes)}
                   </span>
                 </button>
                 <button
                   onClick={() => removeTaskEntry(index)}
                   aria-label="Remove assignment"
-                  className="btn-secondary taskRemoveButton"
+                  className="btn-secondary assignmentRemoveButton"
                 >
                   <i className="las la-trash" aria-hidden="true"></i>
                 </button>
