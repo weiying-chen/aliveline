@@ -455,14 +455,14 @@ describe('App deadline behavior', () => {
     })
   })
 
-  it('boots from assignment draft v2 storage', () => {
+  it('boots from assignment draft storage', () => {
     const now = new Date()
     const y = now.getFullYear()
     const m = `${now.getMonth() + 1}`.padStart(2, '0')
     const d = `${now.getDate()}`.padStart(2, '0')
     localStorage.setItem('aliveline:daily-clear', `${y}-${m}-${d}`)
     localStorage.setItem(
-      'aliveline:assignment-draft-v2',
+      'aliveline:assignment-draft',
       JSON.stringify({
         deadlineIso: '2026-04-10T12:00:00.000Z',
         assignmentTitle: 'Boot assignment',
@@ -481,7 +481,7 @@ describe('App deadline behavior', () => {
     )
   })
 
-  it('updates assignment draft v2 tasks when task list changes', () => {
+  it('updates assignment draft tasks when task list changes', () => {
     render(<App />)
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
@@ -494,11 +494,11 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } })
     fireEvent.click(screen.getByRole('button', { name: /add task/i }))
 
-    let draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft-v2') ?? '{}')
+    let draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
     expect(draft.tasks).toEqual([{ text: 'Task A', minutes: 80 }])
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove task' }))
-    draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft-v2') ?? '{}')
+    draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
     expect(draft.tasks).toEqual([])
   })
 
@@ -515,62 +515,17 @@ describe('App deadline behavior', () => {
 
     expect(localStorage.getItem('aliveline:tasks')).toBeNull()
     expect(localStorage.getItem('aliveline:deadline-extension-assignment')).toBeNull()
-    expect(localStorage.getItem('aliveline:assignment-draft-v2')).toBeTruthy()
+    expect(localStorage.getItem('aliveline:assignment-draft')).toBeTruthy()
   })
 
-  it('boots from v1 fallback when v2 is missing', () => {
-    localStorage.setItem('aliveline:tasks', JSON.stringify([{ text: 'Legacy task', minutes: 40 }]))
-    localStorage.setItem('aliveline:deadline-extension-assignment', 'Legacy assignment')
-    localStorage.setItem('aliveline:deadline-iso', '2026-04-11T08:00:00.000Z')
+  it('ignores malformed draft key payload', () => {
+    localStorage.setItem('aliveline:assignment-draft', '{"deadlineIso":123}')
     localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
 
     render(<App />)
-    expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-11')
-    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('40m')
-
+    expect(screen.queryAllByLabelText('Task due time display')).toHaveLength(0)
     fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
-    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
-      'Legacy assignment'
-    )
-  })
-
-  it('prefers v2 for tasks/title and keeps v1 deadline when both exist', () => {
-    localStorage.setItem(
-      'aliveline:assignment-draft-v2',
-      JSON.stringify({
-        deadlineIso: '2026-04-12T09:00:00.000Z',
-        assignmentTitle: 'V2 assignment',
-        tasks: [{ text: 'V2 task', minutes: 70 }],
-      })
-    )
-    localStorage.setItem('aliveline:tasks', JSON.stringify([{ text: 'V1 task', minutes: 20 }]))
-    localStorage.setItem('aliveline:deadline-extension-assignment', 'V1 assignment')
-    localStorage.setItem('aliveline:deadline-iso', '2026-04-13T08:00:00.000Z')
-    localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
-
-    render(<App />)
-    expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-13')
-    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('1h 10m')
-    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
-    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
-      'V2 assignment'
-    )
-  })
-
-  it('falls back to v1 when v2 is malformed', () => {
-    localStorage.setItem('aliveline:assignment-draft-v2', '{"deadlineIso":123}')
-    localStorage.setItem('aliveline:tasks', JSON.stringify([{ text: 'V1 task', minutes: 25 }]))
-    localStorage.setItem('aliveline:deadline-extension-assignment', 'V1 fallback assignment')
-    localStorage.setItem('aliveline:deadline-iso', '2026-04-14T10:00:00.000Z')
-    localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
-
-    render(<App />)
-    expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-14')
-    expect(screen.getAllByLabelText('Task due time display')[0].textContent).toContain('25m')
-    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
-    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
-      'V1 fallback assignment'
-    )
+    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe('')
   })
 
 })

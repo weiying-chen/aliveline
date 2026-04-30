@@ -50,11 +50,9 @@ const LS_DEADLINE_KEY = 'aliveline:deadline-iso'
 const LS_PREV_DEADLINE_KEY = 'aliveline:previous-deadline-iso'
 const LS_PREV_CHANGED_KEY = 'aliveline:previous-deadline-changed-iso'
 const LS_PREV_TASKS_KEY = 'aliveline:previous-tasks'
-const LS_TASKS_KEY = 'aliveline:tasks' // legacy fallback read only
 const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
 const LS_TASK_FINISH_BASE_KEY = 'aliveline:task-finish-base-iso'
-const LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY = 'aliveline:deadline-extension-assignment' // legacy fallback read only
 const LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY = 'aliveline:deadline-extension-confirmed-by'
 const LS_NEXT_ASSIGNMENT_KEY = 'aliveline:next-assignment'
 const LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY = 'aliveline:next-assignment-confirmed-by'
@@ -71,7 +69,7 @@ const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
-const LS_ASSIGNMENT_DRAFT_V2_KEY = 'aliveline:assignment-draft-v2'
+const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
 const BASE_DEADLINE_MULTIPLIER = 1
 const ADJUSTED_DEADLINE_MULTIPLIER = 1
 const BASE_TASK_MULTIPLIER = 1
@@ -116,8 +114,8 @@ type AssignmentDraftV2 = {
   tasks: TaskEntry[]
 }
 
-function readStoredAssignmentDraftV2() {
-  const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_V2_KEY)
+function readStoredAssignmentDraft() {
+  const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
   if (!saved) return null
   try {
     const parsed = JSON.parse(saved) as {
@@ -171,50 +169,13 @@ function readStoredAssignmentHistory() {
   const saved = localStorage.getItem(LS_ASSIGNMENT_HISTORY_KEY)
   if (!saved) return [] as AssignmentHistoryEntry[]
   try {
-    const parsed = JSON.parse(saved) as Array<Record<string, unknown>>
+    const parsed = JSON.parse(saved) as AssignmentHistoryEntry[]
     if (!Array.isArray(parsed)) return []
-    return parsed
-      .map((item) => {
-        if (
-          Array.isArray(item.assignments) &&
-          typeof item.rootAssignmentId === 'string' &&
-          typeof item.createdAtIso === 'string' &&
-          typeof item.deadlineIso === 'string' &&
-          Number.isFinite(item.totalMinutes)
-        ) {
-          return item as AssignmentHistoryEntry
-        }
-        if (
-          typeof item.assignment === 'string' &&
-          typeof item.createdAtIso === 'string' &&
-          typeof item.deadlineIso === 'string' &&
-          typeof item.confirmedBy === 'string' &&
-          Array.isArray(item.tasks)
-        ) {
-          return buildAssignmentHistoryEntry(
-            {
-              assignment: item.assignment,
-              deadline: new Date(item.deadlineIso),
-              confirmedBy: item.confirmedBy,
-              nextAssignment:
-                typeof item.nextAssignment === 'string' ? item.nextAssignment : '',
-              nextAssignmentConfirmedBy:
-                typeof item.nextAssignmentConfirmedBy === 'string'
-                  ? item.nextAssignmentConfirmedBy
-                  : '',
-              scheduleView: item.scheduleView === 'adjusted' ? 'adjusted' : 'original',
-              tasks: item.tasks as TaskEntry[],
-            },
-            new Date(item.createdAtIso)
-          )
-        }
-        return null
-      })
-      .filter((item): item is AssignmentHistoryEntry => item !== null)
-      .filter((item) => {
+    return parsed.filter((item) => {
       if (!item || typeof item !== 'object') return false
       if (typeof item.createdAtIso !== 'string') return false
       if (typeof item.deadlineIso !== 'string') return false
+      if (typeof item.rootAssignmentId !== 'string') return false
       if (!Array.isArray(item.assignments)) return false
       if (!Number.isFinite(item.totalMinutes)) return false
       return true
@@ -252,11 +213,11 @@ function downloadTextFile(fileName: string, content: string, contentType: string
 
 export default function App() {
   const deadlineRef = useRef<PickerInput | null>(null)
-  const storedDraftV2 = useMemo(() => readStoredAssignmentDraftV2(), [])
+  const storedDraft = useMemo(() => readStoredAssignmentDraft(), [])
 
   const [now, setNow] = useState(() => new Date())
   const [deadline, setDeadline] = useState(
-    () => readStoredDate(LS_DEADLINE_KEY) ?? (storedDraftV2 ? new Date(storedDraftV2.deadlineIso) : new Date())
+    () => readStoredDate(LS_DEADLINE_KEY) ?? (storedDraft ? new Date(storedDraft.deadlineIso) : new Date())
   )
   const [previousDeadline, setPreviousDeadline] = useState<Date | null>(() =>
     readStoredDate(LS_PREV_DEADLINE_KEY)
@@ -267,7 +228,7 @@ export default function App() {
   const [previousTasks, setPreviousTasks] = useState<TaskEntry[]>(() =>
     readStoredEntries(LS_PREV_TASKS_KEY)
   )
-  const [tasks, setTasks] = useState<TaskEntry[]>(() => storedDraftV2?.tasks ?? readStoredEntries(LS_TASKS_KEY))
+  const [tasks, setTasks] = useState<TaskEntry[]>(() => storedDraft?.tasks ?? [])
   const [recentTasks, setRecentTasks] = useState<string[]>(() =>
     readStoredStringList(LS_RECENT_TASKS_KEY)
   )
@@ -283,7 +244,7 @@ export default function App() {
   const [isRecentOpen, setIsRecentOpen] = useState(false)
   const [recentActiveIndex, setRecentActiveIndex] = useState<number>(-1)
   const [deadlineExtensionAssignment, setDeadlineExtensionAssignment] = useState(
-    () => storedDraftV2?.assignmentTitle ?? localStorage.getItem(LS_DEADLINE_EXTENSION_ASSIGNMENT_KEY) ?? ''
+    () => storedDraft?.assignmentTitle ?? ''
   )
   const [deadlineExtensionConfirmedBy, setDeadlineExtensionConfirmedBy] = useState(
     () => localStorage.getItem(LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY) ?? ''
@@ -401,7 +362,7 @@ export default function App() {
       assignmentTitle: deadlineExtensionAssignment,
       tasks,
     }
-    localStorage.setItem(LS_ASSIGNMENT_DRAFT_V2_KEY, JSON.stringify(nextDraft))
+    localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
   }, [deadline, deadlineExtensionAssignment, tasks])
 
   useEffect(() => {
