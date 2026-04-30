@@ -19,7 +19,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .taskSection,
@@ -38,6 +38,43 @@ body {
   margin-bottom: 24px;
 }
 
+.pageTopBar {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto 12px;
+}
+
+.pageTopBarTitle {
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.assignmentHero {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.assignmentHeroTag {
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 12px;
+  color: var(--primary);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.assignmentHeroTitle {
+  margin: 0;
+  font-size: 44px;
+  line-height: 1.1;
+}
+
 /* Card */
 .main {
   border: 0;
@@ -45,6 +82,40 @@ body {
   padding: 0;
   margin-bottom: 0;
   text-align: center;
+}
+
+.assignmentOverviewCard {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  gap: 16px;
+}
+
+.assignmentOverviewCard .main {
+  text-align: left;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.assignmentOverviewCard .label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.assignmentOverviewCard .previous,
+.assignmentOverviewCard .deadline {
+  font-size: 22px;
+}
+
+.assignmentOverviewCard .remaining {
+  font-size: 38px;
+  color: var(--primary);
+}
+
+.assignmentOverviewCard .controls {
+  justify-content: flex-start;
 }
 
 /* Text */
@@ -586,6 +657,14 @@ input[readonly] {
 }
 
 @media (max-width: 640px) {
+  .assignmentHeroTitle {
+    font-size: 32px;
+  }
+
+  .assignmentOverviewCard .main {
+    grid-template-columns: 1fr;
+  }
+
   .nextAssignmentMessageFields {
     grid-template-columns: 1fr;
   }
