@@ -521,6 +521,23 @@ describe('App deadline behavior', () => {
     )
   })
 
+  it('edits assignment title inline from main card', () => {
+    renderApp()
+
+    const titleInput = screen.getByLabelText('Assignment title') as HTMLInputElement
+    expect(titleInput.value).toBe('')
+    expect(titleInput.placeholder).toBe('Assignment')
+
+    fireEvent.change(titleInput, { target: { value: 'Research Project' } })
+
+    expect((screen.getByLabelText('Assignment title') as HTMLInputElement).value).toBe(
+      'Research Project'
+    )
+    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
+      'Research Project'
+    )
+  })
+
   it('updates assignment draft assignments when list changes', () => {
     renderApp()
     fireEvent.change(screen.getByLabelText('Deadline time'), {

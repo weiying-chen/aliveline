@@ -835,8 +835,6 @@ export default function App({
     downloadTextFile(`assignment-history-${suffix}.json`, content, 'application/json;charset=utf-8')
   }
 
-  const assignmentTitle = deadlineExtensionAssignment.trim() || 'Assignment'
-
   return (
     <div className="app">
       <div className="assignmentPageLayout">
@@ -854,7 +852,14 @@ export default function App({
         <div className="assignmentPageBody">
           <div className="deadlineSection assignmentOverviewCard">
             <div className="assignmentOverviewHeader">
-              <h1 className="assignmentOverviewTitle">{assignmentTitle}</h1>
+              <input
+                type="text"
+                className="assignmentOverviewTitleInput"
+                aria-label="Assignment title"
+                value={deadlineExtensionAssignment}
+                onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
+                placeholder="Assignment"
+              />
             </div>
 
             <div className="main">
