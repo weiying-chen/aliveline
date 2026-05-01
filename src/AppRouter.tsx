@@ -9,7 +9,7 @@ export default function AppRouter() {
     <Routes>
       <Route path="/" element={<App />} />
       <Route path="/assignments" element={<AssignmentsPage />} />
-      <Route path="/assignments/:assignmentId" element={<AssignmentDetailPage />} />
+      <Route path="/assignments/view/:itemIndex" element={<AssignmentDetailPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
