@@ -22,6 +22,18 @@ body {
   justify-content: flex-start;
 }
 
+.assignmentPageLayout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.assignmentPageBody {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .assignmentSection,
 .messagesSection,
 .deadlineSection {
@@ -35,7 +47,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 /* Card */
@@ -251,8 +263,9 @@ input[readonly] {
 }
 
 .assignmentSection {
-  margin-top: 0;
-  margin-bottom: 24px;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--space-3);
   text-align: left;
 }
 
@@ -284,6 +297,26 @@ input[readonly] {
   flex-wrap: wrap;
 }
 
+.topNavRow {
+  display: flex;
+  align-items: center;
+}
+
+.topNavLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.topNavLink i {
+  font-size: 22px;
+  line-height: 1;
+}
+
 .assignmentSectionTitle {
   font-size: 16px;
   font-weight: 600;
@@ -294,7 +327,6 @@ input[readonly] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-2);
 }
 
 .assignmentSectionHeader .assignmentSectionTitle {
