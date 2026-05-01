@@ -1,5 +1,3 @@
-export type AssignmentStatus = 'todo' | 'in_progress' | 'done'
-
 export type AssignmentRelationType = 'blocks' | 'extends' | 'relates_to'
 
 export type AssignmentRelation = {
@@ -11,18 +9,18 @@ export type Assignment = {
   id: string
   title: string
   deadlineIso: string
-  status: AssignmentStatus
   estimateMinutes?: number
   relations: AssignmentRelation[]
+  comments: string[]
 }
 
 type BuildAssignmentInput = {
   id: string
   title: string
   deadlineIso: string
-  status?: AssignmentStatus
   estimateMinutes?: number
   relations?: AssignmentRelation[]
+  comments?: string[]
 }
 
 function normalizeEstimateMinutes(value: number | undefined) {
@@ -48,14 +46,19 @@ function normalizeRelations(relations: AssignmentRelation[] | undefined) {
   return normalized
 }
 
+function normalizeComments(comments: string[] | undefined) {
+  if (!Array.isArray(comments)) return [] as string[]
+  return comments.map((comment) => comment.trim()).filter((comment) => comment.length > 0)
+}
+
 export function buildAssignment(input: BuildAssignmentInput): Assignment {
   return {
     id: input.id,
     title: input.title.trim(),
     deadlineIso: input.deadlineIso,
-    status: input.status ?? 'todo',
     estimateMinutes: normalizeEstimateMinutes(input.estimateMinutes),
     relations: normalizeRelations(input.relations),
+    comments: normalizeComments(input.comments),
   }
 }
 

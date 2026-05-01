@@ -69,7 +69,6 @@ export function buildAssignmentHistoryEntry(
       id: `task-${index}`,
       title: task.text,
       deadlineIso,
-      status: 'done',
       estimateMinutes: task.minutes,
     })
   )
@@ -77,7 +76,6 @@ export function buildAssignmentHistoryEntry(
     id: rootAssignmentId,
     title: input.assignment.trim(),
     deadlineIso,
-    status: 'done',
     relations: taskAssignments.map((task) => ({ assignmentId: task.id, type: 'extends' })),
   })
 
