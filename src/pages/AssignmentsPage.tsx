@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { AssignmentRow } from '../components/AssignmentRow'
 import { formatDuration } from '../utils/deadlineHistory'
+import { buildAssignment } from '../utils/assignmentModel'
 import { fmtTime } from '../utils/time'
 import type { Assignment } from '../utils/assignmentModel'
 
@@ -12,37 +14,120 @@ type AssignmentDraftV2 = {
   assignments: Assignment[]
 }
 
-function readAssignmentsFromDraft() {
+function readDraft() {
   const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
-  if (!saved) return [] as Assignment[]
+  if (!saved) return null
   try {
     const parsed = JSON.parse(saved) as AssignmentDraftV2
-    if (!Array.isArray(parsed.assignments)) return []
-    return parsed.assignments
+    if (!Array.isArray(parsed.assignments)) return null
+    return parsed
   } catch {
-    return []
+    return null
   }
 }
 
 export function AssignmentsPage() {
   const navigate = useNavigate()
-  const assignments = readAssignmentsFromDraft()
+  const draft = readDraft()
+  const assignments = (draft?.assignments ?? []).map((assignment) => {
+    if (
+      assignment.title === 'New assignment' &&
+      assignment.estimateMinutes === 60 &&
+      assignment.id.startsWith('assignment-')
+    ) {
+      return { ...assignment, estimateMinutes: undefined }
+    }
+    return assignment
+  })
+
+  useEffect(() => {
+    if (!draft) return
+    const hadLegacyDefault = draft.assignments.some(
+      (assignment) =>
+        assignment.title === 'New assignment' &&
+        assignment.estimateMinutes === 60 &&
+        assignment.id.startsWith('assignment-')
+    )
+    if (!hadLegacyDefault) return
+    localStorage.setItem(
+      LS_ASSIGNMENT_DRAFT_KEY,
+      JSON.stringify({
+        ...draft,
+        assignments,
+      } satisfies AssignmentDraftV2)
+    )
+  }, [assignments, draft])
   const byId = new Map(assignments.map((assignment) => [assignment.id, assignment]))
-  const root = assignments.find((assignment) => assignment.id === 'legacy-root') ?? assignments[0]
+  const root =
+    assignments.find((assignment) => assignment.id === draft?.rootAssignmentId) ??
+    assignments.find((assignment) => assignment.id === 'legacy-root') ??
+    assignments[0]
   const affectingAssignments =
     root?.relations
       .filter((relation) => relation.type === 'extends')
       .map((relation) => byId.get(relation.assignmentId))
       .filter((assignment): assignment is Assignment => Boolean(assignment)) ?? []
 
+  const onAddAssignment = () => {
+    const currentDraft = readDraft()
+    const currentAssignments = currentDraft?.assignments ?? []
+    const currentRoot =
+      currentAssignments.find((assignment) => assignment.id === currentDraft?.rootAssignmentId) ??
+      currentAssignments.find((assignment) => assignment.id === 'legacy-root') ??
+      buildAssignment({
+        id: 'legacy-root',
+        title: 'Assignment',
+        deadlineIso: new Date().toISOString(),
+      })
+
+    const newIndex = 0
+    const newAssignmentId = `assignment-${Date.now()}`
+    const newAssignment = buildAssignment({
+      id: newAssignmentId,
+      title: 'New assignment',
+      deadlineIso: currentRoot.deadlineIso,
+    })
+
+    const nextRoot = buildAssignment({
+      ...currentRoot,
+      relations: [{ assignmentId: newAssignmentId, type: 'extends' }, ...currentRoot.relations],
+    })
+
+    const nextAssignments = [
+      nextRoot,
+      ...currentAssignments.filter((assignment) => assignment.id !== nextRoot.id),
+      newAssignment,
+    ]
+
+    localStorage.setItem(
+      LS_ASSIGNMENT_DRAFT_KEY,
+      JSON.stringify({
+        rootAssignmentId: nextRoot.id,
+        assignments: nextAssignments,
+      } satisfies AssignmentDraftV2)
+    )
+
+    navigate(`/assignments/view/${newIndex}`)
+  }
+
   return (
     <div className="app">
       <div className="assignmentPageLayout">
         <div className="assignmentPageBody">
           <div className="assignmentSection">
-            <h1 className="assignmentOverviewTitle">Assignments</h1>
+            <div className="assignmentSectionHeader">
+              <div className="assignmentSectionTitle sectionHeading">Assignments</div>
+              <button
+                type="button"
+                className="assignmentSectionAddButton"
+                aria-label="Add assignment from list page"
+                onClick={onAddAssignment}
+              >
+                <i className="las la-plus" aria-hidden="true"></i>
+              </button>
+            </div>
             <div className="assignmentList">
-              {affectingAssignments.map((assignment) => (
+              {affectingAssignments.map((assignment, index) => (
                 <AssignmentRow
                   key={assignment.id}
                   title={assignment.title}
@@ -59,7 +144,7 @@ export function AssignmentsPage() {
                     <button
                       type="button"
                       className="btn-primary"
-                      onClick={() => navigate(`/assignments/${assignment.id}`)}
+                      onClick={() => navigate(`/assignments/view/${index}`)}
                     >
                       View
                     </button>
