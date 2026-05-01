@@ -1294,7 +1294,7 @@ export default function App({
                     action={
                       <button
                         type="button"
-                        className="assignmentRemoveButton"
+                        className="btn-secondary assignmentRemoveButton"
                         aria-label="Remove comment"
                         onClick={() => removeComment(index)}
                       >
