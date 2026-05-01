@@ -603,6 +603,11 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: 'Edited child assignment' },
     })
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle comment form' }))
+    fireEvent.change(screen.getByLabelText('Comment'), {
+      target: { value: 'Use simpler wording in paragraph 2' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /add comment/i }))
     openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Nested assignment' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
@@ -613,6 +618,7 @@ describe('App deadline behavior', () => {
     const edited = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a')
     expect(edited.title).toBe('Edited child assignment')
     expect(edited.relations).toEqual([{ assignmentId: 'assignment-a-task-0', type: 'extends' }])
+    expect(edited.comments).toEqual(['Use simpler wording in paragraph 2'])
 
     const nested = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a-task-0')
     expect(nested.title).toBe('Nested assignment')

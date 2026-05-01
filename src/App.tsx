@@ -106,6 +106,7 @@ type AssignmentDraftV2 = {
   deadlineIso: string
   assignmentTitle: string
   tasks: TaskEntry[]
+  comments: string[]
 }
 
 function readStoredAssignmentDraft(rootAssignmentId = 'legacy-root') {
@@ -123,12 +124,15 @@ function readStoredAssignmentDraft(rootAssignmentId = 'legacy-root') {
       rootAssignmentId
     )
     if (Number.isNaN(new Date(legacyDraft.deadlineIso).getTime())) return null
+    const byId = new Map((parsed.assignments as Assignment[]).map((assignment) => [assignment.id, assignment]))
+    const root = byId.get(rootAssignmentId) ?? byId.get(parsed.rootAssignmentId)
     return {
       rootAssignmentId: parsed.rootAssignmentId,
       assignments: parsed.assignments as Assignment[],
       deadlineIso: legacyDraft.deadlineIso,
       assignmentTitle: legacyDraft.assignmentTitle,
       tasks: sanitizeTaskEntries(legacyDraft.tasks),
+      comments: root?.comments ?? [],
     } as AssignmentDraftV2
   } catch {
     return null
@@ -151,7 +155,8 @@ function buildDraftAssignments(
   deadline: Date,
   assignmentTitle: string,
   tasks: TaskEntry[],
-  taskFinishTimes: Date[]
+  taskFinishTimes: Date[],
+  comments: string[]
 ) {
   const taskAssignments = tasks.map((task, index) =>
     buildAssignment({
@@ -167,6 +172,7 @@ function buildDraftAssignments(
     title: assignmentTitle,
     deadlineIso: deadline.toISOString(),
     relations: taskAssignments.map((task) => ({ assignmentId: task.id, type: 'extends' })),
+    comments,
   })
 
   return [root, ...taskAssignments]
@@ -321,6 +327,9 @@ export default function App({
     readStoredBool(LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY, false)
   )
   const [isAddAssignmentFormOpen, setIsAddAssignmentFormOpen] = useState(false)
+  const [isCommentsFormOpen, setIsCommentsFormOpen] = useState(false)
+  const [commentText, setCommentText] = useState('')
+  const [comments, setComments] = useState<string[]>(() => storedDraft?.comments ?? [])
   const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>(() =>
     readStoredScheduleViewMode()
   )
@@ -468,7 +477,8 @@ export default function App({
       deadline,
       deadlineExtensionAssignment,
       tasks,
-      taskFinishTimes
+      taskFinishTimes,
+      comments
     )
     const currentDraft = readStoredAssignmentDraft()
     const assignments = selectedAssignmentId
@@ -480,9 +490,10 @@ export default function App({
       deadlineIso: deadline.toISOString(),
       assignmentTitle: deadlineExtensionAssignment,
       tasks,
+      comments,
     }
     localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
-  }, [deadline, deadlineExtensionAssignment, persistDraft, selectedAssignmentId, tasks, taskFinishTimes])
+  }, [comments, deadline, deadlineExtensionAssignment, persistDraft, selectedAssignmentId, tasks, taskFinishTimes])
   const selectedHistoryMonth = useMemo(() => {
     const match = /^(\d{4})-(\d{2})$/.exec(historyMonth)
     if (!match) return null
@@ -862,6 +873,18 @@ export default function App({
     downloadTextFile(`assignment-history-${suffix}.json`, content, 'application/json;charset=utf-8')
   }
 
+  const addComment = () => {
+    const nextComment = commentText.trim()
+    if (!nextComment) return
+    setComments((prev) => [...prev, nextComment])
+    setCommentText('')
+    setIsCommentsFormOpen(false)
+  }
+
+  const removeComment = (index: number) => {
+    setComments((prev) => prev.filter((_, i) => i !== index))
+  }
+
   return (
     <div className="app">
       <div className="assignmentPageLayout">
@@ -1198,6 +1221,82 @@ export default function App({
                         onClick={() => removeTaskEntry(index)}
                         aria-label="Remove assignment"
                         className="btn-secondary assignmentRemoveButton"
+                      >
+                        <i className="las la-trash" aria-hidden="true"></i>
+                      </button>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="assignmentSection">
+            <div className="assignmentSectionHeader">
+              <div className="assignmentSectionTitle sectionHeading">Comments</div>
+              <button
+                type="button"
+                className="assignmentSectionAddButton"
+                aria-label="Toggle comment form"
+                aria-expanded={isCommentsFormOpen}
+                aria-controls="add-comment-form-panel"
+                onClick={() => setIsCommentsFormOpen((prev) => !prev)}
+              >
+                <i className={`las ${isCommentsFormOpen ? 'la-minus' : 'la-plus'}`} aria-hidden="true"></i>
+              </button>
+            </div>
+            <div
+              id="add-comment-form-panel"
+              className="messagePanel"
+              data-state={isCommentsFormOpen ? 'open' : 'closed'}
+              aria-hidden={!isCommentsFormOpen}
+            >
+              <div className="messagePanelInner">
+                <fieldset disabled={!isCommentsFormOpen} className="messageFieldset">
+                  <div className="assignmentCommentFields">
+                    <div className="fieldGroup assignmentTextField">
+                      <label className="fieldLabel" htmlFor="comment-text">
+                        Comment
+                      </label>
+                      <input
+                        id="comment-text"
+                        type="text"
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Add a comment point"
+                        aria-label="Comment"
+                      />
+                    </div>
+                    <div className="fieldGroup">
+                      <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
+                        Action
+                      </span>
+                      <button
+                        onClick={addComment}
+                        disabled={!commentText.trim()}
+                        className="btn-primary"
+                      >
+                        <i className="las la-plus" aria-hidden="true"></i> Add comment
+                      </button>
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+
+            {comments.length > 0 && (
+              <div className="assignmentList">
+                {comments.map((comment, index) => (
+                  <AssignmentRow
+                    key={`${comment}-${index}`}
+                    title={comment}
+                    middle={<span aria-hidden="true"></span>}
+                    action={
+                      <button
+                        type="button"
+                        className="assignmentRemoveButton"
+                        aria-label="Remove comment"
+                        onClick={() => removeComment(index)}
                       >
                         <i className="las la-trash" aria-hidden="true"></i>
                       </button>
