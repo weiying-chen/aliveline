@@ -449,7 +449,12 @@ input[readonly] {
   transition: grid-template-rows 240ms ease;
 }
 
+.messagePanel[data-state='closed'] {
+  display: none;
+}
+
 .messagePanel[data-state='open'] {
+  display: grid;
   grid-template-rows: 1fr;
 }
 
