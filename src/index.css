@@ -177,6 +177,11 @@ body {
   min-width: 0;
 }
 
+.assignmentOverviewControlsMeta {
+  display: grid;
+  gap: var(--space-1);
+}
+
 /* Text */
 .label {
   font-size: 18px;
@@ -212,10 +217,6 @@ body {
   font-weight: 700;
   line-height: 1.1;
   margin-bottom: 0;
-}
-
-.overdue {
-  margin-top: 10px;
 }
 
 .reminder {

@@ -1086,11 +1086,6 @@ export default function App({
                 <div className="reminder">Reminder: ask for more work before 9:00 AM.</div>
               )}
               {showDeadlineExtensionReminder && <div className="reminder">Reminder: post the deadline extension message.</div>}
-              {!isInWorkTime(now) && (
-                <div className="overdue metaTextMutedSm">
-                  Counting from {fmtDateTimeWithWeekday(workStartAt)}.
-                </div>
-              )}
             </div>
 
             <div className="controls">
@@ -1111,6 +1106,13 @@ export default function App({
                 Reset
               </button>
             </div>
+            {!isInWorkTime(now) && (
+              <div className="assignmentOverviewControlsMeta">
+                <div className="metaTextMutedSm">
+                  Counting from {fmtDateTimeWithWeekday(workStartAt)}.
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="assignmentSection">
