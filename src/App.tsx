@@ -925,7 +925,7 @@ export default function App({
 
           <div className="assignmentSection">
             <div className="assignmentSectionHeader">
-              <div className="assignmentSectionTitle">Affecting deadlines</div>
+              <div className="assignmentSectionTitle sectionHeading">Affecting deadlines</div>
               <button
                 type="button"
                 className="assignmentSectionAddButton"
