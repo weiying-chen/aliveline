@@ -522,7 +522,7 @@ input[readonly] {
 .nextAssignmentMessageFields {
   display: grid;
   gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  margin: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -537,14 +537,14 @@ input[readonly] {
 .assignmentFields {
   display: grid;
   gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  margin: 0;
   grid-template-columns: 1fr 100px 120px auto;
 }
 
 .assignmentCommentFields {
   display: grid;
   gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  margin: 0;
   grid-template-columns: 1fr auto;
 }
 
