@@ -1114,12 +1114,13 @@ export default function App({
                 placeholder="Assignment"
               />
               <div className="assignmentOverviewOwnerField">
-                <label className="fieldLabel" htmlFor="assignment-owner">
+                <label className="label" htmlFor="assignment-owner">
                   Owner
                 </label>
                 <input
                   id="assignment-owner"
                   type="text"
+                  className="assignmentOverviewOwnerInput"
                   value={assignmentOwner}
                   onChange={(e) => setAssignmentOwner(e.target.value)}
                   placeholder="Owner"

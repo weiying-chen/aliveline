@@ -72,6 +72,7 @@ body {
 
 .assignmentOverviewOwnerField {
   margin-top: var(--space-2);
+  max-width: 280px;
 }
 
 .assignmentOverviewTitle {
@@ -100,6 +101,30 @@ body {
 }
 
 .assignmentOverviewTitleInput:focus-visible {
+  outline: none;
+  box-shadow: inset 0 -1px 0 0 var(--primary);
+}
+
+.assignmentOverviewOwnerInput {
+  margin: 0;
+  width: 100%;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 600;
+  cursor: text;
+  box-shadow: inset 0 -1px 0 0 transparent;
+  transition: box-shadow 160ms ease;
+}
+
+.assignmentOverviewOwnerInput:hover {
+  box-shadow: inset 0 -1px 0 0 var(--muted);
+}
+
+.assignmentOverviewOwnerInput:focus-visible {
   outline: none;
   box-shadow: inset 0 -1px 0 0 var(--primary);
 }
