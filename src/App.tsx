@@ -147,6 +147,7 @@ function normalizeTasksViaUnified(deadline: Date, assignmentTitle: string, tasks
 }
 
 function buildDraftAssignments(
+  rootAssignmentId: string,
   deadline: Date,
   assignmentTitle: string,
   tasks: TaskEntry[],
@@ -154,7 +155,7 @@ function buildDraftAssignments(
 ) {
   const taskAssignments = tasks.map((task, index) =>
     buildAssignment({
-      id: `legacy-task-${index}`,
+      id: rootAssignmentId === 'legacy-root' ? `legacy-task-${index}` : `${rootAssignmentId}-task-${index}`,
       title: task.text,
       deadlineIso: (taskFinishTimes[index] ?? deadline).toISOString(),
       estimateMinutes: task.minutes,
@@ -162,13 +163,33 @@ function buildDraftAssignments(
   )
 
   const root = buildAssignment({
-    id: 'legacy-root',
+    id: rootAssignmentId,
     title: assignmentTitle,
     deadlineIso: deadline.toISOString(),
     relations: taskAssignments.map((task) => ({ assignmentId: task.id, type: 'extends' })),
   })
 
   return [root, ...taskAssignments]
+}
+
+function mergeDraftAssignmentsForRoot(
+  existingAssignments: Assignment[],
+  rootAssignmentId: string,
+  nextRootAssignments: Assignment[]
+) {
+  const byId = new Map(existingAssignments.map((assignment) => [assignment.id, assignment]))
+  const previousRoot = byId.get(rootAssignmentId)
+  const previousChildIds = new Set(
+    (previousRoot?.relations ?? [])
+      .filter((relation) => relation.type === 'extends')
+      .map((relation) => relation.assignmentId)
+  )
+
+  const keptAssignments = existingAssignments.filter(
+    (assignment) => assignment.id !== rootAssignmentId && !previousChildIds.has(assignment.id)
+  )
+
+  return [...keptAssignments, ...nextRootAssignments]
 }
 
 function readStoredStringList(key: string) {
@@ -441,21 +462,27 @@ export default function App({
   )
   useEffect(() => {
     if (!persistDraft) return
-    const assignments = buildDraftAssignments(
+    const targetRootId = selectedAssignmentId ?? 'legacy-root'
+    const nextRootAssignments = buildDraftAssignments(
+      targetRootId,
       deadline,
       deadlineExtensionAssignment,
       tasks,
       taskFinishTimes
     )
+    const currentDraft = readStoredAssignmentDraft()
+    const assignments = selectedAssignmentId
+      ? mergeDraftAssignmentsForRoot(currentDraft?.assignments ?? [], targetRootId, nextRootAssignments)
+      : nextRootAssignments
     const nextDraft: AssignmentDraftV2 = {
-      rootAssignmentId: 'legacy-root',
+      rootAssignmentId: currentDraft?.rootAssignmentId ?? 'legacy-root',
       assignments,
       deadlineIso: deadline.toISOString(),
       assignmentTitle: deadlineExtensionAssignment,
       tasks,
     }
     localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
-  }, [deadline, deadlineExtensionAssignment, persistDraft, tasks, taskFinishTimes])
+  }, [deadline, deadlineExtensionAssignment, persistDraft, selectedAssignmentId, tasks, taskFinishTimes])
   const selectedHistoryMonth = useMemo(() => {
     const match = /^(\d{4})-(\d{2})$/.exec(historyMonth)
     if (!match) return null

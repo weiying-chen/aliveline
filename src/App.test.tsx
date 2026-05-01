@@ -565,6 +565,63 @@ describe('App deadline behavior', () => {
     expect(assignmentIds).toEqual(['legacy-root'])
   })
 
+  it('persists selected assignment edits to draft storage', () => {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = `${now.getMonth() + 1}`.padStart(2, '0')
+    const d = `${now.getDate()}`.padStart(2, '0')
+    localStorage.setItem('aliveline:daily-clear', `${y}-${m}-${d}`)
+    localStorage.setItem(
+      'aliveline:assignment-draft',
+      JSON.stringify({
+        rootAssignmentId: 'legacy-root',
+        assignments: [
+          {
+            id: 'legacy-root',
+            title: 'Main root',
+            deadlineIso: '2026-04-10T12:00:00.000Z',
+            status: 'todo',
+            relations: [{ assignmentId: 'assignment-a', type: 'extends' }],
+          },
+          {
+            id: 'assignment-a',
+            title: 'Child assignment',
+            deadlineIso: '2026-04-10T12:00:00.000Z',
+            status: 'todo',
+            relations: [],
+          },
+        ],
+      })
+    )
+
+    render(
+      <MemoryRouter>
+        <App selectedAssignmentId="assignment-a" showTopNav={false} />
+      </MemoryRouter>
+    )
+
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
+      target: { value: 'Edited child assignment' },
+    })
+    openAddAssignmentForm()
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Nested assignment' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
+
+    const draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
+    const edited = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a')
+    expect(edited.title).toBe('Edited child assignment')
+    expect(edited.relations).toEqual([{ assignmentId: 'assignment-a-task-0', type: 'extends' }])
+
+    const nested = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a-task-0')
+    expect(nested.title).toBe('Nested assignment')
+    expect(nested.estimateMinutes).toBe(60)
+
+    const legacyRoot = draft.assignments.find((item: { id: string }) => item.id === 'legacy-root')
+    expect(legacyRoot.relations).toEqual([{ assignmentId: 'assignment-a', type: 'extends' }])
+  })
+
   it('does not persist legacy v1 draft keys', () => {
     renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))

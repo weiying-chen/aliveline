@@ -42,5 +42,5 @@ export function AssignmentDetailPage() {
     return <Navigate to="/assignments" replace />
   }
 
-  return <App selectedAssignmentId={selected.id} showTopNav={true} persistDraft={false} />
+  return <App selectedAssignmentId={selected.id} showTopNav={true} />
 }
