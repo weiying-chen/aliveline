@@ -74,17 +74,10 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    fireEvent.change(screen.getByLabelText('Assignment name'), {
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: '3集大愛真健康' },
     })
-    fireEvent.change(
-      screen.getByLabelText('Confirmed by', {
-        selector: 'input#deadline-extension-confirmed-by',
-      }),
-      {
-      target: { value: 'Emily Ding' },
-      }
-    )
+    fireEvent.change(screen.getByLabelText('Owner'), { target: { value: 'Emily Ding' } })
 
     const preview = screen.getByLabelText('Deadline extension message preview')
     expect(preview.textContent).toBe(
@@ -106,17 +99,10 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    fireEvent.change(screen.getByLabelText('Assignment name'), {
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: '3集大愛真健康' },
     })
-    fireEvent.change(
-      screen.getByLabelText('Confirmed by', {
-        selector: 'input#deadline-extension-confirmed-by',
-      }),
-      {
-        target: { value: 'Emily Ding' },
-      }
-    )
+    fireEvent.change(screen.getByLabelText('Owner'), { target: { value: 'Emily Ding' } })
 
     const preview = screen.getByLabelText('Deadline extension message preview')
     expect(preview.textContent).toBe(
@@ -153,17 +139,10 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    fireEvent.change(screen.getByLabelText('Assignment name'), {
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: '3集大愛真健康' },
     })
-    fireEvent.change(
-      screen.getByLabelText('Confirmed by', {
-        selector: 'input#deadline-extension-confirmed-by',
-      }),
-      {
-        target: { value: 'Emily Ding' },
-      }
-    )
+    fireEvent.change(screen.getByLabelText('Owner'), { target: { value: 'Emily Ding' } })
 
     const preview = screen.getByLabelText('Deadline extension message preview')
     expect(preview.textContent).toContain('今日做其他事時間是 1時40分')
@@ -273,7 +252,7 @@ describe('App deadline behavior', () => {
     })
 
     renderApp()
-    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Message' }))
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
     })
@@ -282,15 +261,10 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '30' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
-    fireEvent.change(screen.getByLabelText('Assignment name'), {
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: 'Main assignment' },
     })
-    fireEvent.change(
-      screen.getByLabelText('Confirmed by', {
-        selector: 'input#deadline-extension-confirmed-by',
-      }),
-      { target: { value: 'Emily Ding' } }
-    )
+    fireEvent.change(screen.getByLabelText('Owner'), { target: { value: 'Emily Ding' } })
 
     fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
 
@@ -344,10 +318,7 @@ describe('App deadline behavior', () => {
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
     expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('40m')
 
-    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
-    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
-      'Boot assignment'
-    )
+    expect((screen.getByLabelText('Assignment title') as HTMLInputElement).value).toBe('Boot assignment')
   })
 
   it('edits assignment title inline from main card', () => {
@@ -362,9 +333,7 @@ describe('App deadline behavior', () => {
     expect((screen.getByLabelText('Assignment title') as HTMLInputElement).value).toBe(
       'Research Project'
     )
-    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(
-      'Research Project'
-    )
+    expect((screen.getByLabelText('Assignment title') as HTMLInputElement).value).toBe('Research Project')
   })
 
   it('updates assignment draft assignments when list changes', () => {
@@ -372,7 +341,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
     })
-    fireEvent.change(screen.getByLabelText('Assignment name'), {
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: 'Task mutation assignment' },
     })
     openAddAssignmentForm()
@@ -463,8 +432,7 @@ describe('App deadline behavior', () => {
 
   it('does not persist legacy v1 draft keys', () => {
     renderApp()
-    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
-    fireEvent.change(screen.getByLabelText('Assignment name'), {
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: 'Legacy key check' },
     })
     openAddAssignmentForm()
@@ -484,8 +452,7 @@ describe('App deadline behavior', () => {
 
     renderApp()
     expect(screen.queryAllByLabelText('Assignment due time display')).toHaveLength(0)
-    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
-    expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText('Assignment title') as HTMLInputElement).value).toBe('')
   })
 
 })

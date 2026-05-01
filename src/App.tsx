@@ -61,7 +61,6 @@ const LS_DEADLINE_KEY = 'aliveline:deadline-iso'
 const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
 const LS_TASK_FINISH_BASE_KEY = 'aliveline:task-finish-base-iso'
-const LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY = 'aliveline:deadline-extension-confirmed-by'
 const LS_NEXT_ASSIGNMENT_KEY = 'aliveline:next-assignment'
 const LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY = 'aliveline:next-assignment-confirmed-by'
 const LS_NEXT_ASSIGNMENT_START_KEY = 'aliveline:next-assignment-start-iso'
@@ -283,9 +282,6 @@ export default function App({
     () => storedDraft?.assignmentTitle ?? ''
   )
   const [assignmentOwner, setAssignmentOwner] = useState(() => storedDraft?.owner ?? '')
-  const [deadlineExtensionConfirmedBy, setDeadlineExtensionConfirmedBy] = useState(
-    () => localStorage.getItem(LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY) ?? ''
-  )
   const [nextAssignment, setNextAssignment] = useState(
     () => localStorage.getItem(LS_NEXT_ASSIGNMENT_KEY) ?? ''
   )
@@ -551,10 +547,6 @@ export default function App({
   }, [deadline, now, showDeadlineExtensionReminder])
 
   useEffect(() => {
-    localStorage.setItem(LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY, deadlineExtensionConfirmedBy)
-  }, [deadlineExtensionConfirmedBy])
-
-  useEffect(() => {
     localStorage.setItem(LS_NEXT_ASSIGNMENT_KEY, nextAssignment)
   }, [nextAssignment])
 
@@ -646,7 +638,7 @@ export default function App({
 
   const deadlineExtensionMessage = useMemo(() => {
     if (!deadlineExtensionAssignment.trim()) return ''
-    if (!deadlineExtensionConfirmedBy.trim()) return ''
+    if (!assignmentOwner.trim()) return ''
     if (tasks.length === 0) return ''
     const messagePreviousDeadline = changeBaseDeadline ?? deadline
     return formatDeadlineExtensionMessage({
@@ -654,11 +646,11 @@ export default function App({
       next: new Date(deadlineMessageInput.deadlineIso),
       tasks: deadlineMessageInput.tasks,
       assignment: deadlineMessageInput.assignmentTitle,
-      assignee: deadlineExtensionConfirmedBy,
+      assignee: assignmentOwner,
     })
   }, [
+    assignmentOwner,
     deadline,
-    deadlineExtensionConfirmedBy,
     changeBaseDeadline,
     deadlineExtensionAssignment,
     deadlineMessageInput,
@@ -713,7 +705,7 @@ export default function App({
       const next = buildAssignmentHistoryEntry({
         assignment: deadlineMessageInput.assignmentTitle,
         deadline: new Date(deadlineMessageInput.deadlineIso),
-        confirmedBy: deadlineExtensionConfirmedBy,
+        confirmedBy: assignmentOwner,
         nextAssignment,
         nextAssignmentConfirmedBy,
         scheduleView: 'adjusted',
@@ -835,67 +827,6 @@ export default function App({
   const messagesSection = (
     <div className="messagesSection">
       <div className="assignmentSectionTitle sectionHeading">Messages</div>
-      <AccordionItem
-        title="Deadline extension message"
-        isOpen={isTasksPanelOpen}
-        onToggle={() => setIsTasksPanelOpen((prev) => !prev)}
-        panelId="tasks-panel"
-      >
-        <fieldset disabled={!isTasksPanelOpen} className="messageFieldset">
-          <div className="messageBody">
-            <div className="messageFields">
-              <div className="fieldGroup">
-                <label className="fieldLabel" htmlFor="deadline-extension-assignment">
-                  Assignment
-                </label>
-                <input
-                  id="deadline-extension-assignment"
-                  type="text"
-                  value={deadlineExtensionAssignment}
-                  onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
-                  placeholder="Assignment"
-                  aria-label="Assignment name"
-                />
-              </div>
-              <div className="fieldGroup">
-                <label className="fieldLabel" htmlFor="deadline-extension-confirmed-by">
-                  Confirmed by
-                </label>
-                <input
-                  id="deadline-extension-confirmed-by"
-                  type="text"
-                  value={deadlineExtensionConfirmedBy}
-                  onChange={(e) => setDeadlineExtensionConfirmedBy(e.target.value)}
-                  placeholder="Confirmed by"
-                  aria-label="Confirmed by"
-                />
-              </div>
-            </div>
-
-            <div className="messagePreview" aria-label="Deadline extension message preview">
-              {deadlineExtensionMessage ||
-                'Fill all fields to generate a deadline extension message preview.'}
-            </div>
-
-            <div className="messageActions">
-              <button
-                onClick={onCopyDeadlineExtensionMessage}
-                disabled={!deadlineExtensionMessage}
-                className="btn-primary"
-              >
-                <i className="las la-copy" aria-hidden="true"></i> Copy
-              </button>
-              {deadlineExtensionCopyState === 'copied' && (
-                <span className="copyStatus">Copied.</span>
-              )}
-              {deadlineExtensionCopyState === 'failed' && (
-                <span className="copyStatus">Copy failed. Please copy manually.</span>
-              )}
-            </div>
-          </div>
-        </fieldset>
-      </AccordionItem>
-
       <AccordionItem
         title="Next assignment message"
         isOpen={isNextAssignmentPanelOpen}
@@ -1433,6 +1364,39 @@ export default function App({
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="messagesSection">
+            <AccordionItem
+              title="Message"
+              isOpen={isTasksPanelOpen}
+              onToggle={() => setIsTasksPanelOpen((prev) => !prev)}
+              panelId="tasks-panel"
+            >
+              <fieldset disabled={!isTasksPanelOpen} className="messageFieldset">
+                <div className="messageBody">
+                  <div className="messagePreview" aria-label="Deadline extension message preview">
+                    {deadlineExtensionMessage ||
+                      'Set assignment title, owner, and affecting deadlines to generate the message.'}
+                  </div>
+                  <div className="messageActions">
+                    <button
+                      onClick={onCopyDeadlineExtensionMessage}
+                      disabled={!deadlineExtensionMessage}
+                      className="btn-primary"
+                    >
+                      <i className="las la-copy" aria-hidden="true"></i> Copy
+                    </button>
+                    {deadlineExtensionCopyState === 'copied' && (
+                      <span className="copyStatus">Copied.</span>
+                    )}
+                    {deadlineExtensionCopyState === 'failed' && (
+                      <span className="copyStatus">Copy failed. Please copy manually.</span>
+                    )}
+                  </div>
+                </div>
+              </fieldset>
+            </AccordionItem>
           </div>
 
           {showMessagesSection ? messagesSection : null}
