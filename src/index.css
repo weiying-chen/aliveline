@@ -67,12 +67,11 @@ body {
 }
 
 .assignmentOverviewHeader {
-  margin-bottom: -4px;
+  display: grid;
+  gap: var(--space-2);
 }
 
 .assignmentOverviewOwnerField {
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-3);
   max-width: 280px;
 }
 
@@ -135,6 +134,16 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.assignmentOverviewCard .block {
+  margin-bottom: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.assignmentOverviewCard .label {
+  margin-bottom: 0;
 }
 
 .assignmentOverviewCard .reminder,
