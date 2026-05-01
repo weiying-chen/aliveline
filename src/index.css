@@ -15,7 +15,8 @@ body {
 
 /* Layout */
 .app {
-  padding: 20px;
+  padding-inline: clamp(16px, 3vw, 24px);
+  padding-block: 20px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -799,7 +800,7 @@ input[readonly] {
 .messageActions {
   display: flex;
   gap: var(--space-2);
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: var(--space-3);
 }

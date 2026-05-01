@@ -1258,7 +1258,7 @@ export default function App({
           </div>
 
           <div className="messagesSection">
-            <div className="assignmentSectionTitle sectionHeading">Message</div>
+            <div className="assignmentSectionTitle sectionHeading">Messages</div>
             <AccordionItem
               title="Deadline extension message"
               isOpen={isTasksPanelOpen}
