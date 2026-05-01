@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import {
   buildAssignmentHistoryEntry,
@@ -9,6 +10,7 @@ import {
   type AssignmentHistoryEntry,
 } from './utils/assignmentHistoryUnified'
 import { AccordionItem } from './components/Accordion'
+import { AssignmentRow } from './components/AssignmentRow'
 import { fromLegacyAssignmentDraft, toLegacyAssignmentDraft } from './utils/assignmentAdapters'
 import { buildAssignment, type Assignment } from './utils/assignmentModel'
 import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
@@ -46,6 +48,12 @@ import {
 } from './utils/workTime'
 
 type PickerInput = HTMLInputElement
+
+type AppProps = {
+  selectedAssignmentId?: string
+  showTopNav?: boolean
+  persistDraft?: boolean
+}
 
 const LS_DEADLINE_KEY = 'aliveline:deadline-iso'
 const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
@@ -100,7 +108,7 @@ type AssignmentDraftV2 = {
   tasks: TaskEntry[]
 }
 
-function readStoredAssignmentDraft() {
+function readStoredAssignmentDraft(rootAssignmentId = 'legacy-root') {
   const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
   if (!saved) return null
   try {
@@ -112,7 +120,7 @@ function readStoredAssignmentDraft() {
     if (!Array.isArray(parsed.assignments)) return null
     const legacyDraft = toLegacyAssignmentDraft(
       parsed.assignments as Assignment[],
-      parsed.rootAssignmentId
+      rootAssignmentId
     )
     if (Number.isNaN(new Date(legacyDraft.deadlineIso).getTime())) return null
     return {
@@ -227,9 +235,16 @@ function downloadTextFile(fileName: string, content: string, contentType: string
   URL.revokeObjectURL(url)
 }
 
-export default function App() {
+export default function App({
+  selectedAssignmentId,
+  showTopNav = true,
+  persistDraft = true,
+}: AppProps = {}) {
   const deadlineRef = useRef<PickerInput | null>(null)
-  const storedDraft = useMemo(() => readStoredAssignmentDraft(), [])
+  const storedDraft = useMemo(
+    () => readStoredAssignmentDraft(selectedAssignmentId ?? 'legacy-root'),
+    [selectedAssignmentId]
+  )
 
   const [now, setNow] = useState(() => new Date())
   const [deadline, setDeadline] = useState(
@@ -425,6 +440,7 @@ export default function App() {
     [adjustedTasks, taskFinishStart]
   )
   useEffect(() => {
+    if (!persistDraft) return
     const assignments = buildDraftAssignments(
       deadline,
       deadlineExtensionAssignment,
@@ -439,7 +455,7 @@ export default function App() {
       tasks,
     }
     localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
-  }, [deadline, deadlineExtensionAssignment, tasks, taskFinishTimes])
+  }, [deadline, deadlineExtensionAssignment, persistDraft, tasks, taskFinishTimes])
   const selectedHistoryMonth = useMemo(() => {
     const match = /^(\d{4})-(\d{2})$/.exec(historyMonth)
     if (!match) return null
@@ -823,510 +839,528 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="deadlineSection assignmentOverviewCard">
-        <div className="assignmentOverviewHeader">
-          <h1 className="assignmentOverviewTitle">{assignmentTitle}</h1>
-        </div>
-
-        <div className="main">
-          <div className="block">
-            <div className="label">Deadline</div>
-            <div className="deadline">
-              <button
-                type="button"
-                className="valueToggle deadlineValue"
-                aria-label="Toggle original and adjusted schedule"
-                onClick={toggleAdjustedView}
-              >
-                <span aria-label="Current deadline display">
-                  {fmtDateTimeWithWeekday(displayDeadline)}
-                  {isAdjustedView ? ADJUSTED_SUFFIX : ''}
-                </span>
-              </button>
+      <div className="assignmentPageLayout">
+        {showTopNav && (
+          <div className="assignmentSection">
+            <div className="topNavRow">
+              <Link to="/assignments" className="topNavLink" aria-label="Go to assignments page">
+                <i className="las la-arrow-left" aria-hidden="true"></i>
+                <span>Assignments</span>
+              </Link>
             </div>
-          </div>
-
-          <div className="block">
-            <div className="label">Remaining (work time)</div>
-            <div className="remaining">
-              <button
-                type="button"
-                className="valueToggle remainingValue"
-                aria-label="Toggle schedule display from remaining work time"
-                onClick={toggleAdjustedView}
-              >
-                <span aria-label="Remaining work time display">
-                  {parts.days > 0 && `${parts.days}d `}
-                  {parts.hours}h {parts.minutes}m {parts.seconds}s
-                  {isAdjustedView ? ADJUSTED_SUFFIX : ''}
-                </span>
-              </button>
-            </div>
-          </div>
-          {showEarlyFinishReminder && (
-            <div className="reminder">Reminder: ask for more work before 9:00 AM.</div>
-          )}
-          {showDeadlineExtensionReminder && <div className="reminder">Reminder: post the deadline extension message.</div>}
-          {!isInWorkTime(now) && (
-            <div className="overdue metaTextMutedSm">
-              Counting from {fmtDateTimeWithWeekday(workStartAt)}.
-            </div>
-          )}
-        </div>
-
-        <div className="controls">
-          <input
-            ref={deadlineRef}
-            className="deadlineInput"
-            type="datetime-local"
-            value={toDatetimeLocalValue(deadline)}
-            onChange={(e) => onSetDeadline(e.target.value)}
-            aria-label="Deadline time"
-          />
-
-          <button
-            onClick={reset}
-            className="resetButton btn-secondary"
-            aria-label="Reset deadline to now"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-
-      <div className="assignmentSection">
-        <div className="assignmentSectionHeader">
-          <div className="assignmentSectionTitle">Affecting deadlines</div>
-          <button
-            type="button"
-            className="assignmentSectionAddButton"
-            aria-label="Toggle assignment form"
-            aria-expanded={isAddAssignmentFormOpen}
-            aria-controls="add-assignment-form-panel"
-            onClick={() => setIsAddAssignmentFormOpen((prev) => !prev)}
-          >
-            <i className={`las ${isAddAssignmentFormOpen ? 'la-minus' : 'la-plus'}`} aria-hidden="true"></i>
-          </button>
-        </div>
-        <div
-          id="add-assignment-form-panel"
-          className="messagePanel"
-          data-state={isAddAssignmentFormOpen ? 'open' : 'closed'}
-          aria-hidden={!isAddAssignmentFormOpen}
-        >
-          <div className="messagePanelInner">
-            <fieldset disabled={!isAddAssignmentFormOpen} className="messageFieldset">
-              <div className="assignmentFields">
-            <div className="fieldGroup assignmentTextField">
-              <label className="fieldLabel" htmlFor="task-name">
-                Name
-              </label>
-              <div className="assignmentInputWrap">
-                <input
-                  id="task-name"
-                  type="text"
-                  value={assignmentName}
-                  onChange={(e) => {
-                    const nextValue = e.target.value
-                    setTaskName(nextValue)
-                    if (nextValue.trim().length === 0) {
-                      setIsRecentOpen(true)
-                    }
-                  }}
-                  onFocus={() => setIsRecentOpen(true)}
-                  onBlur={() => setIsRecentOpen(false)}
-                  onKeyDown={(event) => {
-                    if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
-                    if (event.key === 'ArrowDown') {
-                      event.preventDefault()
-                      setRecentActiveIndex((current) =>
-                        current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
-                      )
-                    } else if (event.key === 'ArrowUp') {
-                      event.preventDefault()
-                      setRecentActiveIndex((current) =>
-                        current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
-                      )
-                    } else if (event.key === 'Enter') {
-                      if (recentActiveIndex < 0) return
-                      event.preventDefault()
-                      const picked = filteredRecentTaskItems[recentActiveIndex]
-                      if (!picked) return
-                      setTaskName(picked)
-                      setIsRecentOpen(false)
-                    } else if (event.key === 'Escape') {
-                      event.preventDefault()
-                      setIsRecentOpen(false)
-                    }
-                  }}
-                placeholder="Name"
-                aria-label="Name"
-                aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
-                aria-controls="task-recent-list"
-              />
-                {isRecentOpen && filteredRecentTaskItems.length > 0 && (
-                  <div
-                    id="task-recent-list"
-                    className="assignmentRecent"
-                    role="listbox"
-                    aria-label="Recent assignments"
-                  >
-                    {filteredRecentTaskItems.map((name) => (
-                      <button
-                        key={name}
-                        type="button"
-                        className="assignmentRecentItem"
-                        data-state={
-                          name === filteredRecentTaskItems[recentActiveIndex] ? 'active' : 'idle'
-                        }
-                        onMouseDown={(event) => {
-                          event.preventDefault()
-                          setTaskName(name)
-                          setIsRecentOpen(false)
-                        }}
-                        role="option"
-                      >
-                        {name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="fieldGroup">
-              <label className="fieldLabel" htmlFor="task-hours">
-                Hours
-              </label>
-              <div className="assignmentHoursInputWrap">
-                <input
-                  id="task-hours"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={taskHours}
-                  onChange={(e) => setTaskHours(e.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'ArrowUp') {
-                      event.preventDefault()
-                      onStepTaskHours(1)
-                      return
-                    }
-
-                    if (event.key === 'ArrowDown') {
-                      event.preventDefault()
-                      onStepTaskHours(-1)
-                    }
-                  }}
-                  placeholder="Hours"
-                  aria-label="Hours"
-                />
-                <div className="assignmentHoursStepButtons">
-                  <button
-                    type="button"
-                    className="assignmentStepButton"
-                    data-dir="up"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => onStepTaskHours(1)}
-                    aria-label="Increase hours by 1"
-                  />
-                  <button
-                    type="button"
-                    className="assignmentStepButton"
-                    data-dir="down"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => onStepTaskHours(-1)}
-                    aria-label="Decrease hours by 1"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="fieldGroup">
-              <label className="fieldLabel" htmlFor="task-minutes">
-                Minutes
-              </label>
-              <div className="assignmentMinutesInputWrap">
-                <input
-                  id="task-minutes"
-                  type="number"
-                  min="-60"
-                  step="1"
-                  value={taskMinutes}
-                  onChange={(e) => onTaskMinutesChange(e.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'ArrowUp') {
-                      event.preventDefault()
-                      onStepTaskMinutes(10)
-                      return
-                    }
-
-                    if (event.key === 'ArrowDown') {
-                      event.preventDefault()
-                      onStepTaskMinutes(-10)
-                    }
-                  }}
-                  placeholder="Minutes"
-                  aria-label="Minutes"
-                />
-                <div className="assignmentMinutesStepButtons">
-                  <button
-                    type="button"
-                    className="assignmentStepButton"
-                    data-dir="up"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => onStepTaskMinutes(10)}
-                    aria-label="Increase minutes by 10"
-                  />
-                  <button
-                    type="button"
-                    className="assignmentStepButton"
-                    data-dir="down"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => onStepTaskMinutes(-10)}
-                    aria-label="Decrease minutes by 10"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="fieldGroup">
-              <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
-                Action
-              </span>
-              <button
-                onClick={addTaskEntry}
-                disabled={!assignmentName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
-                className="btn-primary"
-              >
-                <i className="las la-plus" aria-hidden="true"></i> Add assignment
-              </button>
-            </div>
-          </div>
-            </fieldset>
-          </div>
-        </div>
-
-        {tasks.length > 0 && (
-          <div className="assignmentList">
-            {tasks.map((entry, index) => (
-              <div key={`${entry.text}-${index}`} className="assignmentRow">
-                <div className="assignmentInfo">
-                  <span className="assignmentName">{entry.text}</span>
-                </div>
-                <button
-                  type="button"
-                  className="valueToggle assignmentDueValue"
-                  aria-label="Toggle schedule display from assignment due time"
-                  onClick={toggleAdjustedView}
-                >
-                  <span aria-label="Assignment due time display" className="assignmentDueText">
-                    <span className="assignmentDueTime">
-                      {isAdjustedView
-                        ? fmtTime(adjustedTaskFinishTimes[index])
-                        : fmtTime(taskFinishTimes[index])}
-                    </span>
-                    <span aria-hidden="true"> • </span>
-                    <span className="assignmentDueDuration">
-                      {isAdjustedView
-                        ? `${formatDuration(adjustedTasks[index].minutes)}${ADJUSTED_SUFFIX}`
-                        : formatDuration(entry.minutes)}
-                    </span>
-                  </span>
-                </button>
-                <button
-                  onClick={() => removeTaskEntry(index)}
-                  aria-label="Remove assignment"
-                  className="btn-secondary assignmentRemoveButton"
-                >
-                  <i className="las la-trash" aria-hidden="true"></i>
-                </button>
-              </div>
-            ))}
           </div>
         )}
-      </div>
 
-      <div className="messagesSection">
-        <AccordionItem
-          title="Deadline extension message"
-          isOpen={isTasksPanelOpen}
-          onToggle={() => setIsTasksPanelOpen((prev) => !prev)}
-          panelId="tasks-panel"
-        >
-          <fieldset disabled={!isTasksPanelOpen} className="messageFieldset">
-            <div className="messageBody">
-              <div className="messageFields">
-                <div className="fieldGroup">
-                  <label className="fieldLabel" htmlFor="deadline-extension-assignment">
-                    Assignment
-                  </label>
-                  <input
-                    id="deadline-extension-assignment"
-                    type="text"
-                    value={deadlineExtensionAssignment}
-                    onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
-                    placeholder="Assignment"
-                    aria-label="Assignment name"
-                  />
-                </div>
-                <div className="fieldGroup">
-                  <label className="fieldLabel" htmlFor="deadline-extension-confirmed-by">
-                    Confirmed by
-                  </label>
-                  <input
-                    id="deadline-extension-confirmed-by"
-                    type="text"
-                    value={deadlineExtensionConfirmedBy}
-                    onChange={(e) => setDeadlineExtensionConfirmedBy(e.target.value)}
-                    placeholder="Confirmed by"
-                    aria-label="Confirmed by"
-                  />
-                </div>
-              </div>
-
-              <div className="messagePreview" aria-label="Deadline extension message preview">
-                {deadlineExtensionMessage ||
-                  'Fill all fields to generate a deadline extension message preview.'}
-              </div>
-
-              <div className="messageActions">
-                <button
-                  onClick={onCopyDeadlineExtensionMessage}
-                  disabled={!deadlineExtensionMessage}
-                  className="btn-primary"
-                >
-                  <i className="las la-copy" aria-hidden="true"></i> Copy
-                </button>
-                {deadlineExtensionCopyState === 'copied' && (
-                  <span className="copyStatus">Copied.</span>
-                )}
-                {deadlineExtensionCopyState === 'failed' && (
-                  <span className="copyStatus">Copy failed. Please copy manually.</span>
-                )}
-              </div>
+        <div className="assignmentPageBody">
+          <div className="deadlineSection assignmentOverviewCard">
+            <div className="assignmentOverviewHeader">
+              <h1 className="assignmentOverviewTitle">{assignmentTitle}</h1>
             </div>
-          </fieldset>
-        </AccordionItem>
 
-        <AccordionItem
-          title="Next assignment message"
-          isOpen={isNextAssignmentPanelOpen}
-          onToggle={() => setIsNextAssignmentPanelOpen((prev) => !prev)}
-          panelId="next-assignment-message-panel"
-        >
-          <fieldset disabled={!isNextAssignmentPanelOpen} className="messageFieldset">
-            <div className="messageBody">
-              <div className="nextAssignmentMessageFields">
-                <div className="fieldGroup">
-                  <label
-                    className="fieldLabel"
-                    htmlFor="next-assignment-message-completed-assignment"
+            <div className="main">
+              <div className="block">
+                <div className="label">Deadline</div>
+                <div className="deadline">
+                  <button
+                    type="button"
+                    className="valueToggle deadlineValue"
+                    aria-label="Toggle original and adjusted schedule"
+                    onClick={toggleAdjustedView}
                   >
-                    Completed assignment
+                    <span aria-label="Current deadline display">
+                      {fmtDateTimeWithWeekday(displayDeadline)}
+                      {isAdjustedView ? ADJUSTED_SUFFIX : ''}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="block">
+                <div className="label">Remaining (work time)</div>
+                <div className="remaining">
+                  <button
+                    type="button"
+                    className="valueToggle remainingValue"
+                    aria-label="Toggle schedule display from remaining work time"
+                    onClick={toggleAdjustedView}
+                  >
+                    <span aria-label="Remaining work time display">
+                      {parts.days > 0 && `${parts.days}d `}
+                      {parts.hours}h {parts.minutes}m {parts.seconds}s
+                      {isAdjustedView ? ADJUSTED_SUFFIX : ''}
+                    </span>
+                  </button>
+                </div>
+              </div>
+              {showEarlyFinishReminder && (
+                <div className="reminder">Reminder: ask for more work before 9:00 AM.</div>
+              )}
+              {showDeadlineExtensionReminder && <div className="reminder">Reminder: post the deadline extension message.</div>}
+              {!isInWorkTime(now) && (
+                <div className="overdue metaTextMutedSm">
+                  Counting from {fmtDateTimeWithWeekday(workStartAt)}.
+                </div>
+              )}
+            </div>
+
+            <div className="controls">
+              <input
+                ref={deadlineRef}
+                className="deadlineInput"
+                type="datetime-local"
+                value={toDatetimeLocalValue(deadline)}
+                onChange={(e) => onSetDeadline(e.target.value)}
+                aria-label="Deadline time"
+              />
+
+              <button
+                onClick={reset}
+                className="resetButton btn-secondary"
+                aria-label="Reset deadline to now"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div className="assignmentSection">
+            <div className="assignmentSectionHeader">
+              <div className="assignmentSectionTitle">Affecting deadlines</div>
+              <button
+                type="button"
+                className="assignmentSectionAddButton"
+                aria-label="Toggle assignment form"
+                aria-expanded={isAddAssignmentFormOpen}
+                aria-controls="add-assignment-form-panel"
+                onClick={() => setIsAddAssignmentFormOpen((prev) => !prev)}
+              >
+                <i className={`las ${isAddAssignmentFormOpen ? 'la-minus' : 'la-plus'}`} aria-hidden="true"></i>
+              </button>
+            </div>
+            <div
+              id="add-assignment-form-panel"
+              className="messagePanel"
+              data-state={isAddAssignmentFormOpen ? 'open' : 'closed'}
+              aria-hidden={!isAddAssignmentFormOpen}
+            >
+              <div className="messagePanelInner">
+                <fieldset disabled={!isAddAssignmentFormOpen} className="messageFieldset">
+                  <div className="assignmentFields">
+                <div className="fieldGroup assignmentTextField">
+                  <label className="fieldLabel" htmlFor="task-name">
+                    Name
                   </label>
-                  <input
-                    id="next-assignment-message-completed-assignment"
-                    type="text"
-                    value={deadlineExtensionAssignment}
-                    onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
-                    placeholder="Completed assignment"
-                    aria-label="Completed assignment"
+                  <div className="assignmentInputWrap">
+                    <input
+                      id="task-name"
+                      type="text"
+                      value={assignmentName}
+                      onChange={(e) => {
+                        const nextValue = e.target.value
+                        setTaskName(nextValue)
+                        if (nextValue.trim().length === 0) {
+                          setIsRecentOpen(true)
+                        }
+                      }}
+                      onFocus={() => setIsRecentOpen(true)}
+                      onBlur={() => setIsRecentOpen(false)}
+                      onKeyDown={(event) => {
+                        if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
+                        if (event.key === 'ArrowDown') {
+                          event.preventDefault()
+                          setRecentActiveIndex((current) =>
+                            current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
+                          )
+                        } else if (event.key === 'ArrowUp') {
+                          event.preventDefault()
+                          setRecentActiveIndex((current) =>
+                            current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
+                          )
+                        } else if (event.key === 'Enter') {
+                          if (recentActiveIndex < 0) return
+                          event.preventDefault()
+                          const picked = filteredRecentTaskItems[recentActiveIndex]
+                          if (!picked) return
+                          setTaskName(picked)
+                          setIsRecentOpen(false)
+                        } else if (event.key === 'Escape') {
+                          event.preventDefault()
+                          setIsRecentOpen(false)
+                        }
+                      }}
+                    placeholder="Name"
+                    aria-label="Name"
+                    aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
+                    aria-controls="task-recent-list"
                   />
+                    {isRecentOpen && filteredRecentTaskItems.length > 0 && (
+                      <div
+                        id="task-recent-list"
+                        className="assignmentRecent"
+                        role="listbox"
+                        aria-label="Recent assignments"
+                      >
+                        {filteredRecentTaskItems.map((name) => (
+                          <button
+                            key={name}
+                            type="button"
+                            className="assignmentRecentItem"
+                            data-state={
+                              name === filteredRecentTaskItems[recentActiveIndex] ? 'active' : 'idle'
+                            }
+                            onMouseDown={(event) => {
+                              event.preventDefault()
+                              setTaskName(name)
+                              setIsRecentOpen(false)
+                            }}
+                            role="option"
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="fieldGroup">
-                  <label className="fieldLabel" htmlFor="next-assignment-message-next-assignment">
-                    Next assignment
+                  <label className="fieldLabel" htmlFor="task-hours">
+                    Hours
                   </label>
-                  <input
-                    id="next-assignment-message-next-assignment"
-                    type="text"
-                    value={nextAssignment}
-                    onChange={(e) => setNextAssignment(e.target.value)}
-                    placeholder="Next assignment"
-                    aria-label="Next assignment"
-                  />
+                  <div className="assignmentHoursInputWrap">
+                    <input
+                      id="task-hours"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={taskHours}
+                      onChange={(e) => setTaskHours(e.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'ArrowUp') {
+                          event.preventDefault()
+                          onStepTaskHours(1)
+                          return
+                        }
+
+                        if (event.key === 'ArrowDown') {
+                          event.preventDefault()
+                          onStepTaskHours(-1)
+                        }
+                      }}
+                      placeholder="Hours"
+                      aria-label="Hours"
+                    />
+                    <div className="assignmentHoursStepButtons">
+                      <button
+                        type="button"
+                        className="assignmentStepButton"
+                        data-dir="up"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => onStepTaskHours(1)}
+                        aria-label="Increase hours by 1"
+                      />
+                      <button
+                        type="button"
+                        className="assignmentStepButton"
+                        data-dir="down"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => onStepTaskHours(-1)}
+                        aria-label="Decrease hours by 1"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="fieldGroup nextAssignmentMessageConfirmedBy">
-                  <label className="fieldLabel" htmlFor="next-assignment-message-confirmed-by">
-                    Confirmed by
+                <div className="fieldGroup">
+                  <label className="fieldLabel" htmlFor="task-minutes">
+                    Minutes
                   </label>
-                  <input
-                    id="next-assignment-message-confirmed-by"
-                    type="text"
-                    value={nextAssignmentConfirmedBy}
-                    onChange={(e) => setNextAssignmentConfirmedBy(e.target.value)}
-                    placeholder="Confirmed by"
-                    aria-label="Next assignment message confirmed by"
-                  />
+                  <div className="assignmentMinutesInputWrap">
+                    <input
+                      id="task-minutes"
+                      type="number"
+                      min="-60"
+                      step="1"
+                      value={taskMinutes}
+                      onChange={(e) => onTaskMinutesChange(e.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'ArrowUp') {
+                          event.preventDefault()
+                          onStepTaskMinutes(10)
+                          return
+                        }
+
+                        if (event.key === 'ArrowDown') {
+                          event.preventDefault()
+                          onStepTaskMinutes(-10)
+                        }
+                      }}
+                      placeholder="Minutes"
+                      aria-label="Minutes"
+                    />
+                    <div className="assignmentMinutesStepButtons">
+                      <button
+                        type="button"
+                        className="assignmentStepButton"
+                        data-dir="up"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => onStepTaskMinutes(10)}
+                        aria-label="Increase minutes by 10"
+                      />
+                      <button
+                        type="button"
+                        className="assignmentStepButton"
+                        data-dir="down"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => onStepTaskMinutes(-10)}
+                        aria-label="Decrease minutes by 10"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="fieldGroup nextAssignmentStartAt">
-                  <label className="fieldLabel" htmlFor="next-assignment-message-start-at">
-                    Start time
-                  </label>
-                  <input
-                    id="next-assignment-message-start-at"
-                    type="datetime-local"
-                    value={nextAssignmentStartAt ? toDatetimeLocalValue(nextAssignmentStartAt) : ''}
-                    disabled
-                    readOnly
-                    aria-label="Start time"
-                  />
+                <div className="fieldGroup">
+                  <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
+                    Action
+                  </span>
+                  <button
+                    onClick={addTaskEntry}
+                    disabled={!assignmentName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
+                    className="btn-primary"
+                  >
+                    <i className="las la-plus" aria-hidden="true"></i> Add assignment
+                  </button>
                 </div>
               </div>
-
-              <div className="messagePreview" aria-label="Next assignment message preview">
-                {nextAssignmentMessage || 'Fill all fields to generate a next assignment message.'}
-              </div>
-
-              <div className="messageActions">
-                <button
-                  onClick={onCopyNextAssignmentMessage}
-                  disabled={!nextAssignmentMessage}
-                  className="btn-primary"
-                >
-                  <i className="las la-copy" aria-hidden="true"></i> Copy
-                </button>
-                {nextAssignmentCopyState === 'copied' && <span className="copyStatus">Copied.</span>}
-                {nextAssignmentCopyState === 'failed' && (
-                  <span className="copyStatus">Copy failed. Please copy manually.</span>
-                )}
+                </fieldset>
               </div>
             </div>
-          </fieldset>
-        </AccordionItem>
 
-        <AccordionItem
-          title="Assignment history export"
-          isOpen={isAssignmentHistoryPanelOpen}
-          onToggle={() => setIsAssignmentHistoryPanelOpen((prev) => !prev)}
-          panelId="assignment-history-panel"
-        >
-          <fieldset disabled={!isAssignmentHistoryPanelOpen} className="messageFieldset">
-            <div className="historyExportSection">
-              <div className="fieldGroup historyExportMonthField">
-                <label className="fieldLabel" htmlFor="assignment-history-month">
-                  Month
-                </label>
-                <input
-                  id="assignment-history-month"
-                  type="month"
-                  value={historyMonth}
-                  onChange={(e) => setHistoryMonth(e.target.value)}
-                  aria-label="Month"
-                />
+            {tasks.length > 0 && (
+              <div className="assignmentList">
+                {tasks.map((entry, index) => (
+                  <AssignmentRow
+                    key={`${entry.text}-${index}`}
+                    title={entry.text}
+                    middle={
+                      <button
+                        type="button"
+                        className="valueToggle assignmentDueValue"
+                        aria-label="Toggle schedule display from assignment due time"
+                        onClick={toggleAdjustedView}
+                      >
+                        <span aria-label="Assignment due time display" className="assignmentDueText">
+                          <span className="assignmentDueTime">
+                            {isAdjustedView
+                              ? fmtTime(adjustedTaskFinishTimes[index])
+                              : fmtTime(taskFinishTimes[index])}
+                          </span>
+                          <span aria-hidden="true"> • </span>
+                          <span className="assignmentDueDuration">
+                            {isAdjustedView
+                              ? `${formatDuration(adjustedTasks[index].minutes)}${ADJUSTED_SUFFIX}`
+                              : formatDuration(entry.minutes)}
+                          </span>
+                        </span>
+                      </button>
+                    }
+                    action={
+                      <button
+                        onClick={() => removeTaskEntry(index)}
+                        aria-label="Remove assignment"
+                        className="btn-secondary assignmentRemoveButton"
+                      >
+                        <i className="las la-trash" aria-hidden="true"></i>
+                      </button>
+                    }
+                  />
+                ))}
               </div>
-              <div className="historyExportMeta metaTextMutedSm">
-                {monthlyAssignmentHistory.length} assignments, {(monthlyHistoryMinutes / 60).toFixed(2)} hours
-              </div>
-              <div className="historyExportActions">
-                <button onClick={onExportAssignmentHistoryCsv} className="btn-secondary">
-                  <i className="las la-file-csv" aria-hidden="true"></i> Export CSV
-                </button>
-                <button onClick={onExportAssignmentHistoryJson} className="btn-secondary">
-                  <i className="las la-file-code" aria-hidden="true"></i> Export JSON
-                </button>
-              </div>
-            </div>
-          </fieldset>
-        </AccordionItem>
+            )}
+          </div>
+
+          <div className="messagesSection">
+            <AccordionItem
+              title="Deadline extension message"
+              isOpen={isTasksPanelOpen}
+              onToggle={() => setIsTasksPanelOpen((prev) => !prev)}
+              panelId="tasks-panel"
+            >
+              <fieldset disabled={!isTasksPanelOpen} className="messageFieldset">
+                <div className="messageBody">
+                  <div className="messageFields">
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="deadline-extension-assignment">
+                        Assignment
+                      </label>
+                      <input
+                        id="deadline-extension-assignment"
+                        type="text"
+                        value={deadlineExtensionAssignment}
+                        onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
+                        placeholder="Assignment"
+                        aria-label="Assignment name"
+                      />
+                    </div>
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="deadline-extension-confirmed-by">
+                        Confirmed by
+                      </label>
+                      <input
+                        id="deadline-extension-confirmed-by"
+                        type="text"
+                        value={deadlineExtensionConfirmedBy}
+                        onChange={(e) => setDeadlineExtensionConfirmedBy(e.target.value)}
+                        placeholder="Confirmed by"
+                        aria-label="Confirmed by"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="messagePreview" aria-label="Deadline extension message preview">
+                    {deadlineExtensionMessage ||
+                      'Fill all fields to generate a deadline extension message preview.'}
+                  </div>
+
+                  <div className="messageActions">
+                    <button
+                      onClick={onCopyDeadlineExtensionMessage}
+                      disabled={!deadlineExtensionMessage}
+                      className="btn-primary"
+                    >
+                      <i className="las la-copy" aria-hidden="true"></i> Copy
+                    </button>
+                    {deadlineExtensionCopyState === 'copied' && (
+                      <span className="copyStatus">Copied.</span>
+                    )}
+                    {deadlineExtensionCopyState === 'failed' && (
+                      <span className="copyStatus">Copy failed. Please copy manually.</span>
+                    )}
+                  </div>
+                </div>
+              </fieldset>
+            </AccordionItem>
+
+            <AccordionItem
+              title="Next assignment message"
+              isOpen={isNextAssignmentPanelOpen}
+              onToggle={() => setIsNextAssignmentPanelOpen((prev) => !prev)}
+              panelId="next-assignment-message-panel"
+            >
+              <fieldset disabled={!isNextAssignmentPanelOpen} className="messageFieldset">
+                <div className="messageBody">
+                  <div className="nextAssignmentMessageFields">
+                    <div className="fieldGroup">
+                      <label
+                        className="fieldLabel"
+                        htmlFor="next-assignment-message-completed-assignment"
+                      >
+                        Completed assignment
+                      </label>
+                      <input
+                        id="next-assignment-message-completed-assignment"
+                        type="text"
+                        value={deadlineExtensionAssignment}
+                        onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
+                        placeholder="Completed assignment"
+                        aria-label="Completed assignment"
+                      />
+                    </div>
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="next-assignment-message-next-assignment">
+                        Next assignment
+                      </label>
+                      <input
+                        id="next-assignment-message-next-assignment"
+                        type="text"
+                        value={nextAssignment}
+                        onChange={(e) => setNextAssignment(e.target.value)}
+                        placeholder="Next assignment"
+                        aria-label="Next assignment"
+                      />
+                    </div>
+                    <div className="fieldGroup nextAssignmentMessageConfirmedBy">
+                      <label className="fieldLabel" htmlFor="next-assignment-message-confirmed-by">
+                        Confirmed by
+                      </label>
+                      <input
+                        id="next-assignment-message-confirmed-by"
+                        type="text"
+                        value={nextAssignmentConfirmedBy}
+                        onChange={(e) => setNextAssignmentConfirmedBy(e.target.value)}
+                        placeholder="Confirmed by"
+                        aria-label="Next assignment message confirmed by"
+                      />
+                    </div>
+                    <div className="fieldGroup nextAssignmentStartAt">
+                      <label className="fieldLabel" htmlFor="next-assignment-message-start-at">
+                        Start time
+                      </label>
+                      <input
+                        id="next-assignment-message-start-at"
+                        type="datetime-local"
+                        value={nextAssignmentStartAt ? toDatetimeLocalValue(nextAssignmentStartAt) : ''}
+                        disabled
+                        readOnly
+                        aria-label="Start time"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="messagePreview" aria-label="Next assignment message preview">
+                    {nextAssignmentMessage || 'Fill all fields to generate a next assignment message.'}
+                  </div>
+
+                  <div className="messageActions">
+                    <button
+                      onClick={onCopyNextAssignmentMessage}
+                      disabled={!nextAssignmentMessage}
+                      className="btn-primary"
+                    >
+                      <i className="las la-copy" aria-hidden="true"></i> Copy
+                    </button>
+                    {nextAssignmentCopyState === 'copied' && <span className="copyStatus">Copied.</span>}
+                    {nextAssignmentCopyState === 'failed' && (
+                      <span className="copyStatus">Copy failed. Please copy manually.</span>
+                    )}
+                  </div>
+                </div>
+              </fieldset>
+            </AccordionItem>
+
+            <AccordionItem
+              title="Assignment history export"
+              isOpen={isAssignmentHistoryPanelOpen}
+              onToggle={() => setIsAssignmentHistoryPanelOpen((prev) => !prev)}
+              panelId="assignment-history-panel"
+            >
+              <fieldset disabled={!isAssignmentHistoryPanelOpen} className="messageFieldset">
+                <div className="historyExportSection">
+                  <div className="fieldGroup historyExportMonthField">
+                    <label className="fieldLabel" htmlFor="assignment-history-month">
+                      Month
+                    </label>
+                    <input
+                      id="assignment-history-month"
+                      type="month"
+                      value={historyMonth}
+                      onChange={(e) => setHistoryMonth(e.target.value)}
+                      aria-label="Month"
+                    />
+                  </div>
+                  <div className="historyExportMeta metaTextMutedSm">
+                    {monthlyAssignmentHistory.length} assignments, {(monthlyHistoryMinutes / 60).toFixed(2)} hours
+                  </div>
+                  <div className="historyExportActions">
+                    <button onClick={onExportAssignmentHistoryCsv} className="btn-secondary">
+                      <i className="las la-file-csv" aria-hidden="true"></i> Export CSV
+                    </button>
+                    <button onClick={onExportAssignmentHistoryJson} className="btn-secondary">
+                      <i className="las la-file-code" aria-hidden="true"></i> Export JSON
+                    </button>
+                  </div>
+                </div>
+              </fieldset>
+            </AccordionItem>
+          </div>
+        </div>
       </div>
     </div>
   )

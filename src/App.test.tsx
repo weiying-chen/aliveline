@@ -2,8 +2,17 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 
 import App from './App'
+
+function renderApp() {
+  return render(
+    <MemoryRouter>
+      <App />
+    </MemoryRouter>
+  )
+}
 
 function readHoursMinutes(label: string) {
   const text = screen.getByLabelText(label).textContent ?? ''
@@ -35,7 +44,7 @@ describe('App deadline behavior', () => {
   })
 
   it('extends main deadline when adding task entries', () => {
-    const { container } = render(<App />)
+    const { container } = renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
 
@@ -55,7 +64,7 @@ describe('App deadline behavior', () => {
   })
 
   it('shows deadline message with previous and updated deadline after adding task time', () => {
-    const { container } = render(<App />)
+    const { container } = renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
 
@@ -87,7 +96,7 @@ describe('App deadline behavior', () => {
   })
 
   it('shows the same deadline message under unified model', () => {
-    const { container } = render(<App />)
+    const { container } = renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
 
@@ -119,7 +128,7 @@ describe('App deadline behavior', () => {
   })
 
   it('shows the same task due time under unified model', () => {
-    render(<App />)
+    renderApp()
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
     })
@@ -134,7 +143,7 @@ describe('App deadline behavior', () => {
   })
 
   it('toggles original and adjusted values in place for planning fields', () => {
-    render(<App />)
+    renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
 
@@ -161,7 +170,7 @@ describe('App deadline behavior', () => {
   })
 
   it('persists the schedule view mode in local storage', () => {
-    render(<App />)
+    renderApp()
     const toggle = screen.getByRole('button', { name: 'Toggle original and adjusted schedule' })
 
     fireEvent.click(toggle)
@@ -172,7 +181,7 @@ describe('App deadline behavior', () => {
   })
 
   it('updates deadline extension preview content in adjusted view', () => {
-    render(<App />)
+    renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2099-04-10T12:00' } })
 
@@ -206,7 +215,7 @@ describe('App deadline behavior', () => {
   })
 
   it('shows next assignment message preview using full template', () => {
-    render(<App />)
+    renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
 
@@ -235,7 +244,7 @@ describe('App deadline behavior', () => {
   it('keeps adjusted deadline fixed instead of drifting with now', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    render(<App />)
+    renderApp()
 
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-15T13:00' } })
@@ -260,7 +269,7 @@ describe('App deadline behavior', () => {
   it('keeps deadline value unchanged when deadline multiplier is 1.0', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    render(<App />)
+    renderApp()
 
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-15T13:00' } })
@@ -278,7 +287,7 @@ describe('App deadline behavior', () => {
   it('keeps remaining work unchanged when deadline multiplier is 1.0', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    render(<App />)
+    renderApp()
 
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-15T16:00' } })
@@ -300,7 +309,7 @@ describe('App deadline behavior', () => {
   it('keeps adjusted deadline stable after reload', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    const first = render(<App />)
+    const first = renderApp()
 
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-20T08:55' } })
@@ -313,7 +322,7 @@ describe('App deadline behavior', () => {
       vi.advanceTimersByTime(24 * 60 * 60 * 1000)
     })
 
-    render(<App />)
+    renderApp()
     const adjustedAfter = screen.getByLabelText('Current deadline display').textContent
     expect(adjustedAfter).toBe(adjustedBefore)
   })
@@ -321,7 +330,7 @@ describe('App deadline behavior', () => {
   it('keeps cross-day remaining work unchanged when deadline multiplier is 1.0', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 24, 15, 0, 0))
-    render(<App />)
+    renderApp()
 
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-28T11:00' } })
@@ -337,7 +346,7 @@ describe('App deadline behavior', () => {
   it('keeps cross-day task-extended remaining unchanged when deadline multiplier is 1.0', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 24, 15, 0, 0))
-    render(<App />)
+    renderApp()
 
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-24T16:00' } })
@@ -359,7 +368,7 @@ describe('App deadline behavior', () => {
   it('uses the same 10-minute rounding as task time in adjusted mode', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    render(<App />)
+    renderApp()
 
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-15T10:20' } })
@@ -373,7 +382,7 @@ describe('App deadline behavior', () => {
   it('keeps deadline unchanged when tasks are added later and deadline multiplier is 1.0', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    render(<App />)
+    renderApp()
 
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-15T13:00' } })
@@ -394,7 +403,7 @@ describe('App deadline behavior', () => {
   })
 
   it('renders assignment history export as an accordion panel', () => {
-    render(<App />)
+    renderApp()
 
     const header = screen.getByRole('button', { name: 'Assignment history export' })
     expect(header.getAttribute('aria-expanded')).toBe('false')
@@ -407,7 +416,7 @@ describe('App deadline behavior', () => {
   })
 
   it('shows a month label in assignment history export', () => {
-    render(<App />)
+    renderApp()
 
     fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
     expect(screen.getByLabelText('Month')).toBeTruthy()
@@ -416,7 +425,7 @@ describe('App deadline behavior', () => {
   it('uses shared muted meta text style for counting and history summary', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T06:00:00'))
-    render(<App />)
+    renderApp()
 
     fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
 
@@ -434,7 +443,7 @@ describe('App deadline behavior', () => {
       },
     })
 
-    render(<App />)
+    renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
@@ -501,7 +510,7 @@ describe('App deadline behavior', () => {
       })
     )
 
-    render(<App />)
+    renderApp()
 
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
     expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('50m')
@@ -513,7 +522,7 @@ describe('App deadline behavior', () => {
   })
 
   it('updates assignment draft assignments when list changes', () => {
-    render(<App />)
+    renderApp()
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
     })
@@ -540,7 +549,7 @@ describe('App deadline behavior', () => {
   })
 
   it('does not persist legacy v1 draft keys', () => {
-    render(<App />)
+    renderApp()
     fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
     fireEvent.change(screen.getByLabelText('Assignment name'), {
       target: { value: 'Legacy key check' },
@@ -560,7 +569,7 @@ describe('App deadline behavior', () => {
     localStorage.setItem('aliveline:assignment-draft', '{"deadlineIso":123}')
     localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
 
-    render(<App />)
+    renderApp()
     expect(screen.queryAllByLabelText('Assignment due time display')).toHaveLength(0)
     fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
     expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe('')
