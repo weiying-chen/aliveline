@@ -1116,212 +1116,214 @@ export default function App({
           </div>
 
           <div className="assignmentSection">
-            <div className="assignmentSectionHeader">
-              <div className="assignmentSectionTitle sectionHeading">Affecting deadlines</div>
-              <button
-                type="button"
-                className="assignmentSectionAddButton"
-                aria-label="Toggle assignment form"
-                aria-expanded={isAddAssignmentFormOpen}
-                aria-controls="add-assignment-form-panel"
-                onClick={() => setIsAddAssignmentFormOpen((prev) => !prev)}
-              >
-                <i className={`las ${isAddAssignmentFormOpen ? 'la-minus' : 'la-plus'}`} aria-hidden="true"></i>
-              </button>
-            </div>
-            <div
-              id="add-assignment-form-panel"
-              className="messagePanel"
-              data-state={isAddAssignmentFormOpen ? 'open' : 'closed'}
-              aria-hidden={!isAddAssignmentFormOpen}
-            >
-              <div className="messagePanelInner">
-                <fieldset disabled={!isAddAssignmentFormOpen} className="messageFieldset">
-                  <div className="assignmentFields">
-                <div className="fieldGroup assignmentTextField">
-                  <label className="fieldLabel" htmlFor="task-name">
-                    Name
-                  </label>
-                  <div className="assignmentInputWrap">
-                    <input
-                      id="task-name"
-                      type="text"
-                      value={assignmentName}
-                      onChange={(e) => {
-                        const nextValue = e.target.value
-                        setTaskName(nextValue)
-                        if (nextValue.trim().length === 0) {
-                          setIsRecentOpen(true)
-                        }
-                      }}
-                      onFocus={() => setIsRecentOpen(true)}
-                      onBlur={() => setIsRecentOpen(false)}
-                      onKeyDown={(event) => {
-                        if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
-                        if (event.key === 'ArrowDown') {
-                          event.preventDefault()
-                          setRecentActiveIndex((current) =>
-                            current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
-                          )
-                        } else if (event.key === 'ArrowUp') {
-                          event.preventDefault()
-                          setRecentActiveIndex((current) =>
-                            current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
-                          )
-                        } else if (event.key === 'Enter') {
-                          if (recentActiveIndex < 0) return
-                          event.preventDefault()
-                          const picked = filteredRecentTaskItems[recentActiveIndex]
-                          if (!picked) return
-                          setTaskName(picked)
-                          setIsRecentOpen(false)
-                        } else if (event.key === 'Escape') {
-                          event.preventDefault()
-                          setIsRecentOpen(false)
-                        }
-                      }}
-                    placeholder="Name"
-                    aria-label="Name"
-                    aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
-                    aria-controls="task-recent-list"
-                  />
-                    {isRecentOpen && filteredRecentTaskItems.length > 0 && (
-                      <div
-                        id="task-recent-list"
-                        className="assignmentRecent"
-                        role="listbox"
-                        aria-label="Recent assignments"
-                      >
-                        {filteredRecentTaskItems.map((name) => (
-                          <button
-                            key={name}
-                            type="button"
-                            className="assignmentRecentItem"
-                            data-state={
-                              name === filteredRecentTaskItems[recentActiveIndex] ? 'active' : 'idle'
-                            }
-                            onMouseDown={(event) => {
-                              event.preventDefault()
-                              setTaskName(name)
-                              setIsRecentOpen(false)
-                            }}
-                            role="option"
-                          >
-                            {name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="fieldGroup">
-                  <label className="fieldLabel" htmlFor="task-hours">
-                    Hours
-                  </label>
-                  <div className="assignmentHoursInputWrap">
-                    <input
-                      id="task-hours"
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={taskHours}
-                      onChange={(e) => setTaskHours(e.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'ArrowUp') {
-                          event.preventDefault()
-                          onStepTaskHours(1)
-                          return
-                        }
-
-                        if (event.key === 'ArrowDown') {
-                          event.preventDefault()
-                          onStepTaskHours(-1)
-                        }
-                      }}
-                      placeholder="Hours"
-                      aria-label="Hours"
-                    />
-                    <div className="assignmentHoursStepButtons">
-                      <button
-                        type="button"
-                        className="assignmentStepButton"
-                        data-dir="up"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => onStepTaskHours(1)}
-                        aria-label="Increase hours by 1"
-                      />
-                      <button
-                        type="button"
-                        className="assignmentStepButton"
-                        data-dir="down"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => onStepTaskHours(-1)}
-                        aria-label="Decrease hours by 1"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="fieldGroup">
-                  <label className="fieldLabel" htmlFor="task-minutes">
-                    Minutes
-                  </label>
-                  <div className="assignmentMinutesInputWrap">
-                    <input
-                      id="task-minutes"
-                      type="number"
-                      min="-60"
-                      step="1"
-                      value={taskMinutes}
-                      onChange={(e) => onTaskMinutesChange(e.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'ArrowUp') {
-                          event.preventDefault()
-                          onStepTaskMinutes(10)
-                          return
-                        }
-
-                        if (event.key === 'ArrowDown') {
-                          event.preventDefault()
-                          onStepTaskMinutes(-10)
-                        }
-                      }}
-                      placeholder="Minutes"
-                      aria-label="Minutes"
-                    />
-                    <div className="assignmentMinutesStepButtons">
-                      <button
-                        type="button"
-                        className="assignmentStepButton"
-                        data-dir="up"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => onStepTaskMinutes(10)}
-                        aria-label="Increase minutes by 10"
-                      />
-                      <button
-                        type="button"
-                        className="assignmentStepButton"
-                        data-dir="down"
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => onStepTaskMinutes(-10)}
-                        aria-label="Decrease minutes by 10"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="fieldGroup">
-                  <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
-                    Action
-                  </span>
-                  <button
-                    onClick={addTaskEntry}
-                    disabled={!assignmentName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
-                    className="btn-primary"
-                  >
-                    <i className="las la-plus" aria-hidden="true"></i> Add assignment
-                  </button>
-                </div>
+            <div className="assignmentSectionDisclosure">
+              <div className="assignmentSectionHeader">
+                <div className="assignmentSectionTitle sectionHeading">Affecting deadlines</div>
+                <button
+                  type="button"
+                  className="assignmentSectionAddButton"
+                  aria-label="Toggle assignment form"
+                  aria-expanded={isAddAssignmentFormOpen}
+                  aria-controls="add-assignment-form-panel"
+                  onClick={() => setIsAddAssignmentFormOpen((prev) => !prev)}
+                >
+                  <i className={`las ${isAddAssignmentFormOpen ? 'la-minus' : 'la-plus'}`} aria-hidden="true"></i>
+                </button>
               </div>
-                </fieldset>
+              <div
+                id="add-assignment-form-panel"
+                className="messagePanel"
+                data-state={isAddAssignmentFormOpen ? 'open' : 'closed'}
+                aria-hidden={!isAddAssignmentFormOpen}
+              >
+                <div className="messagePanelInner">
+                  <fieldset disabled={!isAddAssignmentFormOpen} className="messageFieldset">
+                    <div className="assignmentFields">
+                  <div className="fieldGroup assignmentTextField">
+                    <label className="fieldLabel" htmlFor="task-name">
+                      Name
+                    </label>
+                    <div className="assignmentInputWrap">
+                      <input
+                        id="task-name"
+                        type="text"
+                        value={assignmentName}
+                        onChange={(e) => {
+                          const nextValue = e.target.value
+                          setTaskName(nextValue)
+                          if (nextValue.trim().length === 0) {
+                            setIsRecentOpen(true)
+                          }
+                        }}
+                        onFocus={() => setIsRecentOpen(true)}
+                        onBlur={() => setIsRecentOpen(false)}
+                        onKeyDown={(event) => {
+                          if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
+                          if (event.key === 'ArrowDown') {
+                            event.preventDefault()
+                            setRecentActiveIndex((current) =>
+                              current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
+                            )
+                          } else if (event.key === 'ArrowUp') {
+                            event.preventDefault()
+                            setRecentActiveIndex((current) =>
+                              current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
+                            )
+                          } else if (event.key === 'Enter') {
+                            if (recentActiveIndex < 0) return
+                            event.preventDefault()
+                            const picked = filteredRecentTaskItems[recentActiveIndex]
+                            if (!picked) return
+                            setTaskName(picked)
+                            setIsRecentOpen(false)
+                          } else if (event.key === 'Escape') {
+                            event.preventDefault()
+                            setIsRecentOpen(false)
+                          }
+                        }}
+                      placeholder="Name"
+                      aria-label="Name"
+                      aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
+                      aria-controls="task-recent-list"
+                    />
+                      {isRecentOpen && filteredRecentTaskItems.length > 0 && (
+                        <div
+                          id="task-recent-list"
+                          className="assignmentRecent"
+                          role="listbox"
+                          aria-label="Recent assignments"
+                        >
+                          {filteredRecentTaskItems.map((name) => (
+                            <button
+                              key={name}
+                              type="button"
+                              className="assignmentRecentItem"
+                              data-state={
+                                name === filteredRecentTaskItems[recentActiveIndex] ? 'active' : 'idle'
+                              }
+                              onMouseDown={(event) => {
+                                event.preventDefault()
+                                setTaskName(name)
+                                setIsRecentOpen(false)
+                              }}
+                              role="option"
+                            >
+                              {name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="fieldGroup">
+                    <label className="fieldLabel" htmlFor="task-hours">
+                      Hours
+                    </label>
+                    <div className="assignmentHoursInputWrap">
+                      <input
+                        id="task-hours"
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={taskHours}
+                        onChange={(e) => setTaskHours(e.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'ArrowUp') {
+                            event.preventDefault()
+                            onStepTaskHours(1)
+                            return
+                          }
+
+                          if (event.key === 'ArrowDown') {
+                            event.preventDefault()
+                            onStepTaskHours(-1)
+                          }
+                        }}
+                        placeholder="Hours"
+                        aria-label="Hours"
+                      />
+                      <div className="assignmentHoursStepButtons">
+                        <button
+                          type="button"
+                          className="assignmentStepButton"
+                          data-dir="up"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => onStepTaskHours(1)}
+                          aria-label="Increase hours by 1"
+                        />
+                        <button
+                          type="button"
+                          className="assignmentStepButton"
+                          data-dir="down"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => onStepTaskHours(-1)}
+                          aria-label="Decrease hours by 1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="fieldGroup">
+                    <label className="fieldLabel" htmlFor="task-minutes">
+                      Minutes
+                    </label>
+                    <div className="assignmentMinutesInputWrap">
+                      <input
+                        id="task-minutes"
+                        type="number"
+                        min="-60"
+                        step="1"
+                        value={taskMinutes}
+                        onChange={(e) => onTaskMinutesChange(e.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'ArrowUp') {
+                            event.preventDefault()
+                            onStepTaskMinutes(10)
+                            return
+                          }
+
+                          if (event.key === 'ArrowDown') {
+                            event.preventDefault()
+                            onStepTaskMinutes(-10)
+                          }
+                        }}
+                        placeholder="Minutes"
+                        aria-label="Minutes"
+                      />
+                      <div className="assignmentMinutesStepButtons">
+                        <button
+                          type="button"
+                          className="assignmentStepButton"
+                          data-dir="up"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => onStepTaskMinutes(10)}
+                          aria-label="Increase minutes by 10"
+                        />
+                        <button
+                          type="button"
+                          className="assignmentStepButton"
+                          data-dir="down"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => onStepTaskMinutes(-10)}
+                          aria-label="Decrease minutes by 10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="fieldGroup">
+                    <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
+                      Action
+                    </span>
+                    <button
+                      onClick={addTaskEntry}
+                      disabled={!assignmentName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
+                      className="btn-primary"
+                    >
+                      <i className="las la-plus" aria-hidden="true"></i> Add assignment
+                    </button>
+                  </div>
+                </div>
+                  </fieldset>
+                </div>
               </div>
             </div>
 
@@ -1356,55 +1358,57 @@ export default function App({
           </div>
 
           <div className="assignmentSection">
-            <div className="assignmentSectionHeader">
-              <div className="assignmentSectionTitle sectionHeading">Comments</div>
-              <button
-                type="button"
-                className="assignmentSectionAddButton"
-                aria-label="Toggle comment form"
-                aria-expanded={isCommentsFormOpen}
-                aria-controls="add-comment-form-panel"
-                onClick={() => setIsCommentsFormOpen((prev) => !prev)}
+            <div className="assignmentSectionDisclosure">
+              <div className="assignmentSectionHeader">
+                <div className="assignmentSectionTitle sectionHeading">Comments</div>
+                <button
+                  type="button"
+                  className="assignmentSectionAddButton"
+                  aria-label="Toggle comment form"
+                  aria-expanded={isCommentsFormOpen}
+                  aria-controls="add-comment-form-panel"
+                  onClick={() => setIsCommentsFormOpen((prev) => !prev)}
+                >
+                  <i className={`las ${isCommentsFormOpen ? 'la-minus' : 'la-plus'}`} aria-hidden="true"></i>
+                </button>
+              </div>
+              <div
+                id="add-comment-form-panel"
+                className="messagePanel"
+                data-state={isCommentsFormOpen ? 'open' : 'closed'}
+                aria-hidden={!isCommentsFormOpen}
               >
-                <i className={`las ${isCommentsFormOpen ? 'la-minus' : 'la-plus'}`} aria-hidden="true"></i>
-              </button>
-            </div>
-            <div
-              id="add-comment-form-panel"
-              className="messagePanel"
-              data-state={isCommentsFormOpen ? 'open' : 'closed'}
-              aria-hidden={!isCommentsFormOpen}
-            >
-              <div className="messagePanelInner">
-                <fieldset disabled={!isCommentsFormOpen} className="messageFieldset">
-                  <div className="assignmentCommentFields">
-                    <div className="fieldGroup assignmentTextField">
-                      <label className="fieldLabel" htmlFor="comment-text">
-                        Comment
-                      </label>
-                      <input
-                        id="comment-text"
-                        type="text"
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Add a comment point"
-                        aria-label="Comment"
-                      />
+                <div className="messagePanelInner">
+                  <fieldset disabled={!isCommentsFormOpen} className="messageFieldset">
+                    <div className="assignmentCommentFields">
+                      <div className="fieldGroup assignmentTextField">
+                        <label className="fieldLabel" htmlFor="comment-text">
+                          Comment
+                        </label>
+                        <input
+                          id="comment-text"
+                          type="text"
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="Add a comment point"
+                          aria-label="Comment"
+                        />
+                      </div>
+                      <div className="fieldGroup">
+                        <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
+                          Action
+                        </span>
+                        <button
+                          onClick={addComment}
+                          disabled={!commentText.trim()}
+                          className="btn-primary"
+                        >
+                          <i className="las la-plus" aria-hidden="true"></i> Add comment
+                        </button>
+                      </div>
                     </div>
-                    <div className="fieldGroup">
-                      <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
-                        Action
-                      </span>
-                      <button
-                        onClick={addComment}
-                        disabled={!commentText.trim()}
-                        className="btn-primary"
-                      >
-                        <i className="las la-plus" aria-hidden="true"></i> Add comment
-                      </button>
-                    </div>
-                  </div>
-                </fieldset>
+                  </fieldset>
+                </div>
               </div>
             </div>
 
