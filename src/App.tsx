@@ -420,6 +420,10 @@ export default function App() {
       })),
     [currentTaskMultiplier, projectionTasks]
   )
+  const adjustedTaskFinishTimes = useMemo(
+    () => calculateTaskFinishTimes(taskFinishStart, adjustedTasks),
+    [adjustedTasks, taskFinishStart]
+  )
   useEffect(() => {
     const assignments = buildDraftAssignments(
       deadline,
@@ -1113,10 +1117,18 @@ export default function App() {
                   aria-label="Toggle schedule display from assignment due time"
                   onClick={toggleAdjustedView}
                 >
-                  <span aria-label="Assignment due time display">
-                    {isAdjustedView
-                      ? `${formatDuration(adjustedTasks[index].minutes)}${ADJUSTED_SUFFIX}`
-                      : formatDuration(entry.minutes)}
+                  <span aria-label="Assignment due time display" className="assignmentDueText">
+                    <span className="assignmentDueTime">
+                      {isAdjustedView
+                        ? fmtTime(adjustedTaskFinishTimes[index])
+                        : fmtTime(taskFinishTimes[index])}
+                    </span>
+                    <span aria-hidden="true"> • </span>
+                    <span className="assignmentDueDuration">
+                      {isAdjustedView
+                        ? `${formatDuration(adjustedTasks[index].minutes)}${ADJUSTED_SUFFIX}`
+                        : formatDuration(entry.minutes)}
+                    </span>
                   </span>
                 </button>
                 <button

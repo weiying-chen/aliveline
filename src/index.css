@@ -309,7 +309,7 @@ input[readonly] {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--primary);
+  color: var(--fg);
   box-shadow: none;
   display: inline-flex;
   align-items: center;
@@ -323,9 +323,17 @@ input[readonly] {
 
 .assignmentSectionAddButton:hover,
 .assignmentSectionAddButton:focus-visible {
-  color: var(--primary);
+  color: var(--fg);
   box-shadow: none;
   outline: none;
+}
+
+.assignmentDueText {
+  color: var(--fg);
+}
+
+.assignmentDueDuration {
+  color: var(--primary);
 }
 
 .messageHeader {
