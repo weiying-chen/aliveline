@@ -891,6 +891,7 @@ export default function App({
 
   const messagesSection = (
     <div className="messagesSection">
+      <div className="assignmentSectionTitle sectionHeading">Messages</div>
       <AccordionItem
         title="Deadline extension message"
         isOpen={isTasksPanelOpen}
