@@ -70,6 +70,10 @@ body {
   margin-bottom: -4px;
 }
 
+.assignmentOverviewOwnerField {
+  margin-top: var(--space-2);
+}
+
 .assignmentOverviewTitle {
   margin: 0;
   font-size: 36px;

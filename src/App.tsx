@@ -107,6 +107,7 @@ type AssignmentDraftV2 = {
   assignments: Assignment[]
   deadlineIso: string
   assignmentTitle: string
+  owner: string
   tasks: TaskEntry[]
   comments: string[]
 }
@@ -133,6 +134,7 @@ function readStoredAssignmentDraft(rootAssignmentId = 'legacy-root') {
       assignments: parsed.assignments as Assignment[],
       deadlineIso: legacyDraft.deadlineIso,
       assignmentTitle: legacyDraft.assignmentTitle,
+      owner: root?.owner ?? '',
       tasks: sanitizeTaskEntries(legacyDraft.tasks),
       comments: root?.comments ?? [],
     } as AssignmentDraftV2
@@ -156,6 +158,7 @@ function buildDraftAssignments(
   rootAssignmentId: string,
   deadline: Date,
   assignmentTitle: string,
+  owner: string,
   tasks: TaskEntry[],
   taskFinishTimes: Date[],
   comments: string[]
@@ -172,6 +175,7 @@ function buildDraftAssignments(
   const root = buildAssignment({
     id: rootAssignmentId,
     title: assignmentTitle,
+    owner,
     deadlineIso: deadline.toISOString(),
     relations: taskAssignments.map((task) => ({ assignmentId: task.id, type: 'extends' })),
     comments,
@@ -299,6 +303,7 @@ export default function App({
   const [deadlineExtensionAssignment, setDeadlineExtensionAssignment] = useState(
     () => storedDraft?.assignmentTitle ?? ''
   )
+  const [assignmentOwner, setAssignmentOwner] = useState(() => storedDraft?.owner ?? '')
   const [deadlineExtensionConfirmedBy, setDeadlineExtensionConfirmedBy] = useState(
     () => localStorage.getItem(LS_DEADLINE_EXTENSION_CONFIRMED_BY_KEY) ?? ''
   )
@@ -480,6 +485,7 @@ export default function App({
       targetRootId,
       deadline,
       deadlineExtensionAssignment,
+      assignmentOwner,
       tasks,
       taskFinishTimes,
       comments
@@ -493,11 +499,12 @@ export default function App({
       assignments,
       deadlineIso: deadline.toISOString(),
       assignmentTitle: deadlineExtensionAssignment,
+      owner: assignmentOwner,
       tasks,
       comments,
     }
     localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
-  }, [comments, deadline, deadlineExtensionAssignment, persistDraft, selectedAssignmentId, tasks, taskFinishTimes])
+  }, [assignmentOwner, comments, deadline, deadlineExtensionAssignment, persistDraft, selectedAssignmentId, tasks, taskFinishTimes])
   const selectedHistoryMonth = useMemo(() => {
     const match = /^(\d{4})-(\d{2})$/.exec(historyMonth)
     if (!match) return null
@@ -1106,6 +1113,19 @@ export default function App({
                 onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
                 placeholder="Assignment"
               />
+              <div className="assignmentOverviewOwnerField">
+                <label className="fieldLabel" htmlFor="assignment-owner">
+                  Owner
+                </label>
+                <input
+                  id="assignment-owner"
+                  type="text"
+                  value={assignmentOwner}
+                  onChange={(e) => setAssignmentOwner(e.target.value)}
+                  placeholder="Owner"
+                  aria-label="Owner"
+                />
+              </div>
             </div>
 
             <div className="main">

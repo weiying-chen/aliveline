@@ -603,6 +603,9 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: 'Edited child assignment' },
     })
+    fireEvent.change(screen.getByLabelText('Owner'), {
+      target: { value: 'Alice' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Toggle comment form' }))
     fireEvent.change(screen.getByLabelText('Comment'), {
       target: { value: 'Use simpler wording in paragraph 2' },
@@ -617,6 +620,7 @@ describe('App deadline behavior', () => {
     const draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
     const edited = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a')
     expect(edited.title).toBe('Edited child assignment')
+    expect(edited.owner).toBe('Alice')
     expect(edited.relations).toEqual([{ assignmentId: 'assignment-a-task-0', type: 'extends' }])
     expect(edited.comments).toEqual(['Use simpler wording in paragraph 2'])
 

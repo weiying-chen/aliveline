@@ -12,6 +12,7 @@ describe('buildAssignment', () => {
     const assignment = buildAssignment({
       id: 'a1',
       title: '  Translate episode  ',
+      owner: '  PM Chen  ',
       deadlineIso: '2026-05-01T10:00:00.000Z',
       estimateMinutes: 93.7,
       relations: [
@@ -26,6 +27,7 @@ describe('buildAssignment', () => {
     expect(assignment).toEqual({
       id: 'a1',
       title: 'Translate episode',
+      owner: 'PM Chen',
       deadlineIso: '2026-05-01T10:00:00.000Z',
       estimateMinutes: 94,
       relations: [
@@ -46,6 +48,7 @@ describe('buildAssignment', () => {
     expect(assignment.relations).toEqual([])
     expect(assignment.estimateMinutes).toBeUndefined()
     expect(assignment.comments).toEqual([])
+    expect(assignment.owner).toBeUndefined()
   })
 })
 

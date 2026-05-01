@@ -8,6 +8,7 @@ export type AssignmentRelation = {
 export type Assignment = {
   id: string
   title: string
+  owner?: string
   deadlineIso: string
   estimateMinutes?: number
   relations: AssignmentRelation[]
@@ -17,6 +18,7 @@ export type Assignment = {
 type BuildAssignmentInput = {
   id: string
   title: string
+  owner?: string
   deadlineIso: string
   estimateMinutes?: number
   relations?: AssignmentRelation[]
@@ -51,10 +53,18 @@ function normalizeComments(comments: string[] | undefined) {
   return comments.map((comment) => comment.trim()).filter((comment) => comment.length > 0)
 }
 
+function normalizeOwner(owner: string | undefined) {
+  if (typeof owner !== 'string') return undefined
+  const trimmed = owner.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
 export function buildAssignment(input: BuildAssignmentInput): Assignment {
+  const owner = normalizeOwner(input.owner)
   return {
     id: input.id,
     title: input.title.trim(),
+    ...(owner ? { owner } : {}),
     deadlineIso: input.deadlineIso,
     estimateMinutes: normalizeEstimateMinutes(input.estimateMinutes),
     relations: normalizeRelations(input.relations),
