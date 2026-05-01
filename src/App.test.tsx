@@ -88,8 +88,8 @@ describe('App deadline behavior', () => {
 
     const preview = screen.getByLabelText('Deadline extension message preview')
     expect(preview.textContent).toBe(
-      '今日做其他事時間是 2時\n\n' +
-        '英文新聞+錄音 2時\n\n' +
+      '今日做其他事時間是 1時40分\n\n' +
+        '英文新聞+錄音 1時40分\n\n' +
         '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）15:00，請Emily Ding幫我確認，謝謝。'
     )
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
@@ -120,8 +120,8 @@ describe('App deadline behavior', () => {
 
     const preview = screen.getByLabelText('Deadline extension message preview')
     expect(preview.textContent).toBe(
-      '今日做其他事時間是 2時\n\n' +
-        '英文新聞+錄音 2時\n\n' +
+      '今日做其他事時間是 1時40分\n\n' +
+        '英文新聞+錄音 1時40分\n\n' +
         '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）15:00，請Emily Ding幫我確認，謝謝。'
     )
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
@@ -139,48 +139,10 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('2h')
+    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('1h 40m')
   })
 
-  it('toggles original and adjusted values in place for planning fields', () => {
-    renderApp()
-    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
-    fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
-
-    openAddAssignmentForm()
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
-    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
-    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
-
-    const toggle = screen.getByRole('button', { name: 'Toggle original and adjusted schedule' })
-    const deadlineValueBefore = screen.getByLabelText('Current deadline display').textContent
-    const remainingBefore = screen.getByLabelText('Remaining work time display').textContent
-
-    expect(deadlineValueBefore).not.toContain('(-20%)')
-    expect(remainingBefore).not.toContain('(-20%)')
-    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('2h')
-
-    fireEvent.click(toggle)
-
-    expect(screen.getByLabelText('Current deadline display').textContent).toContain('(-20%)')
-    expect(screen.getByLabelText('Remaining work time display').textContent).toContain('(-20%)')
-    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('(-20%)')
-    expect(screen.getByLabelText('Current deadline display').textContent).not.toBe(deadlineValueBefore)
-  })
-
-  it('persists the schedule view mode in local storage', () => {
-    renderApp()
-    const toggle = screen.getByRole('button', { name: 'Toggle original and adjusted schedule' })
-
-    fireEvent.click(toggle)
-    expect(localStorage.getItem('aliveline:schedule-view')).toBe('adjusted')
-
-    fireEvent.click(toggle)
-    expect(localStorage.getItem('aliveline:schedule-view')).toBe('original')
-  })
-
-  it('updates deadline extension preview content in adjusted view', () => {
+  it('uses 0.8 work time in deadline extension preview content', () => {
     renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2099-04-10T12:00' } })
@@ -204,14 +166,8 @@ describe('App deadline behavior', () => {
     )
 
     const preview = screen.getByLabelText('Deadline extension message preview')
-    expect(preview.textContent).toContain('今日做其他事時間是 2時')
-    expect(preview.textContent).toContain('小編文 2時')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
-
     expect(preview.textContent).toContain('今日做其他事時間是 1時40分')
     expect(preview.textContent).toContain('小編文 1時40分')
-    expect(preview.textContent).not.toContain('(-20%)')
   })
 
   it('shows next assignment message preview using full template', () => {
@@ -241,131 +197,7 @@ describe('App deadline behavior', () => {
     )
   })
 
-  it('keeps adjusted deadline fixed instead of drifting with now', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    renderApp()
-
-    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
-    fireEvent.change(deadlineInput, { target: { value: '2026-04-15T13:00' } })
-
-    openAddAssignmentForm()
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
-    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
-    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
-
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
-    const adjustedBefore = screen.getByLabelText('Current deadline display').textContent
-
-    act(() => {
-      vi.advanceTimersByTime(30 * 60 * 1000)
-    })
-
-    const adjustedAfter = screen.getByLabelText('Current deadline display').textContent
-    expect(adjustedAfter).toBe(adjustedBefore)
-  })
-
-  it('keeps deadline value unchanged when deadline multiplier is 1.0', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    renderApp()
-
-    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
-    fireEvent.change(deadlineInput, { target: { value: '2026-04-15T13:00' } })
-
-    const original = screen.getByLabelText('Current deadline display').textContent ?? ''
-    const originalTime = original.replace(' (-20%)', '')
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
-    const adjusted = screen.getByLabelText('Current deadline display').textContent ?? ''
-    const adjustedTime = adjusted.replace(' (-20%)', '')
-
-    expect(adjustedTime).toBe(originalTime)
-    expect(adjusted).toContain('(-20%)')
-  })
-
-  it('keeps remaining work unchanged when deadline multiplier is 1.0', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    renderApp()
-
-    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
-    fireEvent.change(deadlineInput, { target: { value: '2026-04-15T16:00' } })
-
-    openAddAssignmentForm()
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '小編文' } })
-    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
-    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
-
-    const remainingBefore = screen.getByLabelText('Remaining work time display').textContent ?? ''
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
-
-    const adjustedRemaining = screen.getByLabelText('Remaining work time display').textContent ?? ''
-    expect(adjustedRemaining.replace(' (-20%)', '')).toBe(remainingBefore)
-    expect(adjustedRemaining).toContain('(-20%)')
-  })
-
-  it('keeps adjusted deadline stable after reload', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
-    const first = renderApp()
-
-    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
-    fireEvent.change(deadlineInput, { target: { value: '2026-04-20T08:55' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
-    const adjustedBefore = screen.getByLabelText('Current deadline display').textContent
-
-    first.unmount()
-
-    act(() => {
-      vi.advanceTimersByTime(24 * 60 * 60 * 1000)
-    })
-
-    renderApp()
-    const adjustedAfter = screen.getByLabelText('Current deadline display').textContent
-    expect(adjustedAfter).toBe(adjustedBefore)
-  })
-
-  it('keeps cross-day remaining work unchanged when deadline multiplier is 1.0', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2026, 3, 24, 15, 0, 0))
-    renderApp()
-
-    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
-    fireEvent.change(deadlineInput, { target: { value: '2026-04-28T11:00' } })
-
-    const original = readHoursMinutes('Remaining work time display')
-    expect(original).toEqual({ hours: 13, minutes: 0 })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
-    const adjusted = readHoursMinutes('Remaining work time display')
-    expect(adjusted).toEqual(original)
-  })
-
-  it('keeps cross-day task-extended remaining unchanged when deadline multiplier is 1.0', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2026, 3, 24, 15, 0, 0))
-    renderApp()
-
-    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
-    fireEvent.change(deadlineInput, { target: { value: '2026-04-24T16:00' } })
-
-    openAddAssignmentForm()
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Cross-day task' } })
-    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '8' } })
-    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
-    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
-
-    const original = readHoursMinutes('Remaining work time display')
-    expect(original).toEqual({ hours: 9, minutes: 0 })
-
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
-    const adjusted = readHoursMinutes('Remaining work time display')
-    expect(adjusted).toEqual(original)
-  })
-
-  it('uses the same 10-minute rounding as task time in adjusted mode', () => {
+  it('uses the same 10-minute rounding as task time', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
     renderApp()
@@ -373,13 +205,11 @@ describe('App deadline behavior', () => {
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-15T10:20' } })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
-
-    const adjusted = readHoursMinutes('Remaining work time display')
-    expect(adjusted).toEqual({ hours: 0, minutes: 20 })
+    const remaining = readHoursMinutes('Remaining work time display')
+    expect(remaining).toEqual({ hours: 0, minutes: 20 })
   })
 
-  it('keeps deadline unchanged when tasks are added later and deadline multiplier is 1.0', () => {
+  it('keeps deadline unchanged when tasks are added later', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
     renderApp()
@@ -397,9 +227,8 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
-    const adjustedDeadline = screen.getByLabelText('Current deadline display').textContent ?? ''
-    expect(adjustedDeadline).toContain('3:00 PM')
+    const displayDeadline = screen.getByLabelText('Current deadline display').textContent ?? ''
+    expect(displayDeadline).toContain('3:00 PM')
   })
 
   it('renders assignment history export as an accordion panel', () => {
@@ -476,7 +305,7 @@ describe('App deadline behavior', () => {
       expect(root.title).toBe('Main assignment')
       const task = parsed[0].assignments.find((item: { id: string }) => item.id === 'task-0')
       expect(task.title).toBe('Task A')
-      expect(task.estimateMinutes).toBe(90)
+      expect(task.estimateMinutes).toBe(70)
     })
   })
 
@@ -513,7 +342,7 @@ describe('App deadline behavior', () => {
     renderApp()
 
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
-    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('50m')
+    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('40m')
 
     fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
     expect((screen.getByLabelText('Assignment name') as HTMLInputElement).value).toBe(

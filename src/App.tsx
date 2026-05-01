@@ -68,9 +68,6 @@ const LS_NEXT_ASSIGNMENT_START_KEY = 'aliveline:next-assignment-start-iso'
 const LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY = 'aliveline:panel-assignment-history-open'
 const LS_PANEL_TASKS_OPEN_KEY = 'aliveline:panel-tasks-open'
 const LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY = 'aliveline:panel-next-assignment-message-open'
-const LS_SCHEDULE_VIEW_MODE_KEY = 'aliveline:schedule-view'
-const LS_SCHEDULE_VIEW_ADJUSTED_KEY = 'aliveline:schedule-view-adjusted'
-const LS_ADJUSTED_ANCHOR_KEY = 'aliveline:adjusted-anchor-iso'
 const LS_ASSIGNMENT_HISTORY_KEY = 'aliveline:assignment-history'
 const LS_DAILY_CLEAR_KEY = 'aliveline:daily-clear'
 const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
@@ -78,11 +75,7 @@ const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
 const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
-const BASE_DEADLINE_MULTIPLIER = 1
-const ADJUSTED_DEADLINE_MULTIPLIER = 1
-const BASE_TASK_MULTIPLIER = 1
 const ADJUSTED_TASK_MULTIPLIER = 0.8
-const ADJUSTED_SUFFIX = ' (-20%)'
 
 function readStoredDate(key: string) {
   const saved = localStorage.getItem(key)
@@ -242,20 +235,6 @@ function readStoredAssignmentHistory() {
   }
 }
 
-type ScheduleViewMode = 'original' | 'adjusted'
-
-function readStoredScheduleViewMode() {
-  const savedMode = localStorage.getItem(LS_SCHEDULE_VIEW_MODE_KEY)
-  if (savedMode === 'original' || savedMode === 'adjusted') {
-    return savedMode
-  }
-
-  const savedAdjusted = localStorage.getItem(LS_SCHEDULE_VIEW_ADJUSTED_KEY)
-  if (savedAdjusted === 'true') return 'adjusted'
-  if (savedAdjusted === 'false') return 'original'
-  return 'original'
-}
-
 function downloadTextFile(fileName: string, content: string, contentType: string) {
   const blob = new Blob([content], { type: contentType })
   const url = URL.createObjectURL(blob)
@@ -339,19 +318,12 @@ export default function App({
   const [isCommentsFormOpen, setIsCommentsFormOpen] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [comments, setComments] = useState<string[]>(() => storedDraft?.comments ?? [])
-  const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>(() =>
-    readStoredScheduleViewMode()
-  )
   const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryEntry[]>(() =>
     readStoredAssignmentHistory()
   )
   const [historyMonth, setHistoryMonth] = useState(() =>
     `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`
   )
-  const [adjustedAnchorAtDeadlineChange, setAdjustedAnchorAtDeadlineChange] = useState(
-    () => readStoredDate(LS_ADJUSTED_ANCHOR_KEY) ?? new Date()
-  )
-  const isAdjustedView = scheduleViewMode === 'adjusted'
 
   const projectionTasks = useMemo(() => tasks, [tasks])
 
@@ -426,29 +398,13 @@ export default function App({
     setTaskMinutes('')
     setChangeBaseDeadline(null)
     setTaskFinishBase(null)
-    setAdjustedAnchorAtDeadlineChange(now)
   }, [deadline, now])
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
-  const currentTaskMultiplier = isAdjustedView ? ADJUSTED_TASK_MULTIPLIER : BASE_TASK_MULTIPLIER
-  const adjustedDeadline = useMemo(() => {
-    if (ADJUSTED_DEADLINE_MULTIPLIER === BASE_DEADLINE_MULTIPLIER) return deadline
-    const anchor = adjustedAnchorAtDeadlineChange
-    if (deadline.getTime() <= anchor.getTime()) return deadline
-    const totalWorkMs = workMsBetween(anchor, deadline)
-    const adjustedMinutes = Math.max(
-      0,
-      roundMinutesToStep((totalWorkMs / 60000) * ADJUSTED_DEADLINE_MULTIPLIER)
-    )
-    return addWorkMinutes(anchor, adjustedMinutes)
-  }, [adjustedAnchorAtDeadlineChange, deadline])
-  const adjustedWorkMsLeft = useMemo(
-    () => workMsBetween(now, adjustedDeadline),
-    [adjustedDeadline, now]
-  )
-  const displayWorkMsLeft = isAdjustedView ? adjustedWorkMsLeft : workMsLeft
+  const currentTaskMultiplier = ADJUSTED_TASK_MULTIPLIER
+  const displayWorkMsLeft = workMsLeft
   const parts = useMemo(() => msToParts(displayWorkMsLeft), [displayWorkMsLeft])
-  const displayDeadline = isAdjustedView ? adjustedDeadline : deadline
+  const displayDeadline = deadline
   const workStartAt = useMemo(() => (isInWorkTime(now) ? now : nextWorkStart(now)), [now])
   const showEarlyFinishReminder = useMemo(
     () => shouldShowEarlyFinishReminder(now, deadline),
@@ -526,10 +482,6 @@ export default function App({
     () => sumAssignmentHistoryEntryMinutes(monthlyAssignmentHistory),
     [monthlyAssignmentHistory]
   )
-
-  const toggleAdjustedView = () => {
-    setScheduleViewMode((prev) => (prev === 'original' ? 'adjusted' : 'original'))
-  }
 
   useEffect(() => {
     if (!showEarlyFinishReminder) return
@@ -629,15 +581,6 @@ export default function App({
   }, [isNextAssignmentPanelOpen])
 
   useEffect(() => {
-    localStorage.setItem(LS_SCHEDULE_VIEW_MODE_KEY, scheduleViewMode)
-    localStorage.removeItem(LS_SCHEDULE_VIEW_ADJUSTED_KEY)
-  }, [scheduleViewMode])
-
-  useEffect(() => {
-    localStorage.setItem(LS_ADJUSTED_ANCHOR_KEY, adjustedAnchorAtDeadlineChange.toISOString())
-  }, [adjustedAnchorAtDeadlineChange])
-
-  useEffect(() => {
     localStorage.setItem(LS_ASSIGNMENT_HISTORY_KEY, JSON.stringify(assignmentHistory))
   }, [assignmentHistory])
 
@@ -665,7 +608,6 @@ export default function App({
       setTasks([])
       setChangeBaseDeadline(null)
       setTaskFinishBase(null)
-      setAdjustedAnchorAtDeadlineChange(new Date())
       return
     }
     if (sameDeadline) return
@@ -673,7 +615,6 @@ export default function App({
     setNextAssignment(clearTextAfterDeadlineChange(nextAssignment))
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
-      setAdjustedAnchorAtDeadlineChange(new Date())
       setTasks([])
       setChangeBaseDeadline(null)
       setTaskFinishBase(null)
@@ -690,27 +631,24 @@ export default function App({
   }
 
   const deadlineMessageInput = useMemo(() => {
-    const messageTasks = isAdjustedView ? adjustedTasks : tasks
-    const messageDeadline = isAdjustedView ? adjustedDeadline : deadline
+    const messageTasks = adjustedTasks
+    const messageDeadline = deadline
     return {
       assignmentTitle: deadlineExtensionAssignment,
       deadlineIso: messageDeadline.toISOString(),
       tasks: messageTasks,
     }
   }, [
-    adjustedDeadline,
     adjustedTasks,
     deadline,
     deadlineExtensionAssignment,
-    isAdjustedView,
-    tasks,
   ])
 
   const deadlineExtensionMessage = useMemo(() => {
     if (!deadlineExtensionAssignment.trim()) return ''
     if (!deadlineExtensionConfirmedBy.trim()) return ''
     if (tasks.length === 0) return ''
-    const messagePreviousDeadline = changeBaseDeadline ?? (isAdjustedView ? adjustedDeadline : deadline)
+    const messagePreviousDeadline = changeBaseDeadline ?? deadline
     return formatDeadlineExtensionMessage({
       previous: messagePreviousDeadline,
       next: new Date(deadlineMessageInput.deadlineIso),
@@ -719,13 +657,11 @@ export default function App({
       assignee: deadlineExtensionConfirmedBy,
     })
   }, [
-    adjustedDeadline,
     deadline,
     deadlineExtensionConfirmedBy,
     changeBaseDeadline,
     deadlineExtensionAssignment,
     deadlineMessageInput,
-    isAdjustedView,
     tasks,
   ])
 
@@ -780,7 +716,7 @@ export default function App({
         confirmedBy: deadlineExtensionConfirmedBy,
         nextAssignment,
         nextAssignmentConfirmedBy,
-        scheduleView: isAdjustedView ? 'adjusted' : 'original',
+        scheduleView: 'adjusted',
         tasks: deadlineMessageInput.tasks,
       })
       setAssignmentHistory((prev) => [next, ...prev])
@@ -1133,35 +1069,17 @@ export default function App({
               <div className="block">
                 <div className="label">Deadline</div>
                 <div className="deadline">
-                  <button
-                    type="button"
-                    className="valueToggle deadlineValue"
-                    aria-label="Toggle original and adjusted schedule"
-                    onClick={toggleAdjustedView}
-                  >
-                    <span aria-label="Current deadline display">
-                      {fmtDateTimeWithWeekday(displayDeadline)}
-                      {isAdjustedView ? ADJUSTED_SUFFIX : ''}
-                    </span>
-                  </button>
+                  <span aria-label="Current deadline display">{fmtDateTimeWithWeekday(displayDeadline)}</span>
                 </div>
               </div>
 
               <div className="block">
                 <div className="label">Remaining (work time)</div>
                 <div className="remaining">
-                  <button
-                    type="button"
-                    className="valueToggle remainingValue"
-                    aria-label="Toggle schedule display from remaining work time"
-                    onClick={toggleAdjustedView}
-                  >
-                    <span aria-label="Remaining work time display">
-                      {parts.days > 0 && `${parts.days}d `}
-                      {parts.hours}h {parts.minutes}m {parts.seconds}s
-                      {isAdjustedView ? ADJUSTED_SUFFIX : ''}
-                    </span>
-                  </button>
+                  <span aria-label="Remaining work time display">
+                    {parts.days > 0 && `${parts.days}d `}
+                    {parts.hours}h {parts.minutes}m {parts.seconds}s
+                  </span>
                 </div>
               </div>
               {showEarlyFinishReminder && (
@@ -1412,26 +1330,13 @@ export default function App({
                     key={`${entry.text}-${index}`}
                     title={entry.text}
                     middle={
-                      <button
-                        type="button"
-                        className="valueToggle assignmentDueValue"
-                        aria-label="Toggle schedule display from assignment due time"
-                        onClick={toggleAdjustedView}
-                      >
-                        <span aria-label="Assignment due time display" className="assignmentDueText">
-                          <span className="assignmentDueTime">
-                            {isAdjustedView
-                              ? fmtTime(adjustedTaskFinishTimes[index])
-                              : fmtTime(taskFinishTimes[index])}
-                          </span>
-                          <span aria-hidden="true"> • </span>
-                          <span className="assignmentDueDuration">
-                            {isAdjustedView
-                              ? `${formatDuration(adjustedTasks[index].minutes)}${ADJUSTED_SUFFIX}`
-                              : formatDuration(entry.minutes)}
-                          </span>
+                      <span aria-label="Assignment due time display" className="assignmentDueText">
+                        <span className="assignmentDueTime">{fmtTime(adjustedTaskFinishTimes[index])}</span>
+                        <span aria-hidden="true"> • </span>
+                        <span className="assignmentDueDuration">
+                          {formatDuration(adjustedTasks[index].minutes)}
                         </span>
-                      </button>
+                      </span>
                     }
                     action={
                       <button
