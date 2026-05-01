@@ -86,11 +86,18 @@ body {
   font-size: 36px;
   line-height: 1.1;
   font-weight: 700;
+  cursor: text;
+  box-shadow: inset 0 -1px 0 0 transparent;
+  transition: box-shadow 160ms ease;
+}
+
+.assignmentOverviewTitleInput:hover {
+  box-shadow: inset 0 -1px 0 0 color-mix(in srgb, var(--fg) 24%, transparent);
 }
 
 .assignmentOverviewTitleInput:focus-visible {
   outline: none;
-  box-shadow: none;
+  box-shadow: inset 0 -2px 0 0 var(--primary);
 }
 
 .assignmentOverviewCard .main {
