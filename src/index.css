@@ -72,7 +72,7 @@ body {
 
 .assignmentOverviewOwnerField {
   margin-top: var(--space-2);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
   max-width: 280px;
 }
 
