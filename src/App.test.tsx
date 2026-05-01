@@ -149,7 +149,31 @@ describe('App deadline behavior', () => {
     expect(preview.textContent).toContain('小編文 1時40分')
   })
 
-  it('shows next assignment message preview using full template', () => {
+  it('shows next assignment message preview from auto-filled assignment context', () => {
+    localStorage.setItem(
+      'aliveline:assignment-history',
+      JSON.stringify([
+        {
+          createdAtIso: '2026-04-10T15:00:00.000Z',
+          deadlineIso: '2026-04-10T15:00:00.000Z',
+          confirmedBy: 'Emily Ding',
+          nextAssignment: '',
+          nextAssignmentConfirmedBy: '',
+          scheduleView: 'adjusted',
+          rootAssignmentId: 'root',
+          assignments: [
+            {
+              id: 'root',
+              title: '3集大愛真健康',
+              deadlineIso: '2026-04-10T15:00:00.000Z',
+              relations: [],
+              comments: [],
+            },
+          ],
+          totalMinutes: 120,
+        },
+      ])
+    )
     renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
@@ -160,19 +184,17 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    fireEvent.change(screen.getByLabelText('Completed assignment'), {
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: '3集大愛真健康' },
     })
-    fireEvent.change(screen.getByLabelText('Next assignment'), {
-      target: { value: '仁心慧語 (呂紹睿)' },
-    })
-    fireEvent.change(screen.getByLabelText('Next assignment message confirmed by'), {
-      target: { value: 'Emily Ding' },
-    })
+    fireEvent.change(screen.getByLabelText('Owner'), { target: { value: 'Emily Ding' } })
+    fireEvent.change(deadlineInput, { target: { value: '2026-04-11T12:00' } })
+    fireEvent.change(screen.getByLabelText('Assignment title'), { target: { value: '仁心慧語 (呂紹睿)' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Next assignment message' }))
 
     const preview = screen.getByLabelText('Next assignment message preview')
     expect(preview.textContent).toBe(
-      '已完成3集大愛真健康，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）15:00起算，謝謝。'
+      '已完成3集大愛真健康，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）23:00起算，謝謝。'
     )
   })
 

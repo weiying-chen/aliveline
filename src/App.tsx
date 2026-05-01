@@ -16,7 +16,6 @@ import { buildAssignment, type Assignment } from './utils/assignmentModel'
 import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
 import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
-import { syncNextAssignmentMessageStartWithDeadline } from './utils/nextAssignmentMessageStart'
 import {
   fmtDateTimeWithWeekday,
   fmtTime,
@@ -61,9 +60,6 @@ const LS_DEADLINE_KEY = 'aliveline:deadline-iso'
 const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
 const LS_TASK_FINISH_BASE_KEY = 'aliveline:task-finish-base-iso'
-const LS_NEXT_ASSIGNMENT_KEY = 'aliveline:next-assignment'
-const LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY = 'aliveline:next-assignment-confirmed-by'
-const LS_NEXT_ASSIGNMENT_START_KEY = 'aliveline:next-assignment-start-iso'
 const LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY = 'aliveline:panel-assignment-history-open'
 const LS_PANEL_TASKS_OPEN_KEY = 'aliveline:panel-tasks-open'
 const LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY = 'aliveline:panel-next-assignment-message-open'
@@ -234,6 +230,14 @@ function readStoredAssignmentHistory() {
   }
 }
 
+function readHistoryRootAssignment(entry: AssignmentHistoryEntry) {
+  const root = entry.assignments.find((assignment) => assignment.id === entry.rootAssignmentId)
+  if (!root) return null
+  const deadline = new Date(entry.deadlineIso)
+  if (Number.isNaN(deadline.getTime())) return null
+  return { title: root.title.trim(), deadline }
+}
+
 function downloadTextFile(fileName: string, content: string, contentType: string) {
   const blob = new Blob([content], { type: contentType })
   const url = URL.createObjectURL(blob)
@@ -282,19 +286,6 @@ export default function App({
     () => storedDraft?.assignmentTitle ?? ''
   )
   const [assignmentOwner, setAssignmentOwner] = useState(() => storedDraft?.owner ?? '')
-  const [nextAssignment, setNextAssignment] = useState(
-    () => localStorage.getItem(LS_NEXT_ASSIGNMENT_KEY) ?? ''
-  )
-  const [nextAssignmentConfirmedBy, setNextAssignmentConfirmedBy] = useState(
-    () => localStorage.getItem(LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY) ?? ''
-  )
-  const [nextAssignmentStartAt, setNextAssignmentStartAt] = useState<Date | null>(
-    () =>
-      syncNextAssignmentMessageStartWithDeadline(
-        readStoredDate(LS_NEXT_ASSIGNMENT_START_KEY),
-        deadline
-      )
-  )
   const [deadlineExtensionCopyState, setDeadlineExtensionCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle')
@@ -547,14 +538,6 @@ export default function App({
   }, [deadline, now, showDeadlineExtensionReminder])
 
   useEffect(() => {
-    localStorage.setItem(LS_NEXT_ASSIGNMENT_KEY, nextAssignment)
-  }, [nextAssignment])
-
-  useEffect(() => {
-    localStorage.setItem(LS_NEXT_ASSIGNMENT_CONFIRMED_BY_KEY, nextAssignmentConfirmedBy)
-  }, [nextAssignmentConfirmedBy])
-
-  useEffect(() => {
     localStorage.setItem(
       LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY,
       String(isAssignmentHistoryPanelOpen)
@@ -576,21 +559,6 @@ export default function App({
     localStorage.setItem(LS_ASSIGNMENT_HISTORY_KEY, JSON.stringify(assignmentHistory))
   }, [assignmentHistory])
 
-  useEffect(() => {
-    if (nextAssignmentStartAt) {
-      localStorage.setItem(LS_NEXT_ASSIGNMENT_START_KEY, nextAssignmentStartAt.toISOString())
-    } else {
-      localStorage.removeItem(LS_NEXT_ASSIGNMENT_START_KEY)
-    }
-  }, [nextAssignmentStartAt])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setNextAssignmentStartAt((prev) =>
-      syncNextAssignmentMessageStartWithDeadline(prev, deadline)
-    )
-  }, [deadline])
-
   const updateDeadline = (
     nextDeadline: Date,
     options?: { tasks?: TaskEntry[]; resetDrafts?: boolean }
@@ -604,7 +572,6 @@ export default function App({
     }
     if (sameDeadline) return
     setDeadlineExtensionAssignment(clearTextAfterDeadlineChange(deadlineExtensionAssignment))
-    setNextAssignment(clearTextAfterDeadlineChange(nextAssignment))
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
       setTasks([])
@@ -673,25 +640,36 @@ export default function App({
     setDeadlineExtensionCopyState('idle')
   }, [deadlineExtensionMessage])
 
+  const previousAssignment = useMemo(() => {
+    return assignmentHistory.length > 0 ? readHistoryRootAssignment(assignmentHistory[0]) : null
+  }, [assignmentHistory])
+
   const nextAssignmentMessage = useMemo(() => {
-    if (!nextAssignmentStartAt) return ''
+    if (!previousAssignment) return ''
+    if (!previousAssignment.title) return ''
     if (!deadlineExtensionAssignment.trim()) return ''
-    if (!nextAssignment.trim()) return ''
-    if (!nextAssignmentConfirmedBy.trim()) return ''
+    if (!assignmentOwner.trim()) return ''
     return formatNextAssignmentMessage({
-      completedAssignment: deadlineExtensionAssignment,
-      nextAssignment,
-      assignee: nextAssignmentConfirmedBy,
-      start: nextAssignmentStartAt,
+      completedAssignment: previousAssignment.title,
+      nextAssignment: deadlineExtensionAssignment,
+      assignee: assignmentOwner,
+      start: previousAssignment.deadline,
       deadline,
     })
   }, [
+    assignmentOwner,
     deadline,
     deadlineExtensionAssignment,
-    nextAssignment,
-    nextAssignmentConfirmedBy,
-    nextAssignmentStartAt,
+    previousAssignment,
   ])
+
+  const nextAssignmentMessageHint = useMemo(() => {
+    if (!previousAssignment) return 'Copy a deadline extension message first to generate this message.'
+    if (!deadlineExtensionAssignment.trim() || !assignmentOwner.trim()) {
+      return 'Set assignment title and owner to generate the message.'
+    }
+    return ''
+  }, [assignmentOwner, deadlineExtensionAssignment, previousAssignment])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -706,8 +684,8 @@ export default function App({
         assignment: deadlineMessageInput.assignmentTitle,
         deadline: new Date(deadlineMessageInput.deadlineIso),
         confirmedBy: assignmentOwner,
-        nextAssignment,
-        nextAssignmentConfirmedBy,
+        nextAssignment: '',
+        nextAssignmentConfirmedBy: '',
         scheduleView: 'adjusted',
         tasks: deadlineMessageInput.tasks,
       })
@@ -1319,66 +1297,8 @@ export default function App({
             >
               <fieldset disabled={!isNextAssignmentPanelOpen} className="messageFieldset">
                 <div className="messageBody">
-                  <div className="nextAssignmentMessageFields">
-                    <div className="fieldGroup">
-                      <label
-                        className="fieldLabel"
-                        htmlFor="next-assignment-message-completed-assignment"
-                      >
-                        Completed assignment
-                      </label>
-                      <input
-                        id="next-assignment-message-completed-assignment"
-                        type="text"
-                        value={deadlineExtensionAssignment}
-                        onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
-                        placeholder="Completed assignment"
-                        aria-label="Completed assignment"
-                      />
-                    </div>
-                    <div className="fieldGroup">
-                      <label className="fieldLabel" htmlFor="next-assignment-message-next-assignment">
-                        Next assignment
-                      </label>
-                      <input
-                        id="next-assignment-message-next-assignment"
-                        type="text"
-                        value={nextAssignment}
-                        onChange={(e) => setNextAssignment(e.target.value)}
-                        placeholder="Next assignment"
-                        aria-label="Next assignment"
-                      />
-                    </div>
-                    <div className="fieldGroup nextAssignmentMessageConfirmedBy">
-                      <label className="fieldLabel" htmlFor="next-assignment-message-confirmed-by">
-                        Confirmed by
-                      </label>
-                      <input
-                        id="next-assignment-message-confirmed-by"
-                        type="text"
-                        value={nextAssignmentConfirmedBy}
-                        onChange={(e) => setNextAssignmentConfirmedBy(e.target.value)}
-                        placeholder="Confirmed by"
-                        aria-label="Next assignment message confirmed by"
-                      />
-                    </div>
-                    <div className="fieldGroup nextAssignmentStartAt">
-                      <label className="fieldLabel" htmlFor="next-assignment-message-start-at">
-                        Start time
-                      </label>
-                      <input
-                        id="next-assignment-message-start-at"
-                        type="datetime-local"
-                        value={nextAssignmentStartAt ? toDatetimeLocalValue(nextAssignmentStartAt) : ''}
-                        disabled
-                        readOnly
-                        aria-label="Start time"
-                      />
-                    </div>
-                  </div>
-
                   <div className="messagePreview" aria-label="Next assignment message preview">
-                    {nextAssignmentMessage || 'Fill all fields to generate a next assignment message.'}
+                    {nextAssignmentMessage || nextAssignmentMessageHint}
                   </div>
 
                   <div className="messageActions">
