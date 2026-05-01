@@ -252,7 +252,7 @@ describe('App deadline behavior', () => {
     })
 
     renderApp()
-    fireEvent.click(screen.getByRole('button', { name: 'Message' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Deadline extension message' }))
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
     })

@@ -1367,8 +1367,9 @@ export default function App({
           </div>
 
           <div className="messagesSection">
+            <div className="assignmentSectionTitle sectionHeading">Message</div>
             <AccordionItem
-              title="Message"
+              title="Deadline extension message"
               isOpen={isTasksPanelOpen}
               onToggle={() => setIsTasksPanelOpen((prev) => !prev)}
               panelId="tasks-panel"
