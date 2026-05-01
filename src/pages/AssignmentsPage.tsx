@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import App from '../App'
 import { AssignmentRow } from '../components/AssignmentRow'
 import { formatDuration } from '../utils/deadlineHistory'
 import { buildAssignment } from '../utils/assignmentModel'
@@ -126,33 +127,41 @@ export function AssignmentsPage() {
                 <i className="las la-plus" aria-hidden="true"></i>
               </button>
             </div>
-            <div className="assignmentList">
-              {affectingAssignments.map((assignment, index) => (
-                <AssignmentRow
-                  key={assignment.id}
-                  title={assignment.title}
-                  middle={
-                    <span className="assignmentDueText" aria-label="Assignment list due time display">
-                      <span className="assignmentDueTime">{fmtTime(new Date(assignment.deadlineIso))}</span>
-                      <span aria-hidden="true"> • </span>
-                      <span className="assignmentDueDuration">
-                        {formatDuration(assignment.estimateMinutes ?? 0)}
+            <div className="assignmentListScroll">
+              <div className="assignmentList">
+                {affectingAssignments.map((assignment, index) => (
+                  <AssignmentRow
+                    key={assignment.id}
+                    title={assignment.title}
+                    middle={
+                      <span className="assignmentDueText" aria-label="Assignment list due time display">
+                        <span className="assignmentDueTime">{fmtTime(new Date(assignment.deadlineIso))}</span>
+                        <span aria-hidden="true"> • </span>
+                        <span className="assignmentDueDuration">
+                          {formatDuration(assignment.estimateMinutes ?? 0)}
+                        </span>
                       </span>
-                    </span>
-                  }
-                  action={
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => navigate(`/assignments/view/${index}`)}
-                    >
-                      View
-                    </button>
-                  }
-                />
-              ))}
+                    }
+                    action={
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={() => navigate(`/assignments/view/${index}`)}
+                      >
+                        View
+                      </button>
+                    }
+                  />
+                ))}
+              </div>
             </div>
           </div>
+          <App
+            selectedAssignmentId={root?.id}
+            showTopNav={false}
+            persistDraft={false}
+            renderMessagesOnly={true}
+          />
         </div>
       </div>
     </div>

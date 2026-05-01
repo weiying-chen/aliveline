@@ -673,6 +673,12 @@ input[readonly] {
   text-align: left;
 }
 
+.assignmentListScroll {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
 .assignmentRow {
   display: grid;
   grid-template-columns: 1fr auto auto;
