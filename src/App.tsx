@@ -828,93 +828,6 @@ export default function App({
     <div className="messagesSection">
       <div className="assignmentSectionTitle sectionHeading">Messages</div>
       <AccordionItem
-        title="Next assignment message"
-        isOpen={isNextAssignmentPanelOpen}
-        onToggle={() => setIsNextAssignmentPanelOpen((prev) => !prev)}
-        panelId="next-assignment-message-panel"
-      >
-        <fieldset disabled={!isNextAssignmentPanelOpen} className="messageFieldset">
-          <div className="messageBody">
-            <div className="nextAssignmentMessageFields">
-              <div className="fieldGroup">
-                <label
-                  className="fieldLabel"
-                  htmlFor="next-assignment-message-completed-assignment"
-                >
-                  Completed assignment
-                </label>
-                <input
-                  id="next-assignment-message-completed-assignment"
-                  type="text"
-                  value={deadlineExtensionAssignment}
-                  onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
-                  placeholder="Completed assignment"
-                  aria-label="Completed assignment"
-                />
-              </div>
-              <div className="fieldGroup">
-                <label className="fieldLabel" htmlFor="next-assignment-message-next-assignment">
-                  Next assignment
-                </label>
-                <input
-                  id="next-assignment-message-next-assignment"
-                  type="text"
-                  value={nextAssignment}
-                  onChange={(e) => setNextAssignment(e.target.value)}
-                  placeholder="Next assignment"
-                  aria-label="Next assignment"
-                />
-              </div>
-              <div className="fieldGroup nextAssignmentMessageConfirmedBy">
-                <label className="fieldLabel" htmlFor="next-assignment-message-confirmed-by">
-                  Confirmed by
-                </label>
-                <input
-                  id="next-assignment-message-confirmed-by"
-                  type="text"
-                  value={nextAssignmentConfirmedBy}
-                  onChange={(e) => setNextAssignmentConfirmedBy(e.target.value)}
-                  placeholder="Confirmed by"
-                  aria-label="Next assignment message confirmed by"
-                />
-              </div>
-              <div className="fieldGroup nextAssignmentStartAt">
-                <label className="fieldLabel" htmlFor="next-assignment-message-start-at">
-                  Start time
-                </label>
-                <input
-                  id="next-assignment-message-start-at"
-                  type="datetime-local"
-                  value={nextAssignmentStartAt ? toDatetimeLocalValue(nextAssignmentStartAt) : ''}
-                  disabled
-                  readOnly
-                  aria-label="Start time"
-                />
-              </div>
-            </div>
-
-            <div className="messagePreview" aria-label="Next assignment message preview">
-              {nextAssignmentMessage || 'Fill all fields to generate a next assignment message.'}
-            </div>
-
-            <div className="messageActions">
-              <button
-                onClick={onCopyNextAssignmentMessage}
-                disabled={!nextAssignmentMessage}
-                className="btn-primary"
-              >
-                <i className="las la-copy" aria-hidden="true"></i> Copy
-              </button>
-              {nextAssignmentCopyState === 'copied' && <span className="copyStatus">Copied.</span>}
-              {nextAssignmentCopyState === 'failed' && (
-                <span className="copyStatus">Copy failed. Please copy manually.</span>
-              )}
-            </div>
-          </div>
-        </fieldset>
-      </AccordionItem>
-
-      <AccordionItem
         title="Assignment history export"
         isOpen={isAssignmentHistoryPanelOpen}
         onToggle={() => setIsAssignmentHistoryPanelOpen((prev) => !prev)}
@@ -1392,6 +1305,92 @@ export default function App({
                       <span className="copyStatus">Copied.</span>
                     )}
                     {deadlineExtensionCopyState === 'failed' && (
+                      <span className="copyStatus">Copy failed. Please copy manually.</span>
+                    )}
+                  </div>
+                </div>
+              </fieldset>
+            </AccordionItem>
+            <AccordionItem
+              title="Next assignment message"
+              isOpen={isNextAssignmentPanelOpen}
+              onToggle={() => setIsNextAssignmentPanelOpen((prev) => !prev)}
+              panelId="next-assignment-message-panel"
+            >
+              <fieldset disabled={!isNextAssignmentPanelOpen} className="messageFieldset">
+                <div className="messageBody">
+                  <div className="nextAssignmentMessageFields">
+                    <div className="fieldGroup">
+                      <label
+                        className="fieldLabel"
+                        htmlFor="next-assignment-message-completed-assignment"
+                      >
+                        Completed assignment
+                      </label>
+                      <input
+                        id="next-assignment-message-completed-assignment"
+                        type="text"
+                        value={deadlineExtensionAssignment}
+                        onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
+                        placeholder="Completed assignment"
+                        aria-label="Completed assignment"
+                      />
+                    </div>
+                    <div className="fieldGroup">
+                      <label className="fieldLabel" htmlFor="next-assignment-message-next-assignment">
+                        Next assignment
+                      </label>
+                      <input
+                        id="next-assignment-message-next-assignment"
+                        type="text"
+                        value={nextAssignment}
+                        onChange={(e) => setNextAssignment(e.target.value)}
+                        placeholder="Next assignment"
+                        aria-label="Next assignment"
+                      />
+                    </div>
+                    <div className="fieldGroup nextAssignmentMessageConfirmedBy">
+                      <label className="fieldLabel" htmlFor="next-assignment-message-confirmed-by">
+                        Confirmed by
+                      </label>
+                      <input
+                        id="next-assignment-message-confirmed-by"
+                        type="text"
+                        value={nextAssignmentConfirmedBy}
+                        onChange={(e) => setNextAssignmentConfirmedBy(e.target.value)}
+                        placeholder="Confirmed by"
+                        aria-label="Next assignment message confirmed by"
+                      />
+                    </div>
+                    <div className="fieldGroup nextAssignmentStartAt">
+                      <label className="fieldLabel" htmlFor="next-assignment-message-start-at">
+                        Start time
+                      </label>
+                      <input
+                        id="next-assignment-message-start-at"
+                        type="datetime-local"
+                        value={nextAssignmentStartAt ? toDatetimeLocalValue(nextAssignmentStartAt) : ''}
+                        disabled
+                        readOnly
+                        aria-label="Start time"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="messagePreview" aria-label="Next assignment message preview">
+                    {nextAssignmentMessage || 'Fill all fields to generate a next assignment message.'}
+                  </div>
+
+                  <div className="messageActions">
+                    <button
+                      onClick={onCopyNextAssignmentMessage}
+                      disabled={!nextAssignmentMessage}
+                      className="btn-primary"
+                    >
+                      <i className="las la-copy" aria-hidden="true"></i> Copy
+                    </button>
+                    {nextAssignmentCopyState === 'copied' && <span className="copyStatus">Copied.</span>}
+                    {nextAssignmentCopyState === 'failed' && (
                       <span className="copyStatus">Copy failed. Please copy manually.</span>
                     )}
                   </div>
