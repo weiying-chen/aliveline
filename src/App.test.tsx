@@ -292,7 +292,6 @@ describe('App deadline behavior', () => {
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
     const draft = {
-      rootAssignmentId: 'legacy-root',
       assignments: [
         {
           id: 'legacy-root',
@@ -309,11 +308,6 @@ describe('App deadline behavior', () => {
           comments: [],
         },
       ],
-      deadlineIso: '2026-05-02T02:48:00.000Z',
-      assignmentTitle: '',
-      owner: '',
-      tasks: [],
-      comments: [],
     }
     localStorage.setItem('aliveline:assignment-draft', JSON.stringify(draft))
 
@@ -330,7 +324,10 @@ describe('App deadline behavior', () => {
     }
     const content = await (exportedBlob as Blob).text()
     const parsed = JSON.parse(content)
-    expect(parsed).toEqual(draft)
+    expect(parsed).toEqual({
+      assignments: draft.assignments,
+      exportMonth: `${new Date().getFullYear()}-${`${new Date().getMonth() + 1}`.padStart(2, '0')}`,
+    })
   })
 
   it('uses shared muted meta text style for counting and history summary', () => {

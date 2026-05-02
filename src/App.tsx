@@ -87,7 +87,11 @@ function sanitizeTaskEntries(entries: unknown) {
   ) as TaskEntry[]
 }
 
-type AssignmentDraftV2 = {
+type StoredAssignmentDraftV2 = {
+  assignments: DraftAssignment[]
+}
+
+type AssignmentDraftState = {
   assignments: DraftAssignment[]
   deadlineIso: string
   assignmentTitle: string
@@ -161,7 +165,7 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
       owner: current.owner ?? '',
       tasks: sanitizeTaskEntries(tasks),
       comments: current.comments ?? [],
-    } as AssignmentDraftV2
+    } as AssignmentDraftState
   } catch {
     return null
   }
@@ -484,13 +488,8 @@ export default function App({
       targetAssignmentId,
       nextAssignment
     )
-    const nextDraft: AssignmentDraftV2 = {
+    const nextDraft: StoredAssignmentDraftV2 = {
       assignments,
-      deadlineIso: deadline.toISOString(),
-      assignmentTitle: deadlineExtensionAssignment,
-      owner: assignmentOwner,
-      tasks,
-      comments,
     }
     localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
   }, [assignmentOwner, comments, deadline, deadlineExtensionAssignment, persistDraft, selectedAssignmentId, tasks, taskFinishTimes])
@@ -857,12 +856,17 @@ export default function App({
 
   const onExportAssignmentHistoryJson = () => {
     const rawDraft = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
-    let content = rawDraft ?? '{}'
+    const exportMonth = selectedHistoryMonth
+      ? `${selectedHistoryMonth.year}-${pad2(selectedHistoryMonth.month)}`
+      : 'all'
+    let content = JSON.stringify({ assignments: [], exportMonth }, null, 2)
     if (rawDraft) {
       try {
-        content = JSON.stringify(JSON.parse(rawDraft), null, 2)
+        const parsed = JSON.parse(rawDraft) as { assignments?: unknown }
+        const assignments = Array.isArray(parsed.assignments) ? parsed.assignments : []
+        content = JSON.stringify({ assignments, exportMonth }, null, 2)
       } catch {
-        content = rawDraft
+        content = JSON.stringify({ assignments: [], exportMonth }, null, 2)
       }
     }
     const suffix = selectedHistoryMonth
