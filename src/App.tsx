@@ -464,9 +464,55 @@ export default function App({
       selectedHistoryMonth.month
     )
   }, [assignmentHistory, selectedHistoryMonth])
-  const monthlyHistoryMinutes = useMemo(
-    () => sumAssignmentHistoryEntryMinutes(monthlyAssignmentHistory),
-    [monthlyAssignmentHistory]
+  const currentDraftExportEntry = useMemo(() => {
+    if (storedDraft?.assignments.length) {
+      const byId = new Map(storedDraft.assignments.map((assignment) => [assignment.id, assignment]))
+      const root =
+        byId.get(selectedAssignmentId ?? storedDraft.rootAssignmentId) ??
+        byId.get(storedDraft.rootAssignmentId) ??
+        storedDraft.assignments[0]
+
+      if (root) {
+        const childIds = root.relations
+          .filter((relation) => relation.type === 'extends')
+          .map((relation) => relation.assignmentId)
+        const includedIds = new Set([root.id, ...childIds])
+        const assignments = storedDraft.assignments.filter((assignment) => includedIds.has(assignment.id))
+        const totalMinutes = assignments.reduce((sum, assignment) => sum + (assignment.estimateMinutes ?? 0), 0)
+
+        return {
+          createdAtIso: new Date().toISOString(),
+          deadlineIso: root.deadlineIso,
+          confirmedBy: root.owner ?? assignmentOwner,
+          nextAssignment: '',
+          nextAssignmentConfirmedBy: '',
+          scheduleView: 'adjusted',
+          rootAssignmentId: root.id,
+          assignments,
+          totalMinutes,
+        } satisfies AssignmentHistoryEntry
+      }
+    }
+
+    const assignment = deadlineExtensionAssignment.trim()
+    const tasksForExport = adjustedTasks.filter(
+      (task) => task.text.trim().length > 0 && Number.isFinite(task.minutes) && task.minutes > 0
+    )
+    return buildAssignmentHistoryEntry({
+      assignment: assignment || 'Assignment',
+      deadline,
+      confirmedBy: assignmentOwner,
+      scheduleView: 'adjusted',
+      tasks: tasksForExport,
+    })
+  }, [adjustedTasks, assignmentOwner, deadline, deadlineExtensionAssignment, selectedAssignmentId, storedDraft])
+  const exportAssignmentHistoryEntries = useMemo(() => {
+    if (monthlyAssignmentHistory.length > 0) return monthlyAssignmentHistory
+    return [currentDraftExportEntry]
+  }, [currentDraftExportEntry, monthlyAssignmentHistory])
+  const exportHistoryMinutes = useMemo(
+    () => sumAssignmentHistoryEntryMinutes(exportAssignmentHistoryEntries),
+    [exportAssignmentHistoryEntries]
   )
 
   useEffect(() => {
@@ -778,7 +824,7 @@ export default function App({
   }
 
   const onExportAssignmentHistoryJson = () => {
-    const content = exportAssignmentHistoryJson(monthlyAssignmentHistory)
+    const content = exportAssignmentHistoryJson(exportAssignmentHistoryEntries)
     const suffix = selectedHistoryMonth
       ? `${selectedHistoryMonth.year}-${pad2(selectedHistoryMonth.month)}`
       : 'all'
@@ -821,7 +867,7 @@ export default function App({
               />
             </div>
             <div className="historyExportMeta metaTextMutedSm">
-              {monthlyAssignmentHistory.length} assignments, {(monthlyHistoryMinutes / 60).toFixed(2)} hours
+              {exportAssignmentHistoryEntries.length} assignments, {(exportHistoryMinutes / 60).toFixed(2)} hours
             </div>
             <div className="historyExportActions">
               <button onClick={onExportAssignmentHistoryJson} className="btn-secondary">

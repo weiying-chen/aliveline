@@ -278,6 +278,126 @@ describe('App deadline behavior', () => {
     expect(screen.getByRole('button', { name: /export json/i })).toBeTruthy()
   })
 
+  it('exports current draft when history is empty', async () => {
+    let exportedBlob: Blob | null = null
+    Object.assign(URL, {
+      createObjectURL: () => 'blob:stub',
+      revokeObjectURL: () => {},
+    })
+    const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob) => {
+      exportedBlob = blob
+      return 'blob:mock'
+    })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    renderApp()
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
+      target: { value: 'Word export assignment' },
+    })
+    openAddAssignmentForm()
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
+    fireEvent.click(screen.getByRole('button', { name: /export json/i }))
+
+    expect(createObjectUrl).toHaveBeenCalledTimes(1)
+    if (!exportedBlob) throw new Error('Expected export blob')
+    const content = await exportedBlob.text()
+    const parsed = JSON.parse(content)
+    expect(parsed).toHaveLength(1)
+    expect(parsed[0].assignments[0].title).toBe('Word export assignment')
+  })
+
+  it('exports a default entry when history and draft inputs are blank', async () => {
+    let exportedBlob: Blob | null = null
+    Object.assign(URL, {
+      createObjectURL: () => 'blob:stub',
+      revokeObjectURL: () => {},
+    })
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob) => {
+      exportedBlob = blob
+      return 'blob:mock'
+    })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    renderApp()
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
+    fireEvent.click(screen.getByRole('button', { name: /export json/i }))
+
+    if (!exportedBlob) throw new Error('Expected export blob')
+    const content = await exportedBlob.text()
+    const parsed = JSON.parse(content)
+    expect(parsed).toHaveLength(1)
+    expect(parsed[0].assignments[0].title).toBe('Assignment')
+  })
+
+  it('exports unified draft assignments from local storage when history is empty', async () => {
+    let exportedBlob: Blob | null = null
+    Object.assign(URL, {
+      createObjectURL: () => 'blob:stub',
+      revokeObjectURL: () => {},
+    })
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob) => {
+      exportedBlob = blob
+      return 'blob:mock'
+    })
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    localStorage.setItem(
+      'aliveline:assignment-draft',
+      JSON.stringify({
+        rootAssignmentId: 'legacy-root',
+        assignments: [
+          {
+            id: 'legacy-root',
+            title: 'Assignment',
+            deadlineIso: '2026-05-02T02:48:00.000Z',
+            relations: [
+              { assignmentId: 'assignment-a', type: 'extends' },
+              { assignmentId: 'assignment-b', type: 'extends' },
+            ],
+            comments: [],
+          },
+          {
+            id: 'assignment-a',
+            title: 'New assignment',
+            deadlineIso: '2026-05-02T02:48:00.000Z',
+            relations: [],
+            comments: [],
+          },
+          {
+            id: 'assignment-b',
+            title: 'sss',
+            deadlineIso: '2026-05-02T02:48:00.000Z',
+            relations: [],
+            comments: [],
+          },
+        ],
+      })
+    )
+
+    render(
+      <MemoryRouter>
+        <App selectedAssignmentId="legacy-root" />
+      </MemoryRouter>
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
+    fireEvent.click(screen.getByRole('button', { name: /export json/i }))
+
+    if (!exportedBlob) throw new Error('Expected export blob')
+    const content = await exportedBlob.text()
+    const parsed = JSON.parse(content)
+    expect(parsed).toHaveLength(1)
+    expect(parsed[0].assignments.some((item: { id: string }) => item.id === 'assignment-a')).toBe(true)
+    expect(parsed[0].assignments.some((item: { id: string }) => item.id === 'assignment-b')).toBe(true)
+  })
+
   it('uses shared muted meta text style for counting and history summary', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T06:00:00'))
