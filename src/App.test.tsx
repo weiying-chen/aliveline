@@ -232,6 +232,24 @@ describe('App deadline behavior', () => {
     expect(displayDeadline).toContain('3:00 PM')
   })
 
+  it('focuses deadline input when clicking deadline or remaining display', () => {
+    const { container } = renderApp()
+    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+
+    const deadlineDisplay = container.querySelector('.deadline')
+    const remainingDisplay = container.querySelector('.remaining')
+    if (!deadlineDisplay || !remainingDisplay) {
+      throw new Error('Expected deadline and remaining display elements')
+    }
+
+    fireEvent.click(deadlineDisplay)
+    expect(document.activeElement).toBe(deadlineInput)
+
+    deadlineInput.blur()
+    fireEvent.click(remainingDisplay)
+    expect(document.activeElement).toBe(deadlineInput)
+  })
+
   it('renders assignment history export as an accordion panel', () => {
     renderApp()
 

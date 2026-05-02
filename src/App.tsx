@@ -589,6 +589,10 @@ export default function App({
     updateDeadline(new Date(), { resetDrafts: true })
   }
 
+  const focusDeadlineInput = () => {
+    deadlineRef.current?.focus()
+  }
+
   const deadlineMessageInput = useMemo(() => {
     const messageTasks = adjustedTasks
     const messageDeadline = deadline
@@ -890,14 +894,14 @@ export default function App({
             <div className="main">
               <div className="block">
                 <div className="label">Deadline</div>
-                <div className="deadline">
+                <div className="deadline" onClick={focusDeadlineInput}>
                   <span aria-label="Current deadline display">{fmtDateTimeWithWeekday(displayDeadline)}</span>
                 </div>
               </div>
 
               <div className="block">
                 <div className="label">Remaining (work time)</div>
-                <div className="remaining">
+                <div className="remaining" onClick={focusDeadlineInput}>
                   <span aria-label="Remaining work time display">
                     {parts.days > 0 && `${parts.days}d `}
                     {parts.hours}h {parts.minutes}m {parts.seconds}s
