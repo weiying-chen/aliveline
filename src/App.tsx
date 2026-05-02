@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 
 import {
   buildAssignmentHistoryEntry,
-  exportAssignmentHistoryCsv,
   exportAssignmentHistoryJson,
   filterAssignmentHistoryEntriesByMonth,
   sumAssignmentHistoryEntryMinutes,
@@ -778,14 +777,6 @@ export default function App({
     setTaskMinutes(normalized.minutesText)
   }
 
-  const onExportAssignmentHistoryCsv = () => {
-    const content = exportAssignmentHistoryCsv(monthlyAssignmentHistory)
-    const suffix = selectedHistoryMonth
-      ? `${selectedHistoryMonth.year}-${pad2(selectedHistoryMonth.month)}`
-      : 'all'
-    downloadTextFile(`assignment-history-${suffix}.csv`, content, 'text/csv;charset=utf-8')
-  }
-
   const onExportAssignmentHistoryJson = () => {
     const content = exportAssignmentHistoryJson(monthlyAssignmentHistory)
     const suffix = selectedHistoryMonth
@@ -833,9 +824,6 @@ export default function App({
               {monthlyAssignmentHistory.length} assignments, {(monthlyHistoryMinutes / 60).toFixed(2)} hours
             </div>
             <div className="historyExportActions">
-              <button onClick={onExportAssignmentHistoryCsv} className="btn-secondary">
-                <i className="las la-file-csv" aria-hidden="true"></i> Export CSV
-              </button>
               <button onClick={onExportAssignmentHistoryJson} className="btn-secondary">
                 <i className="las la-file-code" aria-hidden="true"></i> Export JSON
               </button>

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildAssignmentHistoryEntry,
-  exportAssignmentHistoryCsv,
+  exportAssignmentHistoryJson,
   filterAssignmentHistoryEntriesByMonth,
   sumAssignmentHistoryEntryMinutes,
 } from './assignmentHistoryUnified'
@@ -54,9 +54,9 @@ describe('month filter and sum', () => {
   })
 })
 
-describe('exportAssignmentHistoryCsv', () => {
-  it('exports one row per root assignment', () => {
-    const csv = exportAssignmentHistoryCsv([
+describe('exportAssignmentHistoryJson', () => {
+  it('exports unified assignment history as JSON', () => {
+    const json = exportAssignmentHistoryJson([
       buildAssignmentHistoryEntry(
         {
           assignment: 'Alpha',
@@ -71,7 +71,9 @@ describe('exportAssignmentHistoryCsv', () => {
       ),
     ])
 
-    expect(csv).toContain('created_at,assignment,deadline')
-    expect(csv).toContain('Task A (30m); Task B (60m)')
+    const parsed = JSON.parse(json)
+    expect(parsed[0].rootAssignmentId).toBe('root')
+    expect(parsed[0].assignments[0].title).toBe('Alpha')
+    expect(parsed[0].assignments[1].title).toBe('Task A')
   })
 })

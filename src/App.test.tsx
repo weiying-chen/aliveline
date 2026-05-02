@@ -270,6 +270,14 @@ describe('App deadline behavior', () => {
     expect(screen.getByLabelText('Month')).toBeTruthy()
   })
 
+  it('shows JSON export only in assignment history export', () => {
+    renderApp()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
+    expect(screen.queryByRole('button', { name: /export csv/i })).toBeNull()
+    expect(screen.getByRole('button', { name: /export json/i })).toBeTruthy()
+  })
+
   it('uses shared muted meta text style for counting and history summary', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T06:00:00'))
