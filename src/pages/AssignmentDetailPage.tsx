@@ -6,18 +6,19 @@ import type { Assignment } from '../utils/assignmentModel'
 const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
 
 type AssignmentDraftV2 = {
+  rootAssignmentId?: string
   assignments: Assignment[]
 }
 
-function readAssignmentsFromDraft() {
+function readDraft() {
   const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
-  if (!saved) return [] as Assignment[]
+  if (!saved) return null as AssignmentDraftV2 | null
   try {
     const parsed = JSON.parse(saved) as AssignmentDraftV2
-    if (!Array.isArray(parsed.assignments)) return []
-    return parsed.assignments
+    if (!Array.isArray(parsed.assignments)) return null
+    return parsed
   } catch {
-    return []
+    return null
   }
 }
 
@@ -28,9 +29,13 @@ export function AssignmentDetailPage() {
     return <Navigate to="/assignments" replace />
   }
 
-  const assignments = readAssignmentsFromDraft()
+  const draft = readDraft()
+  const assignments = draft?.assignments ?? []
   const byId = new Map(assignments.map((assignment) => [assignment.id, assignment]))
-  const root = assignments.find((assignment) => assignment.id === 'legacy-root') ?? assignments[0]
+  const root =
+    assignments.find((assignment) => assignment.id === draft?.rootAssignmentId) ??
+    assignments.find((assignment) => assignment.id === 'legacy-root') ??
+    assignments[0]
   const affectingAssignments =
     root?.relations
       .filter((relation) => relation.type === 'extends')
