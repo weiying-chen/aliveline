@@ -279,12 +279,12 @@ describe('App deadline behavior', () => {
   })
 
   it('exports raw assignment draft from local storage as-is', async () => {
-    let exportedBlob: Blob | null = null
+    let exportedBlob: Blob | MediaSource | null = null
     Object.assign(URL, {
       createObjectURL: () => 'blob:stub',
       revokeObjectURL: () => {},
     })
-    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob) => {
+    vi.spyOn(URL, 'createObjectURL').mockImplementation((blob: Blob | MediaSource) => {
       exportedBlob = blob
       return 'blob:mock'
     })
@@ -325,8 +325,10 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
     fireEvent.click(screen.getByRole('button', { name: /export json/i }))
 
-    if (!exportedBlob) throw new Error('Expected export blob')
-    const content = await exportedBlob.text()
+    if (!exportedBlob || typeof exportedBlob !== 'object' || !('text' in exportedBlob)) {
+      throw new Error('Expected export blob')
+    }
+    const content = await (exportedBlob as Blob).text()
     const parsed = JSON.parse(content)
     expect(parsed).toEqual(draft)
   })
@@ -393,22 +395,22 @@ describe('App deadline behavior', () => {
     localStorage.setItem(
       'aliveline:assignment-draft',
       JSON.stringify({
-        rootAssignmentId: 'legacy-root',
         assignments: [
           {
-            id: 'legacy-root',
+            id: 'boot-assignment',
             title: 'Boot assignment',
             deadlineIso: '2026-04-10T12:00:00.000Z',
             comments: [],
-            relations: [{ assignmentId: 'legacy-task-0', type: 'extends' }],
-          },
-          {
-            id: 'legacy-task-0',
-            title: 'Boot task',
-            deadlineIso: '2026-04-10T12:00:00.000Z',
-            comments: [],
-            estimateMinutes: 50,
-            relations: [],
+            children: [
+              {
+                id: 'boot-task-0',
+                title: 'Boot task',
+                deadlineIso: '2026-04-10T12:00:00.000Z',
+                comments: [],
+                estimateMinutes: 50,
+                children: [],
+              },
+            ],
           },
         ],
       })
@@ -452,16 +454,14 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     let draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
-    expect(draft.rootAssignmentId).toBe('legacy-root')
     expect(Array.isArray(draft.assignments)).toBe(true)
-    const firstTask = draft.assignments.find((item: { id: string }) => item.id === 'legacy-task-0')
+    const firstTask = draft.assignments[0]?.children?.[0]
     expect(firstTask?.title).toBe('Task A')
     expect(firstTask?.estimateMinutes).toBe(80)
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove assignment' }))
     draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
-    const assignmentIds = draft.assignments.map((item: { id: string }) => item.id)
-    expect(assignmentIds).toEqual(['legacy-root'])
+    expect(draft.assignments[0]?.children ?? []).toEqual([])
   })
 
   it('persists selected assignment edits to draft storage', () => {
@@ -473,21 +473,13 @@ describe('App deadline behavior', () => {
     localStorage.setItem(
       'aliveline:assignment-draft',
       JSON.stringify({
-        rootAssignmentId: 'legacy-root',
         assignments: [
-          {
-            id: 'legacy-root',
-            title: 'Main root',
-            deadlineIso: '2026-04-10T12:00:00.000Z',
-            comments: [],
-            relations: [{ assignmentId: 'assignment-a', type: 'extends' }],
-          },
           {
             id: 'assignment-a',
             title: 'Child assignment',
             deadlineIso: '2026-04-10T12:00:00.000Z',
             comments: [],
-            relations: [],
+            children: [],
           },
         ],
       })
@@ -520,15 +512,13 @@ describe('App deadline behavior', () => {
     const edited = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a')
     expect(edited.title).toBe('Edited child assignment')
     expect(edited.owner).toBe('Alice')
-    expect(edited.relations).toEqual([{ assignmentId: 'assignment-a-task-0', type: 'extends' }])
+    expect(Array.isArray(edited.children)).toBe(true)
+    expect(edited.children).toHaveLength(1)
     expect(edited.comments).toEqual(['Use simpler wording in paragraph 2'])
 
-    const nested = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a-task-0')
+    const nested = edited.children[0]
     expect(nested.title).toBe('Nested assignment')
     expect(nested.estimateMinutes).toBe(60)
-
-    const legacyRoot = draft.assignments.find((item: { id: string }) => item.id === 'legacy-root')
-    expect(legacyRoot.relations).toEqual([{ assignmentId: 'assignment-a', type: 'extends' }])
   })
 
   it('does not persist legacy v1 draft keys', () => {

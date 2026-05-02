@@ -19,12 +19,6 @@ describe('AssignmentsPage', () => {
   })
 
   it('inserts new assignments at the top', () => {
-    const root = buildAssignment({
-      id: 'legacy-root',
-      title: 'Assignment',
-      deadlineIso: '2026-05-01T09:00:00.000Z',
-      relations: [{ assignmentId: 'assignment-old', type: 'extends' }],
-    })
     const old = buildAssignment({
       id: 'assignment-old',
       title: 'Old assignment',
@@ -33,7 +27,7 @@ describe('AssignmentsPage', () => {
 
     localStorage.setItem(
       LS_ASSIGNMENT_DRAFT_KEY,
-      JSON.stringify({ rootAssignmentId: root.id, assignments: [root, old] })
+      JSON.stringify({ assignments: [{ ...old, children: [] }] })
     )
 
     vi.spyOn(Date, 'now').mockReturnValue(1714540800000)
@@ -50,12 +44,7 @@ describe('AssignmentsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add assignment from list page' }))
 
     const saved = JSON.parse(localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY) ?? '{}')
-    const savedRoot = saved.assignments.find((assignment: { id: string }) => assignment.id === 'legacy-root')
-
-    expect(savedRoot.relations[0]).toEqual({
-      assignmentId: 'assignment-1714540800000',
-      type: 'extends',
-    })
-    expect(savedRoot.relations[1]).toEqual({ assignmentId: 'assignment-old', type: 'extends' })
+    expect(saved.assignments[0].id).toBe('assignment-1714540800000')
+    expect(saved.assignments[1].id).toBe('assignment-old')
   })
 })

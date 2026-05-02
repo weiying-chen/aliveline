@@ -11,8 +11,7 @@ import type { Assignment } from '../utils/assignmentModel'
 const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
 
 type AssignmentDraftV2 = {
-  rootAssignmentId: string
-  assignments: Assignment[]
+  assignments: (Assignment & { children?: Assignment[] })[]
 }
 
 function readDraft() {
@@ -58,52 +57,29 @@ export function AssignmentsPage() {
       } satisfies AssignmentDraftV2)
     )
   }, [assignments, draft])
-  const byId = new Map(assignments.map((assignment) => [assignment.id, assignment]))
-  const root =
-    assignments.find((assignment) => assignment.id === draft?.rootAssignmentId) ??
-    assignments.find((assignment) => assignment.id === 'legacy-root') ??
-    assignments[0]
-  const affectingAssignments =
-    root?.relations
-      .filter((relation) => relation.type === 'extends')
-      .map((relation) => byId.get(relation.assignmentId))
-      .filter((assignment): assignment is Assignment => Boolean(assignment)) ?? []
+  const affectingAssignments = assignments
 
   const onAddAssignment = () => {
     const currentDraft = readDraft()
     const currentAssignments = currentDraft?.assignments ?? []
-    const currentRoot =
-      currentAssignments.find((assignment) => assignment.id === currentDraft?.rootAssignmentId) ??
-      currentAssignments.find((assignment) => assignment.id === 'legacy-root') ??
-      buildAssignment({
-        id: 'legacy-root',
-        title: 'Assignment',
-        deadlineIso: new Date().toISOString(),
-      })
+    const baseDeadlineIso = currentAssignments[0]?.deadlineIso ?? new Date().toISOString()
 
     const newIndex = 0
     const newAssignmentId = `assignment-${Date.now()}`
     const newAssignment = buildAssignment({
       id: newAssignmentId,
       title: 'New assignment',
-      deadlineIso: currentRoot.deadlineIso,
-    })
-
-    const nextRoot = buildAssignment({
-      ...currentRoot,
-      relations: [{ assignmentId: newAssignmentId, type: 'extends' }, ...currentRoot.relations],
+      deadlineIso: baseDeadlineIso,
     })
 
     const nextAssignments = [
-      nextRoot,
-      ...currentAssignments.filter((assignment) => assignment.id !== nextRoot.id),
-      newAssignment,
+      { ...newAssignment, children: [] as Assignment[] },
+      ...currentAssignments,
     ]
 
     localStorage.setItem(
       LS_ASSIGNMENT_DRAFT_KEY,
       JSON.stringify({
-        rootAssignmentId: nextRoot.id,
         assignments: nextAssignments,
       } satisfies AssignmentDraftV2)
     )
@@ -157,7 +133,7 @@ export function AssignmentsPage() {
             </div>
           </div>
           <App
-            selectedAssignmentId={root?.id}
+            selectedAssignmentId={affectingAssignments[0]?.id}
             showTopNav={false}
             persistDraft={false}
             renderMessagesOnly={true}

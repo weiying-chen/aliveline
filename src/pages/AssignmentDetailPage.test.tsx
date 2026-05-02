@@ -20,35 +20,22 @@ describe('AssignmentDetailPage', () => {
     localStorage.clear()
   })
 
-  it('uses rootAssignmentId to resolve selected assignment', () => {
-    const legacyRoot = buildAssignment({
-      id: 'legacy-root',
-      title: 'Legacy root',
-      deadlineIso: '2026-05-01T09:00:00.000Z',
-      relations: [{ assignmentId: 'legacy-task-0', type: 'extends' }],
-    })
-    const legacyTask = buildAssignment({
-      id: 'legacy-task-0',
-      title: 'Legacy task',
-      deadlineIso: '2026-05-01T08:00:00.000Z',
-    })
+  it('resolves selected assignment from top-level nested list by index', () => {
     const activeRoot = buildAssignment({
       id: 'assignment-a',
       title: 'Active root',
       deadlineIso: '2026-05-01T10:00:00.000Z',
-      relations: [{ assignmentId: 'assignment-a-task-0', type: 'extends' }],
     })
-    const activeTask = buildAssignment({
-      id: 'assignment-a-task-0',
-      title: 'Active task',
+    const another = buildAssignment({
+      id: 'assignment-b',
+      title: 'Another root',
       deadlineIso: '2026-05-01T11:00:00.000Z',
     })
 
     localStorage.setItem(
       LS_ASSIGNMENT_DRAFT_KEY,
       JSON.stringify({
-        rootAssignmentId: 'assignment-a',
-        assignments: [legacyRoot, legacyTask, activeRoot, activeTask],
+        assignments: [{ ...activeRoot, children: [] }, { ...another, children: [] }],
       })
     )
 
@@ -61,6 +48,6 @@ describe('AssignmentDetailPage', () => {
       </MemoryRouter>
     )
 
-    expect(screen.getByText('Selected assignment: assignment-a-task-0')).toBeTruthy()
+    expect(screen.getByText('Selected assignment: assignment-a')).toBeTruthy()
   })
 })

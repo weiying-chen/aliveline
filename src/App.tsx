@@ -9,8 +9,7 @@ import {
 } from './utils/assignmentHistoryUnified'
 import { AccordionItem } from './components/Accordion'
 import { AssignmentRow } from './components/AssignmentRow'
-import { fromLegacyAssignmentDraft, toLegacyAssignmentDraft } from './utils/assignmentAdapters'
-import { buildAssignment, type Assignment } from './utils/assignmentModel'
+import { buildAssignment } from './utils/assignmentModel'
 import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
 import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
@@ -89,8 +88,7 @@ function sanitizeTaskEntries(entries: unknown) {
 }
 
 type AssignmentDraftV2 = {
-  rootAssignmentId: string
-  assignments: Assignment[]
+  assignments: DraftAssignment[]
   deadlineIso: string
   assignmentTitle: string
   owner: string
@@ -98,96 +96,145 @@ type AssignmentDraftV2 = {
   comments: string[]
 }
 
-function readStoredAssignmentDraft(rootAssignmentId = 'legacy-root') {
+type DraftAssignment = {
+  id: string
+  title: string
+  owner?: string
+  deadlineIso: string
+  estimateMinutes?: number
+  comments: string[]
+  children: DraftAssignment[]
+}
+
+function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
+  if (!input || typeof input !== 'object') return null
+  const item = input as Record<string, unknown>
+  if (typeof item.id !== 'string') return null
+  if (typeof item.title !== 'string') return null
+  if (typeof item.deadlineIso !== 'string') return null
+  const comments = Array.isArray(item.comments)
+    ? item.comments.filter((comment): comment is string => typeof comment === 'string').map((comment) => comment.trim()).filter(Boolean)
+    : []
+  const owner =
+    typeof item.owner === 'string' && item.owner.trim().length > 0 ? item.owner.trim() : undefined
+  const estimateMinutes =
+    typeof item.estimateMinutes === 'number' && Number.isFinite(item.estimateMinutes) && item.estimateMinutes > 0
+      ? Math.round(item.estimateMinutes)
+      : undefined
+  const childrenInput = Array.isArray(item.children) ? item.children : []
+  const children = childrenInput
+    .map((child) => normalizeDraftAssignment(child))
+    .filter((child): child is DraftAssignment => Boolean(child))
+  return {
+    id: item.id,
+    title: item.title.trim(),
+    ...(owner ? { owner } : {}),
+    deadlineIso: item.deadlineIso,
+    ...(estimateMinutes ? { estimateMinutes } : {}),
+    comments,
+    children,
+  }
+}
+
+function readStoredAssignmentDraft(selectedAssignmentId?: string) {
   const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
   if (!saved) return null
   try {
     const parsed = JSON.parse(saved) as {
-      rootAssignmentId?: unknown
       assignments?: unknown
     }
-    if (typeof parsed.rootAssignmentId !== 'string') return null
     if (!Array.isArray(parsed.assignments)) return null
-    const legacyDraft = toLegacyAssignmentDraft(
-      parsed.assignments as Assignment[],
-      rootAssignmentId
-    )
-    if (Number.isNaN(new Date(legacyDraft.deadlineIso).getTime())) return null
-    const byId = new Map((parsed.assignments as Assignment[]).map((assignment) => [assignment.id, assignment]))
-    const root = byId.get(rootAssignmentId) ?? byId.get(parsed.rootAssignmentId)
+    const assignments = parsed.assignments
+      .map((item) => normalizeDraftAssignment(item))
+      .filter((item): item is DraftAssignment => Boolean(item))
+    if (assignments.length === 0) return null
+    const current =
+      assignments.find((assignment) => assignment.id === selectedAssignmentId) ?? assignments[0]
+    const tasks = current.children
+      .map((child) => ({ text: child.title, minutes: child.estimateMinutes ?? 0 }))
+      .filter((task) => task.text.trim().length > 0 && task.minutes > 0)
+    if (Number.isNaN(new Date(current.deadlineIso).getTime())) return null
     return {
-      rootAssignmentId: parsed.rootAssignmentId,
-      assignments: parsed.assignments as Assignment[],
-      deadlineIso: legacyDraft.deadlineIso,
-      assignmentTitle: legacyDraft.assignmentTitle,
-      owner: root?.owner ?? '',
-      tasks: sanitizeTaskEntries(legacyDraft.tasks),
-      comments: root?.comments ?? [],
+      assignments,
+      deadlineIso: current.deadlineIso,
+      assignmentTitle: current.title,
+      owner: current.owner ?? '',
+      tasks: sanitizeTaskEntries(tasks),
+      comments: current.comments ?? [],
     } as AssignmentDraftV2
   } catch {
     return null
   }
 }
 
-function normalizeTasksViaUnified(deadline: Date, assignmentTitle: string, tasks: TaskEntry[]) {
-  return toLegacyAssignmentDraft(
-    fromLegacyAssignmentDraft({
-      assignmentTitle,
-      deadlineIso: deadline.toISOString(),
-      tasks,
-    }),
-    'legacy-root'
-  ).tasks
-}
-
 function buildDraftAssignments(
-  rootAssignmentId: string,
+  assignmentId: string,
   deadline: Date,
   assignmentTitle: string,
   owner: string,
   tasks: TaskEntry[],
   taskFinishTimes: Date[],
   comments: string[]
-) {
+) : DraftAssignment {
   const taskAssignments = tasks.map((task, index) =>
-    buildAssignment({
-      id: rootAssignmentId === 'legacy-root' ? `legacy-task-${index}` : `${rootAssignmentId}-task-${index}`,
+    normalizeDraftAssignment(buildAssignment({
+      id: `${assignmentId}-task-${index}`,
       title: task.text,
       deadlineIso: (taskFinishTimes[index] ?? deadline).toISOString(),
       estimateMinutes: task.minutes,
-    })
+      comments: [],
+    })) as DraftAssignment
   )
 
-  const root = buildAssignment({
-    id: rootAssignmentId,
+  const root = normalizeDraftAssignment(buildAssignment({
+    id: assignmentId,
     title: assignmentTitle,
     owner,
     deadlineIso: deadline.toISOString(),
-    relations: taskAssignments.map((task) => ({ assignmentId: task.id, type: 'extends' })),
     comments,
-  })
-
-  return [root, ...taskAssignments]
+  })) as DraftAssignment
+  return {
+    ...root,
+    children: taskAssignments,
+  }
 }
 
-function mergeDraftAssignmentsForRoot(
-  existingAssignments: Assignment[],
-  rootAssignmentId: string,
-  nextRootAssignments: Assignment[]
+function replaceTopLevelAssignment(
+  existingAssignments: DraftAssignment[],
+  assignmentId: string,
+  nextAssignment: DraftAssignment
 ) {
-  const byId = new Map(existingAssignments.map((assignment) => [assignment.id, assignment]))
-  const previousRoot = byId.get(rootAssignmentId)
-  const previousChildIds = new Set(
-    (previousRoot?.relations ?? [])
-      .filter((relation) => relation.type === 'extends')
-      .map((relation) => relation.assignmentId)
-  )
+  let replaced = false
+  const next = existingAssignments.map((assignment) => {
+    if (assignment.id !== assignmentId) return assignment
+    replaced = true
+    return nextAssignment
+  })
+  if (replaced) return next
+  return [nextAssignment, ...existingAssignments]
+}
 
-  const keptAssignments = existingAssignments.filter(
-    (assignment) => assignment.id !== rootAssignmentId && !previousChildIds.has(assignment.id)
+function toHistoryAssignments(root: DraftAssignment) {
+  const childAssignments = root.children.map((child) =>
+    buildAssignment({
+      id: child.id,
+      title: child.title,
+      owner: child.owner,
+      deadlineIso: child.deadlineIso,
+      estimateMinutes: child.estimateMinutes,
+      comments: child.comments,
+      relations: [],
+    })
   )
-
-  return [...keptAssignments, ...nextRootAssignments]
+  const historyRoot = buildAssignment({
+    id: root.id,
+    title: root.title,
+    owner: root.owner,
+    deadlineIso: root.deadlineIso,
+    comments: root.comments,
+    relations: childAssignments.map((child) => ({ assignmentId: child.id, type: 'extends' })),
+  })
+  return [historyRoot, ...childAssignments]
 }
 
 function readStoredStringList(key: string) {
@@ -257,7 +304,7 @@ export default function App({
 }: AppProps = {}) {
   const deadlineRef = useRef<PickerInput | null>(null)
   const storedDraft = useMemo(
-    () => readStoredAssignmentDraft(selectedAssignmentId ?? 'legacy-root'),
+    () => readStoredAssignmentDraft(selectedAssignmentId),
     [selectedAssignmentId]
   )
 
@@ -421,9 +468,9 @@ export default function App({
   )
   useEffect(() => {
     if (!persistDraft) return
-    const targetRootId = selectedAssignmentId ?? 'legacy-root'
-    const nextRootAssignments = buildDraftAssignments(
-      targetRootId,
+    const targetAssignmentId = selectedAssignmentId ?? `assignment-${Date.now()}`
+    const nextAssignment = buildDraftAssignments(
+      targetAssignmentId,
       deadline,
       deadlineExtensionAssignment,
       assignmentOwner,
@@ -432,11 +479,12 @@ export default function App({
       comments
     )
     const currentDraft = readStoredAssignmentDraft()
-    const assignments = selectedAssignmentId
-      ? mergeDraftAssignmentsForRoot(currentDraft?.assignments ?? [], targetRootId, nextRootAssignments)
-      : nextRootAssignments
+    const assignments = replaceTopLevelAssignment(
+      currentDraft?.assignments ?? [],
+      targetAssignmentId,
+      nextAssignment
+    )
     const nextDraft: AssignmentDraftV2 = {
-      rootAssignmentId: currentDraft?.rootAssignmentId ?? 'legacy-root',
       assignments,
       deadlineIso: deadline.toISOString(),
       assignmentTitle: deadlineExtensionAssignment,
@@ -465,20 +513,12 @@ export default function App({
   }, [assignmentHistory, selectedHistoryMonth])
   const currentDraftExportEntry = useMemo(() => {
     if (storedDraft?.assignments.length) {
-      const byId = new Map(storedDraft.assignments.map((assignment) => [assignment.id, assignment]))
       const root =
-        byId.get(selectedAssignmentId ?? storedDraft.rootAssignmentId) ??
-        byId.get(storedDraft.rootAssignmentId) ??
+        storedDraft.assignments.find((assignment) => assignment.id === selectedAssignmentId) ??
         storedDraft.assignments[0]
-
       if (root) {
-        const childIds = root.relations
-          .filter((relation) => relation.type === 'extends')
-          .map((relation) => relation.assignmentId)
-        const includedIds = new Set([root.id, ...childIds])
-        const assignments = storedDraft.assignments.filter((assignment) => includedIds.has(assignment.id))
+        const assignments = toHistoryAssignments(root)
         const totalMinutes = assignments.reduce((sum, assignment) => sum + (assignment.estimateMinutes ?? 0), 0)
-
         return {
           createdAtIso: new Date().toISOString(),
           deadlineIso: root.deadlineIso,
@@ -762,10 +802,7 @@ export default function App({
       minutes: Math.round(minutes),
     }
     setRecentTasks((prev) => updateRecentTaskNames(prev, entry.text))
-    const nextTasks = normalizeTasksViaUnified(deadline, deadlineExtensionAssignment, [
-      ...tasks,
-      entry,
-    ])
+    const nextTasks = sanitizeTaskEntries([...tasks, entry])
     const baseDeadline = pickTaskBatchBase(deadline, changeBaseDeadline)
     const dueBase = pickTaskBatchBase(now, taskFinishBase)
     if (!changeBaseDeadline) {
@@ -785,11 +822,7 @@ export default function App({
   }
 
   const removeTaskEntry = (index: number) => {
-    const nextTasks = normalizeTasksViaUnified(
-      deadline,
-      deadlineExtensionAssignment,
-      tasks.filter((_, i) => i !== index)
-    )
+    const nextTasks = sanitizeTaskEntries(tasks.filter((_, i) => i !== index))
     setTasks(nextTasks)
     if (nextTasks.length === 0) {
       if (changeBaseDeadline) {
