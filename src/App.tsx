@@ -910,7 +910,7 @@ export default function App({
               {exportAssignmentHistoryEntries.length} assignments, {(exportHistoryMinutes / 60).toFixed(2)} hours
             </div>
             <div className="historyExportActions">
-              <button onClick={onExportAssignmentHistoryJson} className="btn-secondary">
+              <button onClick={onExportAssignmentHistoryJson} className="btn-primary">
                 <i className="las la-file-code" aria-hidden="true"></i> Export JSON
               </button>
             </div>
