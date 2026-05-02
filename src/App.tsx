@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 
 import {
   buildAssignmentHistoryEntry,
-  exportAssignmentHistoryJson,
   filterAssignmentHistoryEntriesByMonth,
   sumAssignmentHistoryEntryMinutes,
   type AssignmentHistoryEntry,
@@ -824,7 +823,15 @@ export default function App({
   }
 
   const onExportAssignmentHistoryJson = () => {
-    const content = exportAssignmentHistoryJson(exportAssignmentHistoryEntries)
+    const rawDraft = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
+    let content = rawDraft ?? '{}'
+    if (rawDraft) {
+      try {
+        content = JSON.stringify(JSON.parse(rawDraft), null, 2)
+      } catch {
+        content = rawDraft
+      }
+    }
     const suffix = selectedHistoryMonth
       ? `${selectedHistoryMonth.year}-${pad2(selectedHistoryMonth.month)}`
       : 'all'
