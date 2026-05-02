@@ -1233,7 +1233,7 @@ export default function App({
                   <AssignmentRow
                     key={`${entry.text}-${index}`}
                     title={entry.text}
-                    middle={
+                    meta={
                       <span aria-label="Assignment due time display" className="assignmentDueText">
                         <span className="assignmentDueTime">{fmtTime(adjustedTaskFinishTimes[index])}</span>
                         <span aria-hidden="true"> • </span>
@@ -1318,7 +1318,7 @@ export default function App({
                   <AssignmentRow
                     key={`${comment}-${index}`}
                     title={comment}
-                    middle={<span aria-hidden="true"></span>}
+                    meta={<span aria-hidden="true"></span>}
                     action={
                       <button
                         type="button"

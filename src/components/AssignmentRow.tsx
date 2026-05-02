@@ -2,17 +2,17 @@ import type { ReactNode } from 'react'
 
 type AssignmentRowProps = {
   title: string
-  middle: ReactNode
+  meta: ReactNode
   action: ReactNode
 }
 
-export function AssignmentRow({ title, middle, action }: AssignmentRowProps) {
+export function AssignmentRow({ title, meta, action }: AssignmentRowProps) {
   return (
     <div className="assignmentRow">
       <div className="assignmentInfo">
         <span className="assignmentName">{title}</span>
       </div>
-      {middle}
+      {meta}
       {action}
     </div>
   )

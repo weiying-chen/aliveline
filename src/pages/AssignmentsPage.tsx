@@ -128,7 +128,7 @@ export function AssignmentsPage() {
                   <AssignmentRow
                     key={assignment.id}
                     title={assignment.title}
-                    middle={
+                    meta={
                       <span className="assignmentDueText" aria-label="Assignment list due time display">
                         <span className="assignmentDueTime">{fmtTime(new Date(assignment.deadlineIso))}</span>
                         <span aria-hidden="true"> • </span>
