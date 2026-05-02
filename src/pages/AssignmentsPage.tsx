@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import App from '../App'
@@ -28,6 +28,8 @@ function readDraft() {
 
 export function AssignmentsPage() {
   const navigate = useNavigate()
+  const listScrollRef = useRef<HTMLDivElement | null>(null)
+  const [hasListOverflow, setHasListOverflow] = useState(false)
   const draft = readDraft()
   const assignments = (draft?.assignments ?? []).map((assignment) => {
     if (
@@ -57,6 +59,19 @@ export function AssignmentsPage() {
       } satisfies AssignmentDraftV2)
     )
   }, [assignments, draft])
+
+  useEffect(() => {
+    const element = listScrollRef.current
+    if (!element) return
+
+    const updateOverflow = () => {
+      setHasListOverflow(element.scrollHeight > element.clientHeight)
+    }
+
+    updateOverflow()
+    window.addEventListener('resize', updateOverflow)
+    return () => window.removeEventListener('resize', updateOverflow)
+  }, [assignments.length])
   const affectingAssignments = assignments
 
   const onAddAssignment = () => {
@@ -103,7 +118,11 @@ export function AssignmentsPage() {
                 <i className="las la-plus" aria-hidden="true"></i>
               </button>
             </div>
-            <div className="assignmentListScroll">
+            <div
+              ref={listScrollRef}
+              className="assignmentListScroll"
+              data-has-overflow={hasListOverflow ? 'true' : 'false'}
+            >
               <div className="assignmentList">
                 {affectingAssignments.map((assignment, index) => (
                   <AssignmentRow

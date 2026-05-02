@@ -720,6 +720,10 @@ input[readonly] {
   max-height: 360px;
   overflow-y: auto;
   padding-right: 2px;
+  border-bottom: 0;
+}
+
+.assignmentListScroll[data-has-overflow='true'] {
   border-bottom: 1px solid var(--border);
 }
 
