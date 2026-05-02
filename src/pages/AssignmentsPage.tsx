@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom'
 
 import App from '../App'
 import { AssignmentRow } from '../components/AssignmentRow'
-import { formatDuration } from '../utils/deadlineHistory'
 import { buildAssignment } from '../utils/assignmentModel'
-import { fmtTime } from '../utils/time'
+import { fmtDate } from '../utils/time'
 import type { Assignment } from '../utils/assignmentModel'
 
 const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
@@ -130,11 +129,7 @@ export function AssignmentsPage() {
                     title={assignment.title}
                     meta={
                       <span className="assignmentDueText" aria-label="Assignment list due time display">
-                        <span className="assignmentDueTime">{fmtTime(new Date(assignment.deadlineIso))}</span>
-                        <span aria-hidden="true"> • </span>
-                        <span className="assignmentDueDuration">
-                          {formatDuration(assignment.estimateMinutes ?? 0)}
-                        </span>
+                        <span className="assignmentDueTime">{fmtDate(new Date(assignment.deadlineIso))}</span>
                       </span>
                     }
                     action={
