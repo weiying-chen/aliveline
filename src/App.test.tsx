@@ -77,6 +77,52 @@ describe('App deadline behavior', () => {
     expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
   })
 
+  it('supports deadline start-plus-duration input mode', () => {
+    render(<App />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
+    fireEvent.change(screen.getByLabelText('Deadline start time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline duration hours'), {
+      target: { value: '2' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline duration minutes'), {
+      target: { value: '30' },
+    })
+
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('2:30 PM')
+    expect(screen.getByLabelText('Computed deadline preview').textContent).toContain('2:30 PM')
+  })
+
+  it('keeps values when switching deadline input modes', () => {
+    render(<App />)
+
+    const directInput = screen.getByLabelText('Deadline time') as HTMLInputElement
+    fireEvent.change(directInput, { target: { value: '2026-04-10T11:15' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
+    fireEvent.change(screen.getByLabelText('Deadline start time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline duration hours'), {
+      target: { value: '1' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline duration minutes'), {
+      target: { value: '45' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pick exact date/time' }))
+    expect((screen.getByLabelText('Deadline time') as HTMLInputElement).value).toBe('2026-04-10T11:15')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
+    expect((screen.getByLabelText('Deadline start time') as HTMLInputElement).value).toBe(
+      '2026-04-10T12:00'
+    )
+    expect((screen.getByLabelText('Deadline duration hours') as HTMLInputElement).value).toBe('1')
+    expect((screen.getByLabelText('Deadline duration minutes') as HTMLInputElement).value).toBe('45')
+  })
+
   it('toggles original and adjusted values in place for planning fields', () => {
     render(<App />)
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
