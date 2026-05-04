@@ -128,6 +128,72 @@ describe('App deadline behavior', () => {
     expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('1h 40m')
   })
 
+  it('keeps exact picked deadlines at full time', () => {
+    renderApp()
+
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('12:00 PM')
+  })
+
+  it('sets deadline from start plus adjusted duration', () => {
+    renderApp()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
+    fireEvent.change(screen.getByLabelText('Deadline start time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline duration hours'), {
+      target: { value: '2' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline duration minutes'), {
+      target: { value: '0' },
+    })
+
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('1:40 PM')
+    expect(screen.queryByText(/Final due:/)).toBeNull()
+  })
+
+  it('keeps deadline input values when switching modes', () => {
+    renderApp()
+
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-10T11:15' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
+    fireEvent.change(screen.getByLabelText('Deadline start time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline duration hours'), {
+      target: { value: '1' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline duration minutes'), {
+      target: { value: '45' },
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pick exact date/time' }))
+    expect((screen.getByLabelText('Deadline time') as HTMLInputElement).value).toBe('2026-04-10T11:15')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
+    expect((screen.getByLabelText('Deadline start time') as HTMLInputElement).value).toBe(
+      '2026-04-10T12:00'
+    )
+    expect((screen.getByLabelText('Deadline duration hours') as HTMLInputElement).value).toBe('1')
+    expect((screen.getByLabelText('Deadline duration minutes') as HTMLInputElement).value).toBe('45')
+  })
+
+  it('renders compact icon-only deadline mode toggle', () => {
+    renderApp()
+
+    expect(screen.queryByText('Pick exact date/time')).toBeNull()
+    expect(screen.queryByText('Start date + duration')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Pick exact date/time' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Start date + duration' })).toBeTruthy()
+  })
+
   it('uses 0.8 work time in deadline extension preview content', () => {
     renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement

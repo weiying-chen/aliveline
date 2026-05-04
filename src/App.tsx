@@ -44,6 +44,7 @@ import {
 } from './utils/workTime'
 
 type PickerInput = HTMLInputElement
+type DeadlineInputMode = 'direct' | 'duration'
 
 type AppProps = {
   selectedAssignmentId?: string
@@ -68,6 +69,43 @@ const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extensio
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
 const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
 const ADJUSTED_TASK_MULTIPLIER = 0.8
+
+function adjustedAssignmentMinutes(rawMinutes: number) {
+  return Math.max(1, roundMinutesToStep(rawMinutes * ADJUSTED_TASK_MULTIPLIER))
+}
+
+function adjustedDeadlineDurationMinutes(rawMinutes: number) {
+  if (rawMinutes <= 0) return 0
+  return adjustedAssignmentMinutes(rawMinutes)
+}
+
+function officialDeadlineFromAddedAssignments(baseDeadline: Date, rawTasks: TaskEntry[]) {
+  const rawTotalMinutes = rawTasks.reduce((sum, task) => sum + task.minutes, 0)
+  return addWorkMinutes(baseDeadline, rawTotalMinutes)
+}
+
+function deadlineFromAdjustedDuration(start: Date, rawMinutes: number) {
+  const next = new Date(start)
+  next.setMinutes(next.getMinutes() + adjustedDeadlineDurationMinutes(rawMinutes))
+  return next
+}
+
+function deadlineFromDurationInputs(
+  startInput: string,
+  hoursInput: string,
+  minutesInput: string
+) {
+  const start = parseDatetimeLocalValue(startInput)
+  if (!start) return null
+
+  const parsedHours =
+    hoursInput.trim().length === 0 ? 0 : Math.max(0, Math.floor(Number(hoursInput)))
+  const parsedMinutes =
+    minutesInput.trim().length === 0 ? 0 : Math.max(0, Math.floor(Number(minutesInput)))
+  if (!Number.isFinite(parsedHours) || !Number.isFinite(parsedMinutes)) return null
+
+  return deadlineFromAdjustedDuration(start, parsedHours * 60 + parsedMinutes)
+}
 
 function readStoredDate(key: string) {
   const saved = localStorage.getItem(key)
@@ -360,6 +398,11 @@ export default function App({
   const [historyMonth, setHistoryMonth] = useState(() =>
     `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`
   )
+  const [deadlineInputMode, setDeadlineInputMode] = useState<DeadlineInputMode>('direct')
+  const [directDeadlineInput, setDirectDeadlineInput] = useState(() => toDatetimeLocalValue(deadline))
+  const [durationStartInput, setDurationStartInput] = useState(() => toDatetimeLocalValue(deadline))
+  const [durationHoursInput, setDurationHoursInput] = useState('')
+  const [durationMinutesInput, setDurationMinutesInput] = useState('')
 
   const projectionTasks = useMemo(() => tasks, [tasks])
 
@@ -462,7 +505,10 @@ export default function App({
     () =>
       projectionTasks.map((task) => ({
         ...task,
-        minutes: Math.max(1, roundMinutesToStep(task.minutes * currentTaskMultiplier)),
+        minutes:
+          currentTaskMultiplier === ADJUSTED_TASK_MULTIPLIER
+            ? adjustedAssignmentMinutes(task.minutes)
+            : task.minutes,
       })),
     [currentTaskMultiplier, projectionTasks]
   )
@@ -664,12 +710,44 @@ export default function App({
   }
 
   const onSetDeadline = (v: string) => {
+    setDirectDeadlineInput(v)
     const d = parseDatetimeLocalValue(v)
     if (d) updateDeadline(d, { resetDrafts: true })
   }
 
   const reset = () => {
-    updateDeadline(new Date(), { resetDrafts: true })
+    const next = new Date()
+    updateDeadline(next, { resetDrafts: true })
+    setDirectDeadlineInput(toDatetimeLocalValue(next))
+    if (deadlineInputMode === 'duration') {
+      setDurationStartInput(toDatetimeLocalValue(next))
+      setDurationHoursInput('')
+      setDurationMinutesInput('')
+    }
+  }
+
+  const updateDeadlineFromDurationInputs = (
+    startInput: string,
+    hoursInput: string,
+    minutesInput: string
+  ) => {
+    const nextDeadline = deadlineFromDurationInputs(startInput, hoursInput, minutesInput)
+    if (nextDeadline) updateDeadline(nextDeadline, { resetDrafts: true })
+  }
+
+  const onDurationStartInputChange = (value: string) => {
+    setDurationStartInput(value)
+    updateDeadlineFromDurationInputs(value, durationHoursInput, durationMinutesInput)
+  }
+
+  const onDurationHoursInputChange = (value: string) => {
+    setDurationHoursInput(value)
+    updateDeadlineFromDurationInputs(durationStartInput, value, durationMinutesInput)
+  }
+
+  const onDurationMinutesInputChange = (value: string) => {
+    setDurationMinutesInput(value)
+    updateDeadlineFromDurationInputs(durationStartInput, durationHoursInput, value)
   }
 
   const focusDeadlineInput = () => {
@@ -810,10 +888,12 @@ export default function App({
     if (!taskFinishBase) {
       setTaskFinishBase(dueBase)
     }
-    const totalMinutes = nextTasks.reduce((sum, task) => sum + task.minutes, 0)
-    const nextDeadline = addWorkMinutes(baseDeadline, totalMinutes)
+    const nextDeadline = officialDeadlineFromAddedAssignments(baseDeadline, nextTasks)
     setTasks(nextTasks)
     setDeadline(nextDeadline)
+    if (deadlineInputMode === 'direct') {
+      setDirectDeadlineInput(toDatetimeLocalValue(nextDeadline))
+    }
     setTaskName('')
     setTaskHours('')
     setTaskMinutes('')
@@ -826,6 +906,9 @@ export default function App({
     if (nextTasks.length === 0) {
       if (changeBaseDeadline) {
         setDeadline(changeBaseDeadline)
+        if (deadlineInputMode === 'direct') {
+          setDirectDeadlineInput(toDatetimeLocalValue(changeBaseDeadline))
+        }
       }
       setChangeBaseDeadline(null)
       setTaskFinishBase(null)
@@ -833,8 +916,11 @@ export default function App({
     }
 
     if (changeBaseDeadline) {
-      const totalMinutes = nextTasks.reduce((sum, task) => sum + task.minutes, 0)
-      setDeadline(addWorkMinutes(changeBaseDeadline, totalMinutes))
+      const nextDeadline = officialDeadlineFromAddedAssignments(changeBaseDeadline, nextTasks)
+      setDeadline(nextDeadline)
+      if (deadlineInputMode === 'direct') {
+        setDirectDeadlineInput(toDatetimeLocalValue(nextDeadline))
+      }
     }
   }
 
@@ -993,14 +1079,67 @@ export default function App({
             </div>
 
             <div className="controls">
-              <input
-                ref={deadlineRef}
-                className="deadlineInput"
-                type="datetime-local"
-                value={toDatetimeLocalValue(deadline)}
-                onChange={(e) => onSetDeadline(e.target.value)}
-                aria-label="Deadline time"
-              />
+              <div className="deadlineInputModeSwitch" role="group" aria-label="Deadline input mode">
+                <button
+                  type="button"
+                  className={`btn-secondary ${deadlineInputMode === 'direct' ? 'isActive' : ''}`}
+                  onClick={() => setDeadlineInputMode('direct')}
+                  aria-label="Pick exact date/time"
+                  title="Pick exact date/time"
+                >
+                  <i className="las la-clock" aria-hidden="true"></i>
+                </button>
+                <button
+                  type="button"
+                  className={`btn-secondary ${deadlineInputMode === 'duration' ? 'isActive' : ''}`}
+                  onClick={() => setDeadlineInputMode('duration')}
+                  aria-label="Start date + duration"
+                  title="Start date + duration"
+                >
+                  <i className="las la-hourglass-half" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              {deadlineInputMode === 'direct' ? (
+                <input
+                  ref={deadlineRef}
+                  className="deadlineInput"
+                  type="datetime-local"
+                  value={directDeadlineInput}
+                  onChange={(e) => onSetDeadline(e.target.value)}
+                  aria-label="Deadline time"
+                />
+              ) : (
+                <div className="deadlineDurationInputs">
+                  <input
+                    className="deadlineInput"
+                    type="datetime-local"
+                    value={durationStartInput}
+                    onChange={(e) => onDurationStartInputChange(e.target.value)}
+                    aria-label="Deadline start time"
+                  />
+                  <input
+                    className="deadlineDurationInput"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={durationHoursInput}
+                    onChange={(e) => onDurationHoursInputChange(e.target.value)}
+                    placeholder="Hours"
+                    aria-label="Deadline duration hours"
+                  />
+                  <input
+                    className="deadlineDurationInput"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={durationMinutesInput}
+                    onChange={(e) => onDurationMinutesInputChange(e.target.value)}
+                    placeholder="Minutes"
+                    aria-label="Deadline duration minutes"
+                  />
+                </div>
+              )}
 
               <button
                 onClick={reset}
