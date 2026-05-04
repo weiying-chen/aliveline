@@ -9,9 +9,9 @@ import {
 } from './utils/assignmentHistoryUnified'
 import { AccordionItem } from './components/Accordion'
 import { AssignmentRow } from './components/AssignmentRow'
+import { HoursMinutesInput } from './components/HoursMinutesInput'
 import { buildAssignment } from './utils/assignmentModel'
 import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
-import { clearTextAfterDeadlineChange } from './utils/deadlineChange'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
 import {
   fmtDateTimeWithWeekday,
@@ -23,14 +23,11 @@ import {
 } from './utils/time'
 import { updateRecentTaskNames } from './utils/taskHistory'
 import {
-  applyMinutesDeltaWithCarry,
   calculateTaskFinishTimes,
   minutesFromTimeParts,
-  normalizeTaskTimeParts,
   pickTaskBatchBase,
   pickTaskFinishStart,
   roundMinutesToStep,
-  stepHoursText,
 } from './utils/taskTime'
 import {
   atLocalTime,
@@ -345,6 +342,7 @@ export default function App({
   showMessagesSection = true,
 }: AppProps = {}) {
   const deadlineRef = useRef<PickerInput | null>(null)
+  const durationStartRef = useRef<PickerInput | null>(null)
   const storedDraft = useMemo(
     () => readStoredAssignmentDraft(selectedAssignmentId),
     [selectedAssignmentId]
@@ -700,7 +698,6 @@ export default function App({
       return
     }
     if (sameDeadline) return
-    setDeadlineExtensionAssignment(clearTextAfterDeadlineChange(deadlineExtensionAssignment))
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
       setTasks([])
@@ -740,17 +737,17 @@ export default function App({
     updateDeadlineFromDurationInputs(value, durationHoursInput, durationMinutesInput)
   }
 
-  const onDurationHoursInputChange = (value: string) => {
-    setDurationHoursInput(value)
-    updateDeadlineFromDurationInputs(durationStartInput, value, durationMinutesInput)
-  }
-
-  const onDurationMinutesInputChange = (value: string) => {
-    setDurationMinutesInput(value)
-    updateDeadlineFromDurationInputs(durationStartInput, durationHoursInput, value)
+  const onDurationTimeChange = (nextHours: string, nextMinutes: string) => {
+    setDurationHoursInput(nextHours)
+    setDurationMinutesInput(nextMinutes)
+    updateDeadlineFromDurationInputs(durationStartInput, nextHours, nextMinutes)
   }
 
   const focusDeadlineInput = () => {
+    if (deadlineInputMode === 'duration') {
+      durationStartRef.current?.focus()
+      return
+    }
     deadlineRef.current?.focus()
   }
 
@@ -924,20 +921,9 @@ export default function App({
     }
   }
 
-  const onTaskMinutesChange = (value: string) => {
-    const normalized = normalizeTaskTimeParts(taskHours, value)
-    setTaskHours(normalized.hoursText)
-    setTaskMinutes(normalized.minutesText)
-  }
-
-  const onStepTaskHours = (delta: number) => {
-    setTaskHours((prev) => stepHoursText(prev, delta))
-  }
-
-  const onStepTaskMinutes = (delta: number) => {
-    const normalized = applyMinutesDeltaWithCarry(taskHours, taskMinutes, delta)
-    setTaskHours(normalized.hoursText)
-    setTaskMinutes(normalized.minutesText)
+  const onTaskTimeChange = (nextHours: string, nextMinutes: string) => {
+    setTaskHours(nextHours)
+    setTaskMinutes(nextMinutes)
   }
 
   const onExportAssignmentHistoryJson = () => {
@@ -1112,31 +1098,26 @@ export default function App({
               ) : (
                 <div className="deadlineDurationInputs">
                   <input
+                    ref={durationStartRef}
                     className="deadlineInput"
                     type="datetime-local"
                     value={durationStartInput}
                     onChange={(e) => onDurationStartInputChange(e.target.value)}
                     aria-label="Deadline start time"
                   />
-                  <input
-                    className="deadlineDurationInput"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={durationHoursInput}
-                    onChange={(e) => onDurationHoursInputChange(e.target.value)}
-                    placeholder="Hours"
-                    aria-label="Deadline duration hours"
-                  />
-                  <input
-                    className="deadlineDurationInput"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={durationMinutesInput}
-                    onChange={(e) => onDurationMinutesInputChange(e.target.value)}
-                    placeholder="Minutes"
-                    aria-label="Deadline duration minutes"
+                  <HoursMinutesInput
+                    hoursText={durationHoursInput}
+                    minutesText={durationMinutesInput}
+                    onChange={onDurationTimeChange}
+                    hoursAriaLabel="Deadline duration hours"
+                    minutesAriaLabel="Deadline duration minutes"
+                    showLabels={false}
+                    hoursInputClassName="deadlineDurationInput"
+                    minutesInputClassName="deadlineDurationInput"
+                    increaseHoursLabel="Increase deadline duration hours by 1"
+                    decreaseHoursLabel="Decrease deadline duration hours by 1"
+                    increaseMinutesLabel="Increase deadline duration minutes by 10"
+                    decreaseMinutesLabel="Decrease deadline duration minutes by 10"
                   />
                 </div>
               )}
@@ -1258,100 +1239,19 @@ export default function App({
                       )}
                     </div>
                   </div>
-                  <div className="fieldGroup">
-                    <label className="fieldLabel" htmlFor="task-hours">
-                      Hours
-                    </label>
-                    <div className="assignmentHoursInputWrap">
-                      <input
-                        id="task-hours"
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={taskHours}
-                        onChange={(e) => setTaskHours(e.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'ArrowUp') {
-                            event.preventDefault()
-                            onStepTaskHours(1)
-                            return
-                          }
-
-                          if (event.key === 'ArrowDown') {
-                            event.preventDefault()
-                            onStepTaskHours(-1)
-                          }
-                        }}
-                        placeholder="Hours"
-                        aria-label="Hours"
-                      />
-                      <div className="assignmentHoursStepButtons">
-                        <button
-                          type="button"
-                          className="assignmentStepButton"
-                          data-dir="up"
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => onStepTaskHours(1)}
-                          aria-label="Increase hours by 1"
-                        />
-                        <button
-                          type="button"
-                          className="assignmentStepButton"
-                          data-dir="down"
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => onStepTaskHours(-1)}
-                          aria-label="Decrease hours by 1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="fieldGroup">
-                    <label className="fieldLabel" htmlFor="task-minutes">
-                      Minutes
-                    </label>
-                    <div className="assignmentMinutesInputWrap">
-                      <input
-                        id="task-minutes"
-                        type="number"
-                        min="-60"
-                        step="1"
-                        value={taskMinutes}
-                        onChange={(e) => onTaskMinutesChange(e.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'ArrowUp') {
-                            event.preventDefault()
-                            onStepTaskMinutes(10)
-                            return
-                          }
-
-                          if (event.key === 'ArrowDown') {
-                            event.preventDefault()
-                            onStepTaskMinutes(-10)
-                          }
-                        }}
-                        placeholder="Minutes"
-                        aria-label="Minutes"
-                      />
-                      <div className="assignmentMinutesStepButtons">
-                        <button
-                          type="button"
-                          className="assignmentStepButton"
-                          data-dir="up"
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => onStepTaskMinutes(10)}
-                          aria-label="Increase minutes by 10"
-                        />
-                        <button
-                          type="button"
-                          className="assignmentStepButton"
-                          data-dir="down"
-                          onMouseDown={(event) => event.preventDefault()}
-                          onClick={() => onStepTaskMinutes(-10)}
-                          aria-label="Decrease minutes by 10"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <HoursMinutesInput
+                    hoursText={taskHours}
+                    minutesText={taskMinutes}
+                    onChange={onTaskTimeChange}
+                    hoursInputId="task-hours"
+                    minutesInputId="task-minutes"
+                    hoursAriaLabel="Hours"
+                    minutesAriaLabel="Minutes"
+                    increaseHoursLabel="Increase hours by 1"
+                    decreaseHoursLabel="Decrease hours by 1"
+                    increaseMinutesLabel="Increase minutes by 10"
+                    decreaseMinutesLabel="Decrease minutes by 10"
+                  />
                   <div className="fieldGroup">
                     <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">
                       Action

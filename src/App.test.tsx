@@ -138,6 +138,19 @@ describe('App deadline behavior', () => {
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('12:00 PM')
   })
 
+  it('keeps assignment title when deadline changes', () => {
+    renderApp()
+
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
+      target: { value: 'Keep this title' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+
+    expect((screen.getByLabelText('Assignment title') as HTMLInputElement).value).toBe('Keep this title')
+  })
+
   it('sets deadline from start plus adjusted duration', () => {
     renderApp()
 
@@ -154,6 +167,25 @@ describe('App deadline behavior', () => {
 
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('1:40 PM')
     expect(screen.queryByText(/Final due:/)).toBeNull()
+  })
+
+  it('uses stepped duration minute controls with hour carry', () => {
+    renderApp()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
+    fireEvent.change(screen.getByLabelText('Deadline duration hours'), {
+      target: { value: '2' },
+    })
+    fireEvent.change(screen.getByLabelText('Deadline duration minutes'), {
+      target: { value: '1023' },
+    })
+
+    expect((screen.getByLabelText('Deadline duration hours') as HTMLInputElement).value).toBe('19')
+    expect((screen.getByLabelText('Deadline duration minutes') as HTMLInputElement).value).toBe('3')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Increase deadline duration minutes by 10' }))
+    expect((screen.getByLabelText('Deadline duration hours') as HTMLInputElement).value).toBe('19')
+    expect((screen.getByLabelText('Deadline duration minutes') as HTMLInputElement).value).toBe('13')
   })
 
   it('keeps deadline input values when switching modes', () => {
@@ -314,6 +346,17 @@ describe('App deadline behavior', () => {
     deadlineInput.blur()
     fireEvent.click(remainingDisplay)
     expect(document.activeElement).toBe(deadlineInput)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
+    const durationStartInput = screen.getByLabelText('Deadline start time') as HTMLInputElement
+
+    durationStartInput.blur()
+    fireEvent.click(deadlineDisplay)
+    expect(document.activeElement).toBe(durationStartInput)
+
+    durationStartInput.blur()
+    fireEvent.click(remainingDisplay)
+    expect(document.activeElement).toBe(durationStartInput)
   })
 
   it('renders assignment history export as an accordion panel', () => {
