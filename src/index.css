@@ -173,11 +173,17 @@ body {
 .assignmentOverviewCard .controls {
   justify-content: flex-start;
   flex-wrap: nowrap;
+  align-items: center;
+}
+
+.assignmentOverviewCard .resetButton {
+  margin-left: 0;
+  flex: 0 0 auto;
 }
 
 .assignmentOverviewCard .deadlineInput {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 240px;
+  min-width: 200px;
 }
 
 .assignmentOverviewControlsMeta {
@@ -243,6 +249,52 @@ body {
   flex-wrap: wrap;
   justify-content: center;
   margin-bottom: 0;
+}
+
+.deadlineInputModeSwitch {
+  display: inline-flex;
+  width: 96px;
+  min-width: 96px;
+  flex: 0 0 96px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  justify-content: center;
+}
+
+.deadlineInputModeSwitch .btn-secondary {
+  border: 0;
+  border-radius: 0;
+  width: 48px;
+  min-width: 48px;
+  padding: 0;
+  font-size: 20px;
+}
+
+.deadlineInputModeSwitch .btn-secondary i {
+  display: inline-block;
+  width: 1.25em;
+  min-width: 1.25em;
+  text-align: center;
+  line-height: 1;
+}
+
+.deadlineInputModeSwitch .btn-secondary.isActive {
+  background: var(--primary);
+  color: var(--bg);
+}
+
+.deadlineDurationInputs {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  flex: 0 1 auto;
+}
+
+.deadlineDurationInput {
+  width: 96px;
 }
 
 button {
@@ -816,6 +868,10 @@ input[readonly] {
 }
 
 @media (max-width: 640px) {
+  .assignmentOverviewCard .controls {
+    flex-wrap: wrap;
+  }
+
   .assignmentOverviewTitle {
     font-size: 28px;
   }
@@ -842,6 +898,16 @@ input[readonly] {
 
   .assignmentRow .assignmentRemoveButton {
     grid-column: 1 / -1;
+  }
+
+  .deadlineDurationInputs {
+    justify-content: stretch;
+  }
+
+  .deadlineDurationInputs .deadlineInput,
+  .deadlineDurationInputs .deadlineDurationInput {
+    width: 100%;
+    min-width: 0;
   }
 }
 
