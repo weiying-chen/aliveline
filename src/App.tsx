@@ -63,15 +63,12 @@ const LS_PANEL_TASKS_OPEN_KEY = 'aliveline:panel-tasks-open'
 const LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY = 'aliveline:panel-next-assignment-message-open'
 const LS_SCHEDULE_VIEW_MODE_KEY = 'aliveline:schedule-view'
 const LS_SCHEDULE_VIEW_ADJUSTED_KEY = 'aliveline:schedule-view-adjusted'
-const LS_ADJUSTED_ANCHOR_KEY = 'aliveline:adjusted-anchor-iso'
 const LS_ASSIGNMENT_HISTORY_KEY = 'aliveline:assignment-history'
 const LS_DAILY_CLEAR_KEY = 'aliveline:daily-clear'
 const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
-const BASE_DEADLINE_MULTIPLIER = 1
-const ADJUSTED_DEADLINE_MULTIPLIER = 1
 const BASE_TASK_MULTIPLIER = 1
 const ADJUSTED_TASK_MULTIPLIER = 0.8
 const ADJUSTED_SUFFIX = ' (-20%)'
@@ -239,9 +236,6 @@ export default function App() {
   const [historyMonth, setHistoryMonth] = useState(() =>
     `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`
   )
-  const [adjustedAnchorAtDeadlineChange, setAdjustedAnchorAtDeadlineChange] = useState(
-    () => readStoredDate(LS_ADJUSTED_ANCHOR_KEY) ?? new Date()
-  )
   const isAdjustedView = scheduleViewMode === 'adjusted'
 
   useEffect(() => {
@@ -343,34 +337,10 @@ export default function App() {
     setChangeBaseDeadline(null)
     setTaskFinishBase(null)
     setPreviousTasks([])
-    setAdjustedAnchorAtDeadlineChange(now)
   }, [now])
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
   const currentTaskMultiplier = isAdjustedView ? ADJUSTED_TASK_MULTIPLIER : BASE_TASK_MULTIPLIER
-  const adjustedDeadline = useMemo(() => {
-    if (ADJUSTED_DEADLINE_MULTIPLIER === BASE_DEADLINE_MULTIPLIER) return deadline
-    const anchor = adjustedAnchorAtDeadlineChange
-    if (deadline.getTime() <= anchor.getTime()) return deadline
-    const totalWorkMs = workMsBetween(anchor, deadline)
-    const adjustedMinutes = Math.max(
-      0,
-      roundMinutesToStep((totalWorkMs / 60000) * ADJUSTED_DEADLINE_MULTIPLIER)
-    )
-    return addWorkMinutes(anchor, adjustedMinutes)
-  }, [adjustedAnchorAtDeadlineChange, deadline])
-  const adjustedWorkMsLeft = useMemo(
-    () => workMsBetween(now, adjustedDeadline),
-    [adjustedDeadline, now]
-  )
-  const displayWorkMsLeft = isAdjustedView ? adjustedWorkMsLeft : workMsLeft
-  const parts = useMemo(() => msToParts(displayWorkMsLeft), [displayWorkMsLeft])
-  const adjustedPreviousDeadline = useMemo(() => {
-    if (!previousDeadline) return null
-    return previousDeadline
-  }, [previousDeadline])
-  const displayDeadline = isAdjustedView ? adjustedDeadline : deadline
-  const displayPreviousDeadline = isAdjustedView ? adjustedPreviousDeadline : previousDeadline
   const workStartAt = useMemo(() => (isInWorkTime(now) ? now : nextWorkStart(now)), [now])
   const showEarlyFinishReminder = useMemo(
     () => shouldShowEarlyFinishReminder(now, deadline),
@@ -396,6 +366,26 @@ export default function App() {
       })),
     [currentTaskMultiplier, tasks]
   )
+  const adjustedTaskTotalMinutes = useMemo(
+    () => adjustedTasks.reduce((sum, task) => sum + task.minutes, 0),
+    [adjustedTasks]
+  )
+  const adjustedDeadline = useMemo(() => {
+    if (!changeBaseDeadline || tasks.length === 0) return deadline
+    return addWorkMinutes(changeBaseDeadline, adjustedTaskTotalMinutes)
+  }, [adjustedTaskTotalMinutes, changeBaseDeadline, deadline, tasks.length])
+  const adjustedWorkMsLeft = useMemo(
+    () => workMsBetween(now, adjustedDeadline),
+    [adjustedDeadline, now]
+  )
+  const displayWorkMsLeft = isAdjustedView ? adjustedWorkMsLeft : workMsLeft
+  const parts = useMemo(() => msToParts(displayWorkMsLeft), [displayWorkMsLeft])
+  const adjustedPreviousDeadline = useMemo(() => {
+    if (!previousDeadline) return null
+    return previousDeadline
+  }, [previousDeadline])
+  const displayDeadline = isAdjustedView ? adjustedDeadline : deadline
+  const displayPreviousDeadline = isAdjustedView ? adjustedPreviousDeadline : previousDeadline
   const adjustedTaskFinishTimes = useMemo(
     () => calculateTaskFinishTimes(taskFinishStart, adjustedTasks),
     [adjustedTasks, taskFinishStart]
@@ -529,10 +519,6 @@ export default function App() {
   }, [scheduleViewMode])
 
   useEffect(() => {
-    localStorage.setItem(LS_ADJUSTED_ANCHOR_KEY, adjustedAnchorAtDeadlineChange.toISOString())
-  }, [adjustedAnchorAtDeadlineChange])
-
-  useEffect(() => {
     localStorage.setItem(LS_ASSIGNMENT_HISTORY_KEY, JSON.stringify(assignmentHistory))
   }, [assignmentHistory])
 
@@ -563,7 +549,6 @@ export default function App() {
       setTasks([])
       setChangeBaseDeadline(null)
       setTaskFinishBase(null)
-      setAdjustedAnchorAtDeadlineChange(new Date())
       return
     }
     if (sameDeadline) return
@@ -580,7 +565,6 @@ export default function App() {
     setNextAssignment(clearTextAfterDeadlineChange(nextAssignment))
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
-      setAdjustedAnchorAtDeadlineChange(new Date())
       setTasks([])
       setChangeBaseDeadline(null)
       setTaskFinishBase(null)

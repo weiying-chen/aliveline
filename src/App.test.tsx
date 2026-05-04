@@ -218,7 +218,7 @@ describe('App deadline behavior', () => {
     expect(adjusted).toContain('(-20%)')
   })
 
-  it('keeps remaining work unchanged when deadline multiplier is 1.0', () => {
+  it('reduces remaining work via task multiplier in adjusted mode', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
     render(<App />)
@@ -235,7 +235,8 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
 
     const adjustedRemaining = screen.getByLabelText('Remaining work time display').textContent ?? ''
-    expect(adjustedRemaining.replace(' (-20%)', '')).toBe(remainingBefore)
+    expect(adjustedRemaining.replace(' (-20%)', '')).not.toBe(remainingBefore)
+    expect(adjustedRemaining).toContain('6h 40m')
     expect(adjustedRemaining).toContain('(-20%)')
   })
 
@@ -276,7 +277,7 @@ describe('App deadline behavior', () => {
     expect(adjusted).toEqual(original)
   })
 
-  it('keeps cross-day task-extended remaining unchanged when deadline multiplier is 1.0', () => {
+  it('reduces cross-day task-extended remaining in adjusted mode', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 24, 15, 0, 0))
     render(<App />)
@@ -294,7 +295,7 @@ describe('App deadline behavior', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
     const adjusted = readHoursMinutes('Remaining work time display')
-    expect(adjusted).toEqual(original)
+    expect(adjusted).toEqual({ hours: 7, minutes: 20 })
   })
 
   it('uses the same 10-minute rounding as task time in adjusted mode', () => {
@@ -311,7 +312,7 @@ describe('App deadline behavior', () => {
     expect(adjusted).toEqual({ hours: 0, minutes: 20 })
   })
 
-  it('keeps deadline unchanged when tasks are added later and deadline multiplier is 1.0', () => {
+  it('updates adjusted deadline from task multiplier when tasks are added later', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
     render(<App />)
@@ -330,7 +331,7 @@ describe('App deadline behavior', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Toggle original and adjusted schedule' }))
     const adjustedDeadline = screen.getByLabelText('Current deadline display').textContent ?? ''
-    expect(adjustedDeadline).toContain('3:00 PM')
+    expect(adjustedDeadline).toContain('2:40 PM')
   })
 
   it('renders assignment history export as an accordion panel', () => {
