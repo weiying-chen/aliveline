@@ -169,7 +169,7 @@ describe('App deadline behavior', () => {
     expect(screen.queryByText(/Final due:/)).toBeNull()
   })
 
-  it('normalizes out-of-hours duration start to next work window', () => {
+  it('snaps out-of-hours duration start to next work window', () => {
     renderApp()
 
     fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
@@ -184,7 +184,10 @@ describe('App deadline behavior', () => {
     })
 
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('9:36 AM')
-    expect(screen.getByText(/Start time adjusted to next work window:/).textContent).toContain('8:00 AM')
+    expect((screen.getByLabelText('Deadline start time') as HTMLInputElement).value).toBe(
+      '2026-04-10T08:00'
+    )
+    expect(screen.queryByText(/Start time adjusted to next work window:/)).toBeNull()
   })
 
   it('uses stepped duration minute controls with hour carry', () => {
@@ -229,7 +232,7 @@ describe('App deadline behavior', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
     expect((screen.getByLabelText('Deadline start time') as HTMLInputElement).value).toBe(
-      '2026-04-10T12:00'
+      '2026-04-10T13:00'
     )
     expect((screen.getByLabelText('Deadline duration hours') as HTMLInputElement).value).toBe('1')
     expect((screen.getByLabelText('Deadline duration minutes') as HTMLInputElement).value).toBe('45')

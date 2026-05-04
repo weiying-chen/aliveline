@@ -400,18 +400,6 @@ export default function App({
   const [durationStartInput, setDurationStartInput] = useState(() => toDatetimeLocalValue(deadline))
   const [durationHoursInput, setDurationHoursInput] = useState('')
   const [durationMinutesInput, setDurationMinutesInput] = useState('')
-  const durationStartAt = useMemo(
-    () => parseDatetimeLocalValue(durationStartInput),
-    [durationStartInput]
-  )
-  const adjustedDurationStartAt = useMemo(() => {
-    if (!durationStartAt) return null
-    return isInWorkTime(durationStartAt) ? durationStartAt : nextWorkStart(durationStartAt)
-  }, [durationStartAt])
-  const hasAdjustedDurationStart = useMemo(() => {
-    if (!durationStartAt || !adjustedDurationStartAt) return false
-    return durationStartAt.getTime() !== adjustedDurationStartAt.getTime()
-  }, [adjustedDurationStartAt, durationStartAt])
 
   const projectionTasks = useMemo(() => tasks, [tasks])
 
@@ -744,8 +732,12 @@ export default function App({
   }
 
   const onDurationStartInputChange = (value: string) => {
-    setDurationStartInput(value)
-    updateDeadlineFromDurationInputs(value, durationHoursInput, durationMinutesInput)
+    const parsedStart = parseDatetimeLocalValue(value)
+    const normalizedValue = parsedStart
+      ? toDatetimeLocalValue(isInWorkTime(parsedStart) ? parsedStart : nextWorkStart(parsedStart))
+      : value
+    setDurationStartInput(normalizedValue)
+    updateDeadlineFromDurationInputs(normalizedValue, durationHoursInput, durationMinutesInput)
   }
 
   const onDurationTimeChange = (nextHours: string, nextMinutes: string) => {
@@ -1145,18 +1137,6 @@ export default function App({
               <div className="assignmentOverviewControlsMeta">
                 <div className="metaTextMutedSm">
                   Counting from {fmtDateTimeWithWeekday(workStartAt)}.
-                </div>
-                {deadlineInputMode === 'duration' && hasAdjustedDurationStart && adjustedDurationStartAt && (
-                  <div className="metaTextMutedSm">
-                    Start time adjusted to next work window: {fmtDateTimeWithWeekday(adjustedDurationStartAt)}.
-                  </div>
-                )}
-              </div>
-            )}
-            {isInWorkTime(now) && deadlineInputMode === 'duration' && hasAdjustedDurationStart && adjustedDurationStartAt && (
-              <div className="assignmentOverviewControlsMeta">
-                <div className="metaTextMutedSm">
-                  Start time adjusted to next work window: {fmtDateTimeWithWeekday(adjustedDurationStartAt)}.
                 </div>
               </div>
             )}
