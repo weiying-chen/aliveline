@@ -59,7 +59,7 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     const deadlineTextAfter = container.querySelector('.deadline')?.textContent
-    expect(deadlineTextAfter).toContain('3:00 PM')
+    expect(deadlineTextAfter).toContain('2:36 PM')
     expect(deadlineTextAfter).not.toBe(deadlineTextBefore)
   })
 
@@ -81,11 +81,11 @@ describe('App deadline behavior', () => {
 
     const preview = screen.getByLabelText('Deadline extension message preview')
     expect(preview.textContent).toBe(
-      '今日做其他事時間是 1時40分\n\n' +
-        '英文新聞+錄音 1時40分\n\n' +
-        '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）15:00，請Emily Ding幫我確認，謝謝。'
+      '今日做其他事時間是 1時36分\n\n' +
+        '英文新聞+錄音 1時36分\n\n' +
+        '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）14:36，請Emily Ding幫我確認，謝謝。'
     )
-    expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
+    expect(container.querySelector('.deadline')?.textContent).toContain('2:36 PM')
   })
 
   it('shows the same deadline message under unified model', () => {
@@ -106,11 +106,11 @@ describe('App deadline behavior', () => {
 
     const preview = screen.getByLabelText('Deadline extension message preview')
     expect(preview.textContent).toBe(
-      '今日做其他事時間是 1時40分\n\n' +
-        '英文新聞+錄音 1時40分\n\n' +
-        '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）15:00，請Emily Ding幫我確認，謝謝。'
+      '今日做其他事時間是 1時36分\n\n' +
+        '英文新聞+錄音 1時36分\n\n' +
+        '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）14:36，請Emily Ding幫我確認，謝謝。'
     )
-    expect(container.querySelector('.deadline')?.textContent).toContain('3:00 PM')
+    expect(container.querySelector('.deadline')?.textContent).toContain('2:36 PM')
   })
 
   it('shows the same task due time under unified model', () => {
@@ -125,7 +125,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('1h 40m')
+    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('1h 36m')
   })
 
   it('keeps exact picked deadlines at full time', () => {
@@ -165,7 +165,7 @@ describe('App deadline behavior', () => {
       target: { value: '0' },
     })
 
-    expect(screen.getByLabelText('Current deadline display').textContent).toContain('1:40 PM')
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('1:36 PM')
     expect(screen.queryByText(/Final due:/)).toBeNull()
   })
 
@@ -243,8 +243,8 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Owner'), { target: { value: 'Emily Ding' } })
 
     const preview = screen.getByLabelText('Deadline extension message preview')
-    expect(preview.textContent).toContain('今日做其他事時間是 1時40分')
-    expect(preview.textContent).toContain('小編文 1時40分')
+    expect(preview.textContent).toContain('今日做其他事時間是 1時36分')
+    expect(preview.textContent).toContain('小編文 1時36分')
   })
 
   it('shows next assignment message preview from auto-filled assignment context', () => {
@@ -327,7 +327,7 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     const displayDeadline = screen.getByLabelText('Current deadline display').textContent ?? ''
-    expect(displayDeadline).toContain('3:00 PM')
+    expect(displayDeadline).toContain('2:36 PM')
   })
 
   it('focuses deadline input when clicking deadline or remaining display', () => {
@@ -488,7 +488,7 @@ describe('App deadline behavior', () => {
       expect(root.title).toBe('Main assignment')
       const task = parsed[0].assignments.find((item: { id: string }) => item.id === 'task-0')
       expect(task.title).toBe('Task A')
-      expect(task.estimateMinutes).toBe(70)
+      expect(task.estimateMinutes).toBe(72)
     })
   })
 

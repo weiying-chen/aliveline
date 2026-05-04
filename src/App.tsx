@@ -27,7 +27,6 @@ import {
   minutesFromTimeParts,
   pickTaskBatchBase,
   pickTaskFinishStart,
-  roundMinutesToStep,
 } from './utils/taskTime'
 import {
   atLocalTime,
@@ -68,7 +67,8 @@ const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
 const ADJUSTED_TASK_MULTIPLIER = 0.8
 
 function adjustedAssignmentMinutes(rawMinutes: number) {
-  return Math.max(1, roundMinutesToStep(rawMinutes * ADJUSTED_TASK_MULTIPLIER))
+  if (rawMinutes <= 0) return 0
+  return Math.max(1, Math.round(rawMinutes * ADJUSTED_TASK_MULTIPLIER))
 }
 
 function adjustedDeadlineDurationMinutes(rawMinutes: number) {
@@ -78,7 +78,7 @@ function adjustedDeadlineDurationMinutes(rawMinutes: number) {
 
 function officialDeadlineFromAddedAssignments(baseDeadline: Date, rawTasks: TaskEntry[]) {
   const rawTotalMinutes = rawTasks.reduce((sum, task) => sum + task.minutes, 0)
-  return addWorkMinutes(baseDeadline, rawTotalMinutes)
+  return addWorkMinutes(baseDeadline, adjustedAssignmentMinutes(rawTotalMinutes))
 }
 
 function deadlineFromAdjustedDuration(start: Date, rawMinutes: number) {
