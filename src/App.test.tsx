@@ -50,7 +50,7 @@ describe('App deadline behavior', () => {
 
     const deadlineTextBefore = container.querySelector('.deadline')?.textContent
     expect(deadlineTextBefore).toContain('2026-04-10')
-    expect(deadlineTextBefore).toContain('12:00 PM')
+    expect(deadlineTextBefore).toContain('1:00 PM')
 
     openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'English news + recording' } })
@@ -83,7 +83,7 @@ describe('App deadline behavior', () => {
     expect(preview.textContent).toBe(
       '今日做其他事時間是 1時36分\n\n' +
         '英文新聞+錄音 1時36分\n\n' +
-        '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）14:36，請Emily Ding幫我確認，謝謝。'
+        '3集大愛真健康，deadline由4/10（五）13:00，延後至4/10（五）14:36，請Emily Ding幫我確認，謝謝。'
     )
     expect(container.querySelector('.deadline')?.textContent).toContain('2:36 PM')
   })
@@ -108,7 +108,7 @@ describe('App deadline behavior', () => {
     expect(preview.textContent).toBe(
       '今日做其他事時間是 1時36分\n\n' +
         '英文新聞+錄音 1時36分\n\n' +
-        '3集大愛真健康，deadline由4/10（五）12:00，延後至4/10（五）14:36，請Emily Ding幫我確認，謝謝。'
+        '3集大愛真健康，deadline由4/10（五）13:00，延後至4/10（五）14:36，請Emily Ding幫我確認，謝謝。'
     )
     expect(container.querySelector('.deadline')?.textContent).toContain('2:36 PM')
   })
@@ -128,14 +128,15 @@ describe('App deadline behavior', () => {
     expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('1h 36m')
   })
 
-  it('keeps exact picked deadlines at full time', () => {
+  it('snaps exact picked deadlines to work time', () => {
     renderApp()
 
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
     })
 
-    expect(screen.getByLabelText('Current deadline display').textContent).toContain('12:00 PM')
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('1:00 PM')
+    expect((screen.getByLabelText('Deadline time') as HTMLInputElement).value).toBe('2026-04-10T13:00')
   })
 
   it('keeps assignment title when deadline changes', () => {

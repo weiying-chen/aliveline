@@ -76,13 +76,17 @@ function adjustedDeadlineDurationMinutes(rawMinutes: number) {
   return adjustedAssignmentMinutes(rawMinutes)
 }
 
+function snapToWorkTime(value: Date) {
+  return isInWorkTime(value) ? value : nextWorkStart(value)
+}
+
 function officialDeadlineFromAddedAssignments(baseDeadline: Date, rawTasks: TaskEntry[]) {
   const rawTotalMinutes = rawTasks.reduce((sum, task) => sum + task.minutes, 0)
   return addWorkMinutes(baseDeadline, adjustedAssignmentMinutes(rawTotalMinutes))
 }
 
 function deadlineFromAdjustedDuration(start: Date, rawMinutes: number) {
-  const effectiveStart = isInWorkTime(start) ? start : nextWorkStart(start)
+  const effectiveStart = snapToWorkTime(start)
   return addWorkMinutes(effectiveStart, adjustedDeadlineDurationMinutes(rawMinutes))
 }
 
@@ -706,13 +710,14 @@ export default function App({
   }
 
   const onSetDeadline = (v: string) => {
-    setDirectDeadlineInput(v)
     const d = parseDatetimeLocalValue(v)
-    if (d) updateDeadline(d, { resetDrafts: true })
+    const normalizedDeadline = d ? snapToWorkTime(d) : null
+    setDirectDeadlineInput(normalizedDeadline ? toDatetimeLocalValue(normalizedDeadline) : v)
+    if (normalizedDeadline) updateDeadline(normalizedDeadline, { resetDrafts: true })
   }
 
   const reset = () => {
-    const next = new Date()
+    const next = snapToWorkTime(new Date())
     updateDeadline(next, { resetDrafts: true })
     setDirectDeadlineInput(toDatetimeLocalValue(next))
     if (deadlineInputMode === 'duration') {
@@ -733,9 +738,7 @@ export default function App({
 
   const onDurationStartInputChange = (value: string) => {
     const parsedStart = parseDatetimeLocalValue(value)
-    const normalizedValue = parsedStart
-      ? toDatetimeLocalValue(isInWorkTime(parsedStart) ? parsedStart : nextWorkStart(parsedStart))
-      : value
+    const normalizedValue = parsedStart ? toDatetimeLocalValue(snapToWorkTime(parsedStart)) : value
     setDurationStartInput(normalizedValue)
     updateDeadlineFromDurationInputs(normalizedValue, durationHoursInput, durationMinutesInput)
   }
