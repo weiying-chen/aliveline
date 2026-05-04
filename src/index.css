@@ -64,7 +64,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px 16px;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .assignmentOverviewHeader {
