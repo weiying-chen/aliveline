@@ -306,6 +306,11 @@ body {
   width: 96px;
 }
 
+.deadlineDurationInputs .assignmentHoursInputWrap,
+.deadlineDurationInputs .assignmentMinutesInputWrap {
+  width: 96px;
+}
+
 button {
   background: transparent;
   color: var(--fg);
@@ -914,7 +919,9 @@ input[readonly] {
   }
 
   .deadlineDurationInputs .deadlineInput,
-  .deadlineDurationInputs .deadlineDurationInput {
+  .deadlineDurationInputs .deadlineDurationInput,
+  .deadlineDurationInputs .assignmentHoursInputWrap,
+  .deadlineDurationInputs .assignmentMinutesInputWrap {
     width: 100%;
     min-width: 0;
   }
