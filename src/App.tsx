@@ -9,6 +9,7 @@ import {
 } from './utils/assignmentHistoryUnified'
 import { AccordionItem } from './components/Accordion'
 import { AssignmentRow } from './components/AssignmentRow'
+import { DateTimeInput, snapToWorkTime } from './components/DateTimeInput'
 import { HoursMinutesInput } from './components/HoursMinutesInput'
 import { buildAssignment } from './utils/assignmentModel'
 import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
@@ -74,10 +75,6 @@ function adjustedAssignmentMinutes(rawMinutes: number) {
 function adjustedDeadlineDurationMinutes(rawMinutes: number) {
   if (rawMinutes <= 0) return 0
   return adjustedAssignmentMinutes(rawMinutes)
-}
-
-function snapToWorkTime(value: Date) {
-  return isInWorkTime(value) ? value : nextWorkStart(value)
 }
 
 function officialDeadlineFromAddedAssignments(baseDeadline: Date, rawTasks: TaskEntry[]) {
@@ -709,11 +706,9 @@ export default function App({
     }
   }
 
-  const onSetDeadline = (v: string) => {
-    const d = parseDatetimeLocalValue(v)
-    const normalizedDeadline = d ? snapToWorkTime(d) : null
-    setDirectDeadlineInput(normalizedDeadline ? toDatetimeLocalValue(normalizedDeadline) : v)
-    if (normalizedDeadline) updateDeadline(normalizedDeadline, { resetDrafts: true })
+  const onSetDeadline = (value: string, nextDeadline: Date | null) => {
+    setDirectDeadlineInput(value)
+    if (nextDeadline) updateDeadline(nextDeadline, { resetDrafts: true })
   }
 
   const reset = () => {
@@ -737,10 +732,8 @@ export default function App({
   }
 
   const onDurationStartInputChange = (value: string) => {
-    const parsedStart = parseDatetimeLocalValue(value)
-    const normalizedValue = parsedStart ? toDatetimeLocalValue(snapToWorkTime(parsedStart)) : value
-    setDurationStartInput(normalizedValue)
-    updateDeadlineFromDurationInputs(normalizedValue, durationHoursInput, durationMinutesInput)
+    setDurationStartInput(value)
+    updateDeadlineFromDurationInputs(value, durationHoursInput, durationMinutesInput)
   }
 
   const onDurationTimeChange = (nextHours: string, nextMinutes: string) => {
@@ -1093,23 +1086,21 @@ export default function App({
               </div>
 
               {deadlineInputMode === 'direct' ? (
-                <input
+                <DateTimeInput
                   ref={deadlineRef}
                   className="deadlineInput"
-                  type="datetime-local"
                   value={directDeadlineInput}
-                  onChange={(e) => onSetDeadline(e.target.value)}
-                  aria-label="Deadline time"
+                  onChange={onSetDeadline}
+                  ariaLabel="Deadline time"
                 />
               ) : (
                 <div className="deadlineDurationInputs">
-                  <input
+                  <DateTimeInput
                     ref={durationStartRef}
                     className="deadlineInput"
-                    type="datetime-local"
                     value={durationStartInput}
-                    onChange={(e) => onDurationStartInputChange(e.target.value)}
-                    aria-label="Deadline start time"
+                    onChange={(value) => onDurationStartInputChange(value)}
+                    ariaLabel="Deadline start time"
                   />
                   <HoursMinutesInput
                     hoursText={durationHoursInput}
