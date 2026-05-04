@@ -262,6 +262,11 @@ body {
   justify-content: center;
 }
 
+.deadlineInputModeSwitch:focus-within {
+  outline: 2px solid var(--border);
+  outline-offset: 2px;
+}
+
 .deadlineInputModeSwitch .btn-secondary {
   border: 0;
   border-radius: 0;
@@ -282,6 +287,10 @@ body {
 .deadlineInputModeSwitch .btn-secondary.isActive {
   background: var(--primary);
   color: var(--bg);
+}
+
+.deadlineInputModeSwitch .btn-secondary:focus-visible {
+  outline: 0;
 }
 
 .deadlineDurationInputs {
