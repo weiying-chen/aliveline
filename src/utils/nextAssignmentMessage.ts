@@ -20,7 +20,7 @@ export function formatNextAssignmentMessage(options: NextAssignmentMessageOption
   return (
     `已完成${completedAssignment}，接下來會開始翻譯${nextAssignment}，` +
     `再麻煩${assignee}便時幫忙設deadline，` +
-    `從${formatMessageDate(options.start)}起算，謝謝。\n` +
+    `從${formatMessageDate(options.start)}起算，謝謝。\n=====\n` +
     NEXT_ASSIGNMENT_RATE_NOTE
   )
 }
