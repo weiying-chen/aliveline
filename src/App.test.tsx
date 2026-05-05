@@ -318,6 +318,33 @@ describe('App deadline behavior', () => {
     )
   })
 
+  it('shows next assignment message from current affecting deadline without copied history', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-10T13:00:00'))
+    renderApp()
+
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-10T13:00' },
+    })
+
+    openAddAssignmentForm()
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
+
+    fireEvent.change(screen.getByLabelText('Assignment title'), {
+      target: { value: '仁心慧語 (呂紹睿)' },
+    })
+    fireEvent.change(screen.getByLabelText('Owner'), { target: { value: 'Emily Ding' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Next assignment message' }))
+
+    const preview = screen.getByLabelText('Next assignment message preview')
+    expect(preview.textContent).toBe(
+      '已完成英文新聞+錄音，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）14:36起算，謝謝。\n之前是1分鐘算1小時，現在改成1分鐘算0.8 小時，謝謝。'
+    )
+  })
+
   it('uses the same 10-minute rounding as task time', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
