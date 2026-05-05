@@ -314,7 +314,7 @@ describe('App deadline behavior', () => {
 
     const preview = screen.getByLabelText('Next assignment message preview')
     expect(preview.textContent).toBe(
-      '已完成3集大愛真健康，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）23:00起算，謝謝。'
+      '已完成3集大愛真健康，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）23:00起算，謝謝。\n之前是1分鐘算1小時，現在改成1分鐘算0.8 小時，謝謝。'
     )
   })
 
