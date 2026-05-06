@@ -82,6 +82,10 @@ function officialDeadlineFromAddedAssignments(baseDeadline: Date, rawTasks: Task
   return addWorkMinutes(baseDeadline, adjustedAssignmentMinutes(rawTotalMinutes))
 }
 
+function deadlineWorkMinutes(start: Date, deadline: Date) {
+  return Math.round(workMsBetween(start, deadline) / 60000)
+}
+
 function deadlineFromAdjustedDuration(start: Date, rawMinutes: number) {
   const effectiveStart = snapToWorkTime(start)
   return addWorkMinutes(effectiveStart, adjustedDeadlineDurationMinutes(rawMinutes))
@@ -131,6 +135,7 @@ type AssignmentDraftState = {
   deadlineIso: string
   assignmentTitle: string
   owner: string
+  workMinutes?: number
   tasks: TaskEntry[]
   comments: string[]
 }
@@ -140,6 +145,7 @@ type DraftAssignment = {
   title: string
   owner?: string
   deadlineIso: string
+  workMinutes?: number
   estimateMinutes?: number
   comments: string[]
   children: DraftAssignment[]
@@ -160,6 +166,10 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
     typeof item.estimateMinutes === 'number' && Number.isFinite(item.estimateMinutes) && item.estimateMinutes > 0
       ? Math.round(item.estimateMinutes)
       : undefined
+  const workMinutes =
+    typeof item.workMinutes === 'number' && Number.isFinite(item.workMinutes) && item.workMinutes >= 0
+      ? Math.round(item.workMinutes)
+      : undefined
   const childrenInput = Array.isArray(item.children) ? item.children : []
   const children = childrenInput
     .map((child) => normalizeDraftAssignment(child))
@@ -169,6 +179,7 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
     title: item.title.trim(),
     ...(owner ? { owner } : {}),
     deadlineIso: item.deadlineIso,
+    ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
     ...(estimateMinutes ? { estimateMinutes } : {}),
     comments,
     children,
@@ -198,6 +209,7 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
       deadlineIso: current.deadlineIso,
       assignmentTitle: current.title,
       owner: current.owner ?? '',
+      ...(typeof current.workMinutes === 'number' ? { workMinutes: current.workMinutes } : {}),
       tasks: sanitizeTaskEntries(tasks),
       comments: current.comments ?? [],
     } as AssignmentDraftState
@@ -211,6 +223,7 @@ function buildDraftAssignments(
   deadline: Date,
   assignmentTitle: string,
   owner: string,
+  workMinutes: number | undefined,
   tasks: TaskEntry[],
   taskFinishTimes: Date[],
   comments: string[]
@@ -230,6 +243,7 @@ function buildDraftAssignments(
     title: assignmentTitle,
     owner,
     deadlineIso: deadline.toISOString(),
+    ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
     comments,
   })) as DraftAssignment
   return {
@@ -270,6 +284,7 @@ function toHistoryAssignments(root: DraftAssignment) {
     title: root.title,
     owner: root.owner,
     deadlineIso: root.deadlineIso,
+    workMinutes: root.workMinutes,
     comments: root.comments,
     relations: childAssignments.map((child) => ({ assignmentId: child.id, type: 'extends' })),
   })
@@ -382,6 +397,7 @@ export default function App({
     () => storedDraft?.assignmentTitle ?? ''
   )
   const [assignmentOwner, setAssignmentOwner] = useState(() => storedDraft?.owner ?? '')
+  const [workMinutes, setWorkMinutes] = useState<number | undefined>(() => storedDraft?.workMinutes)
   const [deadlineExtensionCopyState, setDeadlineExtensionCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle')
@@ -533,6 +549,7 @@ export default function App({
       deadline,
       deadlineExtensionAssignment,
       assignmentOwner,
+      workMinutes,
       tasks,
       taskFinishTimes,
       comments
@@ -547,7 +564,7 @@ export default function App({
       assignments,
     }
     localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
-  }, [assignmentOwner, comments, deadline, deadlineExtensionAssignment, persistDraft, selectedAssignmentId, tasks, taskFinishTimes])
+  }, [assignmentOwner, comments, deadline, deadlineExtensionAssignment, persistDraft, selectedAssignmentId, tasks, taskFinishTimes, workMinutes])
   const selectedHistoryMonth = useMemo(() => {
     const match = /^(\d{4})-(\d{2})$/.exec(historyMonth)
     if (!match) return null
@@ -699,8 +716,11 @@ export default function App({
 
   const updateDeadline = (
     nextDeadline: Date,
-    options?: { tasks?: TaskEntry[]; resetDrafts?: boolean }
+    options?: { tasks?: TaskEntry[]; resetDrafts?: boolean; captureWorkMinutes?: boolean }
   ) => {
+    if (options?.captureWorkMinutes) {
+      setWorkMinutes(deadlineWorkMinutes(now, nextDeadline))
+    }
     const sameDeadline = nextDeadline.getTime() === deadline.getTime()
     if (sameDeadline && options?.resetDrafts) {
       setTasks([])
@@ -719,12 +739,12 @@ export default function App({
 
   const onSetDeadline = (value: string, nextDeadline: Date | null) => {
     setDirectDeadlineInput(value)
-    if (nextDeadline) updateDeadline(nextDeadline, { resetDrafts: true })
+    if (nextDeadline) updateDeadline(nextDeadline, { resetDrafts: true, captureWorkMinutes: true })
   }
 
   const reset = () => {
     const next = snapToWorkTime(new Date())
-    updateDeadline(next, { resetDrafts: true })
+    updateDeadline(next, { resetDrafts: true, captureWorkMinutes: true })
     setDirectDeadlineInput(toDatetimeLocalValue(next))
     if (deadlineInputMode === 'duration') {
       setDurationStartInput(toDatetimeLocalValue(next))
@@ -739,7 +759,7 @@ export default function App({
     minutesInput: string
   ) => {
     const nextDeadline = deadlineFromDurationInputs(startInput, hoursInput, minutesInput)
-    if (nextDeadline) updateDeadline(nextDeadline, { resetDrafts: true })
+    if (nextDeadline) updateDeadline(nextDeadline, { resetDrafts: true, captureWorkMinutes: true })
   }
 
   const onDurationStartInputChange = (value: string) => {

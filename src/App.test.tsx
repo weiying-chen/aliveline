@@ -619,6 +619,28 @@ describe('App deadline behavior', () => {
     expect(draft.assignments[0]?.children ?? []).toEqual([])
   })
 
+  it('keeps root workMinutes frozen after affecting assignments change deadline', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-15T10:00:00'))
+    renderApp()
+
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-15T13:00' },
+    })
+
+    let draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
+    expect(draft.assignments[0]?.workMinutes).toBe(120)
+
+    openAddAssignmentForm()
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
+
+    draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
+    expect(draft.assignments[0]?.workMinutes).toBe(120)
+  })
+
   it('persists selected assignment edits to draft storage', () => {
     const now = new Date()
     const y = now.getFullYear()

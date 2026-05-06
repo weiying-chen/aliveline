@@ -14,6 +14,7 @@ describe('buildAssignment', () => {
       title: '  Translate episode  ',
       owner: '  PM Chen  ',
       deadlineIso: '2026-05-01T10:00:00.000Z',
+      workMinutes: 239.6,
       estimateMinutes: 93.7,
       relations: [
         { assignmentId: 'a2', type: 'blocks' },
@@ -29,6 +30,7 @@ describe('buildAssignment', () => {
       title: 'Translate episode',
       owner: 'PM Chen',
       deadlineIso: '2026-05-01T10:00:00.000Z',
+      workMinutes: 240,
       estimateMinutes: 94,
       relations: [
         { assignmentId: 'a2', type: 'blocks' },
