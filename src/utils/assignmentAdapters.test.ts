@@ -38,7 +38,7 @@ describe('fromLegacyAssignmentDraft', () => {
         title: 'Task A',
         deadline: '2026-05-01T10:00:00.000Z',
         comments: [],
-        estimateMinutes: 30,
+        workMinutes: 30,
         relations: [],
       },
       {
@@ -46,7 +46,7 @@ describe('fromLegacyAssignmentDraft', () => {
         title: 'Task B',
         deadline: '2026-05-01T10:00:00.000Z',
         comments: [],
-        estimateMinutes: 96,
+        workMinutes: 96,
         relations: [],
       },
     ])
@@ -71,7 +71,7 @@ describe('toLegacyAssignmentDraft', () => {
         title: 'Task A',
         deadline: '2026-05-02T10:00:00.000Z',
         comments: [],
-        estimateMinutes: 45,
+        workMinutes: 45,
         relations: [],
       },
       {
@@ -79,7 +79,7 @@ describe('toLegacyAssignmentDraft', () => {
         title: 'Task B',
         deadline: '2026-05-02T11:00:00.000Z',
         comments: [],
-        estimateMinutes: 80,
+        workMinutes: 80,
         relations: [],
       },
     ]

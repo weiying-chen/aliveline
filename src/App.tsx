@@ -141,7 +141,6 @@ type DraftAssignment = {
   owner?: string
   deadline: string
   workMinutes?: number
-  estimateMinutes?: number
   comments: string[]
   children: DraftAssignment[]
 }
@@ -161,10 +160,6 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
     typeof item.createdAt === 'string' && !Number.isNaN(new Date(item.createdAt).getTime())
       ? item.createdAt
       : undefined
-  const estimateMinutes =
-    typeof item.estimateMinutes === 'number' && Number.isFinite(item.estimateMinutes) && item.estimateMinutes > 0
-      ? Math.round(item.estimateMinutes)
-      : undefined
   const workMinutes =
     typeof item.workMinutes === 'number' && Number.isFinite(item.workMinutes) && item.workMinutes >= 0
       ? Math.round(item.workMinutes)
@@ -180,7 +175,6 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
     ...(owner ? { owner } : {}),
     deadline: item.deadline,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
-    ...(estimateMinutes ? { estimateMinutes } : {}),
     comments,
     children,
   }
@@ -201,7 +195,7 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
     const current =
       assignments.find((assignment) => assignment.id === selectedAssignmentId) ?? assignments[0]
     const tasks = current.children
-      .map((child) => ({ text: child.title, minutes: child.estimateMinutes ?? 0 }))
+      .map((child) => ({ text: child.title, minutes: child.workMinutes ?? 0 }))
       .filter((task) => task.text.trim().length > 0 && task.minutes > 0)
     if (Number.isNaN(new Date(current.deadline).getTime())) return null
     return {
@@ -235,7 +229,7 @@ function buildDraftAssignments(
       id: `${assignmentId}-task-${index}`,
       title: task.text,
       deadline: (taskFinishTimes[index] ?? deadline).toISOString(),
-      estimateMinutes: task.minutes,
+      workMinutes: task.minutes,
       comments: [],
     })) as DraftAssignment
   )
@@ -541,8 +535,8 @@ export default function App({
       exportAssignments.reduce(
         (sum, assignment) =>
           sum +
-          (assignment.estimateMinutes ?? 0) +
-          assignment.children.reduce((childSum, child) => childSum + (child.estimateMinutes ?? 0), 0),
+          (assignment.workMinutes ?? 0) +
+          assignment.children.reduce((childSum, child) => childSum + (child.workMinutes ?? 0), 0),
         0
       ),
     [exportAssignments]

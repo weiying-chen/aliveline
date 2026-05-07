@@ -12,7 +12,6 @@ export type Assignment = {
   owner?: string
   deadline: string
   workMinutes?: number
-  estimateMinutes?: number
   relations: AssignmentRelation[]
   comments: string[]
 }
@@ -24,14 +23,8 @@ type BuildAssignmentInput = {
   owner?: string
   deadline: string
   workMinutes?: number
-  estimateMinutes?: number
   relations?: AssignmentRelation[]
   comments?: string[]
-}
-
-function normalizeEstimateMinutes(value: number | undefined) {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return undefined
-  return Math.round(value)
 }
 
 function normalizeWorkMinutes(value: number | undefined) {
@@ -86,7 +79,6 @@ export function buildAssignment(input: BuildAssignmentInput): Assignment {
     ...(owner ? { owner } : {}),
     deadline: input.deadline,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
-    estimateMinutes: normalizeEstimateMinutes(input.estimateMinutes),
     relations: normalizeRelations(input.relations),
     comments: normalizeComments(input.comments),
   }

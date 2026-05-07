@@ -44,7 +44,7 @@ export function buildAssignmentHistoryEntry(
       id: `task-${index}`,
       title: task.text,
       deadline,
-      estimateMinutes: task.minutes,
+      workMinutes: task.minutes,
     })
   )
   const root = buildAssignment({

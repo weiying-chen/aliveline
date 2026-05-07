@@ -22,7 +22,7 @@ export function fromLegacyAssignmentDraft(draft: LegacyAssignmentDraft): Assignm
       id: `legacy-task-${index}`,
       title: task.text,
       deadline: draft.deadline,
-      estimateMinutes: task.minutes,
+      workMinutes: task.minutes,
     })
   )
 
@@ -50,7 +50,7 @@ export function toLegacyAssignmentDraft(assignments: Assignment[], rootId?: stri
     .filter((assignment): assignment is Assignment => Boolean(assignment))
     .map((assignment) => ({
       text: assignment.title,
-      minutes: assignment.estimateMinutes ?? 0,
+      minutes: assignment.workMinutes ?? 0,
     }))
     .filter((task) => task.text.trim().length > 0 && task.minutes > 0)
 

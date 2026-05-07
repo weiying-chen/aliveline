@@ -8,15 +8,14 @@ import {
 } from './assignmentModel'
 
 describe('buildAssignment', () => {
-  it('normalizes title, relations, and estimate minutes', () => {
+  it('normalizes title, relations, and work minutes', () => {
     const assignment = buildAssignment({
       id: 'a1',
       title: '  Translate episode  ',
       createdAt: '2026-04-30T09:15:00.000Z',
       owner: '  PM Chen  ',
       deadline: '2026-05-01T10:00:00.000Z',
-      workMinutes: 239.6,
-      estimateMinutes: 93.7,
+      workMinutes: 93.7,
       relations: [
         { assignmentId: 'a2', type: 'blocks' },
         { assignmentId: ' a2 ', type: 'blocks' },
@@ -32,8 +31,7 @@ describe('buildAssignment', () => {
       createdAt: '2026-04-30T09:15:00.000Z',
       owner: 'PM Chen',
       deadline: '2026-05-01T10:00:00.000Z',
-      workMinutes: 240,
-      estimateMinutes: 94,
+      workMinutes: 94,
       relations: [
         { assignmentId: 'a2', type: 'blocks' },
         { assignmentId: 'a3', type: 'extends' },
@@ -50,7 +48,7 @@ describe('buildAssignment', () => {
     })
 
     expect(assignment.relations).toEqual([])
-    expect(assignment.estimateMinutes).toBeUndefined()
+    expect(assignment.workMinutes).toBeUndefined()
     expect(assignment.comments).toEqual([])
     expect(assignment.owner).toBeUndefined()
   })

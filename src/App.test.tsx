@@ -487,7 +487,7 @@ describe('App deadline behavior', () => {
               title: 'Imported task',
               deadline: '2026-04-10T12:00:00.000Z',
               comments: [],
-              estimateMinutes: 50,
+              workMinutes: 50,
               children: [],
             },
           ],
@@ -575,7 +575,7 @@ describe('App deadline behavior', () => {
                 title: 'Boot task',
                 deadline: '2026-04-10T12:00:00.000Z',
                 comments: [],
-                estimateMinutes: 50,
+                workMinutes: 50,
                 children: [],
               },
             ],
@@ -625,7 +625,7 @@ describe('App deadline behavior', () => {
     expect(Array.isArray(draft.assignments)).toBe(true)
     const firstTask = draft.assignments[0]?.children?.[0]
     expect(firstTask?.title).toBe('Task A')
-    expect(firstTask?.estimateMinutes).toBe(80)
+    expect(firstTask?.workMinutes).toBe(80)
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove assignment' }))
     draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
@@ -708,7 +708,7 @@ describe('App deadline behavior', () => {
 
     const nested = edited.children[0]
     expect(nested.title).toBe('Nested assignment')
-    expect(nested.estimateMinutes).toBe(60)
+    expect(nested.workMinutes).toBe(60)
   })
 
   it('does not persist legacy v1 draft keys', () => {

@@ -33,10 +33,10 @@ export function AssignmentsPage() {
   const assignments = (draft?.assignments ?? []).map((assignment) => {
     if (
       assignment.title === 'New assignment' &&
-      assignment.estimateMinutes === 60 &&
+      assignment.workMinutes === 60 &&
       assignment.id.startsWith('assignment-')
     ) {
-      return { ...assignment, estimateMinutes: undefined }
+      return { ...assignment, workMinutes: undefined }
     }
     return assignment
   })
@@ -46,7 +46,7 @@ export function AssignmentsPage() {
     const hadLegacyDefault = draft.assignments.some(
       (assignment) =>
         assignment.title === 'New assignment' &&
-        assignment.estimateMinutes === 60 &&
+        assignment.workMinutes === 60 &&
         assignment.id.startsWith('assignment-')
     )
     if (!hadLegacyDefault) return
