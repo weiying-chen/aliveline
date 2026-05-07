@@ -83,6 +83,7 @@ export function AssignmentsPage() {
     const newAssignment = buildAssignment({
       id: newAssignmentId,
       title: 'New assignment',
+      createdAtIso: new Date().toISOString(),
       deadlineIso: baseDeadlineIso,
     })
 

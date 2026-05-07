@@ -12,6 +12,7 @@ describe('buildAssignment', () => {
     const assignment = buildAssignment({
       id: 'a1',
       title: '  Translate episode  ',
+      createdAtIso: '2026-04-30T09:15:00.000Z',
       owner: '  PM Chen  ',
       deadlineIso: '2026-05-01T10:00:00.000Z',
       workMinutes: 239.6,
@@ -28,6 +29,7 @@ describe('buildAssignment', () => {
     expect(assignment).toEqual({
       id: 'a1',
       title: 'Translate episode',
+      createdAtIso: '2026-04-30T09:15:00.000Z',
       owner: 'PM Chen',
       deadlineIso: '2026-05-01T10:00:00.000Z',
       workMinutes: 240,

@@ -8,6 +8,7 @@ export type AssignmentRelation = {
 export type Assignment = {
   id: string
   title: string
+  createdAtIso?: string
   owner?: string
   deadlineIso: string
   workMinutes?: number
@@ -19,6 +20,7 @@ export type Assignment = {
 type BuildAssignmentInput = {
   id: string
   title: string
+  createdAtIso?: string
   owner?: string
   deadlineIso: string
   workMinutes?: number
@@ -66,12 +68,21 @@ function normalizeOwner(owner: string | undefined) {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
+function normalizeCreatedAtIso(createdAtIso: string | undefined) {
+  if (typeof createdAtIso !== 'string') return undefined
+  const trimmed = createdAtIso.trim()
+  if (!trimmed) return undefined
+  return Number.isNaN(new Date(trimmed).getTime()) ? undefined : trimmed
+}
+
 export function buildAssignment(input: BuildAssignmentInput): Assignment {
   const owner = normalizeOwner(input.owner)
   const workMinutes = normalizeWorkMinutes(input.workMinutes)
+  const createdAtIso = normalizeCreatedAtIso(input.createdAtIso)
   return {
     id: input.id,
     title: input.title.trim(),
+    ...(typeof createdAtIso === 'string' ? { createdAtIso } : {}),
     ...(owner ? { owner } : {}),
     deadlineIso: input.deadlineIso,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),

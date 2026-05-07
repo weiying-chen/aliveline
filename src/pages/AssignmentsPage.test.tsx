@@ -19,6 +19,9 @@ describe('AssignmentsPage', () => {
   })
 
   it('inserts new assignments at the top', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2024-05-01T00:00:00.000Z'))
+
     const old = buildAssignment({
       id: 'assignment-old',
       title: 'Old assignment',
@@ -29,9 +32,6 @@ describe('AssignmentsPage', () => {
       LS_ASSIGNMENTS_KEY,
       JSON.stringify({ assignments: [{ ...old, children: [] }] })
     )
-
-    vi.spyOn(Date, 'now').mockReturnValue(1714540800000)
-
     render(
       <MemoryRouter initialEntries={['/assignments']}>
         <Routes>
@@ -44,7 +44,8 @@ describe('AssignmentsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add assignment from list page' }))
 
     const saved = JSON.parse(localStorage.getItem(LS_ASSIGNMENTS_KEY) ?? '{}')
-    expect(saved.assignments[0].id).toBe('assignment-1714540800000')
+    expect(saved.assignments[0].id).toBe(`assignment-${new Date('2024-05-01T00:00:00.000Z').getTime()}`)
+    expect(saved.assignments[0].createdAtIso).toBe('2024-05-01T00:00:00.000Z')
     expect(saved.assignments[1].id).toBe('assignment-old')
   })
 })

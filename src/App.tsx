@@ -127,6 +127,7 @@ type AssignmentDraftState = {
   assignments: DraftAssignment[]
   deadlineIso: string
   assignmentTitle: string
+  createdAtIso?: string
   owner: string
   workMinutes?: number
   tasks: TaskEntry[]
@@ -136,6 +137,7 @@ type AssignmentDraftState = {
 type DraftAssignment = {
   id: string
   title: string
+  createdAtIso?: string
   owner?: string
   deadlineIso: string
   workMinutes?: number
@@ -155,6 +157,10 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
     : []
   const owner =
     typeof item.owner === 'string' && item.owner.trim().length > 0 ? item.owner.trim() : undefined
+  const createdAtIso =
+    typeof item.createdAtIso === 'string' && !Number.isNaN(new Date(item.createdAtIso).getTime())
+      ? item.createdAtIso
+      : undefined
   const estimateMinutes =
     typeof item.estimateMinutes === 'number' && Number.isFinite(item.estimateMinutes) && item.estimateMinutes > 0
       ? Math.round(item.estimateMinutes)
@@ -170,6 +176,7 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
   return {
     id: item.id,
     title: item.title.trim(),
+    ...(typeof createdAtIso === 'string' ? { createdAtIso } : {}),
     ...(owner ? { owner } : {}),
     deadlineIso: item.deadlineIso,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
@@ -201,6 +208,7 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
       assignments,
       deadlineIso: current.deadlineIso,
       assignmentTitle: current.title,
+      ...(typeof current.createdAtIso === 'string' ? { createdAtIso: current.createdAtIso } : {}),
       owner: current.owner ?? '',
       ...(typeof current.workMinutes === 'number' ? { workMinutes: current.workMinutes } : {}),
       tasks: sanitizeTaskEntries(tasks),
@@ -213,6 +221,7 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
 
 function buildDraftAssignments(
   assignmentId: string,
+  createdAtIso: string,
   deadline: Date,
   assignmentTitle: string,
   owner: string,
@@ -234,6 +243,7 @@ function buildDraftAssignments(
   const root = normalizeDraftAssignment(buildAssignment({
     id: assignmentId,
     title: assignmentTitle,
+    createdAtIso,
     owner,
     deadlineIso: deadline.toISOString(),
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
@@ -338,6 +348,9 @@ export default function App({
   const [recentActiveIndex, setRecentActiveIndex] = useState<number>(-1)
   const [deadlineExtensionAssignment, setDeadlineExtensionAssignment] = useState(
     () => storedDraft?.assignmentTitle ?? ''
+  )
+  const [createdAtIso] = useState<string>(
+    () => storedDraft?.createdAtIso ?? new Date().toISOString()
   )
   const [assignmentOwner, setAssignmentOwner] = useState(() => storedDraft?.owner ?? '')
   const [workMinutes, setWorkMinutes] = useState<number | undefined>(() => storedDraft?.workMinutes)
@@ -490,6 +503,7 @@ export default function App({
       fallbackAssignmentIdRef.current
     const nextAssignment = buildDraftAssignments(
       targetAssignmentId,
+      createdAtIso,
       deadline,
       deadlineExtensionAssignment,
       assignmentOwner,
@@ -510,6 +524,7 @@ export default function App({
     localStorage.setItem(LS_ASSIGNMENTS_KEY, JSON.stringify(nextDraft))
   }, [
     assignmentOwner,
+    createdAtIso,
     comments,
     deadline,
     deadlineExtensionAssignment,
