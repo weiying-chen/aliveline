@@ -1,4 +1,4 @@
-import type { TaskEntry } from './deadlineHistory'
+import type { AssignmentEntry } from './deadlineHistory'
 import { buildAssignment, type Assignment } from './assignmentModel'
 
 export type AssignmentHistoryEntry = {
@@ -20,38 +20,38 @@ type AssignmentHistoryEntryBuildInput = {
   nextAssignment?: string
   nextAssignmentConfirmedBy?: string
   scheduleView?: 'original' | 'adjusted'
-  tasks: TaskEntry[]
+  assignments: AssignmentEntry[]
 }
 
-function sanitizeTasks(tasks: TaskEntry[]) {
-  return tasks
-    .map((task) => ({
-      text: task.text.trim(),
-      minutes: Math.round(task.minutes),
+function sanitizeAssignments(assignments: AssignmentEntry[]) {
+  return assignments
+    .map((item) => ({
+      text: item.text.trim(),
+      minutes: Math.round(item.minutes),
     }))
-    .filter((task) => task.text.length > 0 && Number.isFinite(task.minutes) && task.minutes > 0)
+    .filter((item) => item.text.length > 0 && Number.isFinite(item.minutes) && item.minutes > 0)
 }
 
 export function buildAssignmentHistoryEntry(
   input: AssignmentHistoryEntryBuildInput,
   createdAt: Date = new Date()
 ): AssignmentHistoryEntry {
-  const tasks = sanitizeTasks(input.tasks)
+  const assignments = sanitizeAssignments(input.assignments)
   const deadline = input.deadline.toISOString()
   const rootAssignmentId = 'root'
-  const taskAssignments = tasks.map((task, index) =>
+  const taskAssignments = assignments.map((item, index) =>
     buildAssignment({
-      id: `task-${index}`,
-      title: task.text,
+      id: `item-${index}`,
+      title: item.text,
       deadline,
-      workMinutes: task.minutes,
+      workMinutes: item.minutes,
     })
   )
   const root = buildAssignment({
     id: rootAssignmentId,
     title: input.assignment.trim(),
     deadline,
-    relations: taskAssignments.map((task) => ({ assignmentId: task.id, type: 'extends' })),
+    relations: taskAssignments.map((item) => ({ assignmentId: item.id, type: 'extends' })),
   })
 
   return {
@@ -63,7 +63,7 @@ export function buildAssignmentHistoryEntry(
     scheduleView: input.scheduleView ?? 'original',
     rootAssignmentId,
     assignments: [root, ...taskAssignments],
-    totalMinutes: tasks.reduce((sum, task) => sum + task.minutes, 0),
+    totalMinutes: assignments.reduce((sum, item) => sum + item.minutes, 0),
   }
 }
 

@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest'
 
 import {
   applyMinutesDeltaWithCarry,
-  calculateTaskFinishTimes,
-  formatTaskTimeWithDuration,
+  calculateAssignmentFinishTimes,
+  formatAssignmentTimeWithDuration,
   minutesFromTimeParts,
-  normalizeTaskTimeParts,
-  pickTaskBatchBase,
-  pickTaskFinishStart,
+  normalizeAssignmentTimeParts,
+  pickAssignmentBatchBase,
+  pickAssignmentFinishStart,
   roundMinutesToStep,
   stepHoursText,
   stepMinutesText,
-} from './taskTime'
+} from './assignmentTime'
 
 describe('minutesFromTimeParts', () => {
   it('returns null when both fields are empty', () => {
@@ -46,45 +46,45 @@ describe('minutesFromTimeParts', () => {
   })
 })
 
-describe('normalizeTaskTimeParts', () => {
+describe('normalizeAssignmentTimeParts', () => {
   it('carries extra minutes into hours', () => {
-    expect(normalizeTaskTimeParts('1', '75')).toEqual({ hoursText: '2', minutesText: '15' })
+    expect(normalizeAssignmentTimeParts('1', '75')).toEqual({ hoursText: '2', minutesText: '15' })
   })
 
   it('supports carry when hours field is empty', () => {
-    expect(normalizeTaskTimeParts('', '120')).toEqual({ hoursText: '2', minutesText: '0' })
+    expect(normalizeAssignmentTimeParts('', '120')).toEqual({ hoursText: '2', minutesText: '0' })
   })
 
   it('leaves minutes unchanged under 60', () => {
-    expect(normalizeTaskTimeParts('1', '59')).toEqual({ hoursText: '1', minutesText: '59' })
+    expect(normalizeAssignmentTimeParts('1', '59')).toEqual({ hoursText: '1', minutesText: '59' })
   })
 
   it('borrows an hour when minutes go below 0', () => {
-    expect(normalizeTaskTimeParts('2', '-1')).toEqual({ hoursText: '1', minutesText: '59' })
+    expect(normalizeAssignmentTimeParts('2', '-1')).toEqual({ hoursText: '1', minutesText: '59' })
   })
 
   it('clamps to zero when borrowing would go below 0 total minutes', () => {
-    expect(normalizeTaskTimeParts('0', '-1')).toEqual({ hoursText: '0', minutesText: '0' })
+    expect(normalizeAssignmentTimeParts('0', '-1')).toEqual({ hoursText: '0', minutesText: '0' })
   })
 
   it('keeps raw carried minutes when typing over 60', () => {
-    expect(normalizeTaskTimeParts('1', '66')).toEqual({ hoursText: '2', minutesText: '6' })
+    expect(normalizeAssignmentTimeParts('1', '66')).toEqual({ hoursText: '2', minutesText: '6' })
   })
 
   it('keeps raw minutes under 60 without snapping', () => {
-    expect(normalizeTaskTimeParts('1', '56')).toEqual({ hoursText: '1', minutesText: '56' })
+    expect(normalizeAssignmentTimeParts('1', '56')).toEqual({ hoursText: '1', minutesText: '56' })
   })
 })
 
-describe('calculateTaskFinishTimes', () => {
-  it('returns an empty list for no tasks', () => {
+describe('calculateAssignmentFinishTimes', () => {
+  it('returns an empty list for no assignments', () => {
     const start = new Date(2025, 0, 2, 9, 0)
-    expect(calculateTaskFinishTimes(start, [])).toEqual([])
+    expect(calculateAssignmentFinishTimes(start, [])).toEqual([])
   })
 
   it('calculates cumulative finish times during work hours', () => {
     const start = new Date(2025, 0, 2, 9, 0)
-    const finishTimes = calculateTaskFinishTimes(start, [{ minutes: 30 }, { minutes: 45 }])
+    const finishTimes = calculateAssignmentFinishTimes(start, [{ minutes: 30 }, { minutes: 45 }])
     expect(finishTimes.map((item) => item.getTime())).toEqual([
       new Date(2025, 0, 2, 9, 30).getTime(),
       new Date(2025, 0, 2, 10, 15).getTime(),
@@ -93,7 +93,7 @@ describe('calculateTaskFinishTimes', () => {
 
   it('skips non-work windows like lunch break and after-hours', () => {
     const start = new Date(2025, 0, 2, 11, 30)
-    const finishTimes = calculateTaskFinishTimes(start, [{ minutes: 60 }, { minutes: 180 }])
+    const finishTimes = calculateAssignmentFinishTimes(start, [{ minutes: 60 }, { minutes: 180 }])
     expect(finishTimes.map((item) => item.getTime())).toEqual([
       new Date(2025, 0, 2, 13, 30).getTime(),
       new Date(2025, 0, 2, 16, 30).getTime(),
@@ -101,38 +101,38 @@ describe('calculateTaskFinishTimes', () => {
   })
 })
 
-describe('pickTaskFinishStart', () => {
+describe('pickAssignmentFinishStart', () => {
   it('uses a frozen base when present so due display does not drift', () => {
     const now = new Date(2025, 0, 2, 14, 24)
     const frozenBase = new Date(2025, 0, 2, 8, 30)
 
-    expect(pickTaskFinishStart(now, frozenBase).getTime()).toBe(frozenBase.getTime())
+    expect(pickAssignmentFinishStart(now, frozenBase).getTime()).toBe(frozenBase.getTime())
   })
 
   it('falls back to now when there is no base', () => {
     const now = new Date(2025, 0, 2, 12, 30)
 
-    expect(pickTaskFinishStart(now, null).getTime()).toBe(now.getTime())
+    expect(pickAssignmentFinishStart(now, null).getTime()).toBe(now.getTime())
   })
 })
 
-describe('pickTaskBatchBase', () => {
-  it('uses now when starting a new task batch', () => {
+describe('pickAssignmentBatchBase', () => {
+  it('uses now when starting a new assignment batch', () => {
     const now = new Date(2025, 0, 2, 10, 24)
-    expect(pickTaskBatchBase(now, null).getTime()).toBe(now.getTime())
+    expect(pickAssignmentBatchBase(now, null).getTime()).toBe(now.getTime())
   })
 
-  it('keeps the existing base while editing an active task batch', () => {
+  it('keeps the existing base while editing an active assignment batch', () => {
     const now = new Date(2025, 0, 2, 10, 24)
     const changeBaseDeadline = new Date(2025, 0, 2, 8, 30)
-    expect(pickTaskBatchBase(now, changeBaseDeadline).getTime()).toBe(changeBaseDeadline.getTime())
+    expect(pickAssignmentBatchBase(now, changeBaseDeadline).getTime()).toBe(changeBaseDeadline.getTime())
   })
 })
 
-describe('formatTaskTimeWithDuration', () => {
-  it('combines finish time and duration for the right-side task label', () => {
+describe('formatAssignmentTimeWithDuration', () => {
+  it('combines finish time and duration for the right-side assignment label', () => {
     const finishAt = new Date(2025, 0, 2, 13, 38)
-    expect(formatTaskTimeWithDuration(finishAt, 60)).toBe('Due 1:38 PM • 1h')
+    expect(formatAssignmentTimeWithDuration(finishAt, 60)).toBe('Due 1:38 PM • 1h')
   })
 })
 

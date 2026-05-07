@@ -6,7 +6,7 @@ import { AssignmentRow } from './components/AssignmentRow'
 import { DateTimeInput, snapToWorkTime } from './components/DateTimeInput'
 import { HoursMinutesInput } from './components/HoursMinutesInput'
 import { buildAssignment } from './utils/assignmentModel'
-import { formatDeadlineExtensionMessage, formatDuration, type TaskEntry } from './utils/deadlineHistory'
+import { formatDeadlineExtensionMessage, formatDuration, type AssignmentEntry } from './utils/deadlineHistory'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
 import {
   fmtDateTimeWithWeekday,
@@ -16,13 +16,13 @@ import {
   parseDatetimeLocalValue,
   toDatetimeLocalValue,
 } from './utils/time'
-import { updateRecentTaskNames } from './utils/taskHistory'
+import { updateRecentAssignmentNames as updateRecentAssignmentNames } from './utils/assignmentNameHistory'
 import {
-  calculateTaskFinishTimes,
+  calculateAssignmentFinishTimes as calculateAssignmentFinishTimes,
   minutesFromTimeParts,
-  pickTaskBatchBase,
-  pickTaskFinishStart,
-} from './utils/taskTime'
+  pickAssignmentBatchBase as pickAssignmentBatchBase,
+  pickAssignmentFinishStart as pickAssignmentFinishStart,
+} from './utils/assignmentTime'
 import {
   atLocalTime,
   addWorkMinutes,
@@ -46,11 +46,11 @@ type AppProps = {
 }
 
 const LS_DEADLINE_KEY = 'aliveline:deadline-iso'
-const LS_RECENT_TASKS_KEY = 'aliveline:recent-tasks'
+const LS_RECENT_ASSIGNMENTS_KEY = 'aliveline:recent-assignments'
 const LS_CHANGE_BASE_KEY = 'aliveline:change-base-deadline-iso'
-const LS_TASK_FINISH_BASE_KEY = 'aliveline:task-finish-base-iso'
+const LS_ASSIGNMENT_FINISH_BASE_KEY = 'aliveline:assignment-finish-base-iso'
 const LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY = 'aliveline:panel-assignment-history-open'
-const LS_PANEL_TASKS_OPEN_KEY = 'aliveline:panel-tasks-open'
+const LS_PANEL_ASSIGNMENTS_OPEN_KEY = 'aliveline:panel-assignments-open'
 const LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY = 'aliveline:panel-next-assignment-message-open'
 const LS_DAILY_CLEAR_KEY = 'aliveline:daily-clear'
 const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
@@ -58,11 +58,11 @@ const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
 const LS_ASSIGNMENTS_KEY = 'aliveline:assignments'
-const ADJUSTED_TASK_MULTIPLIER = 0.8
+const ADJUSTED_ASSIGNMENT_MULTIPLIER = 0.8
 
 function adjustedAssignmentMinutes(rawMinutes: number) {
   if (rawMinutes <= 0) return 0
-  return Math.max(1, Math.round(rawMinutes * ADJUSTED_TASK_MULTIPLIER))
+  return Math.max(1, Math.round(rawMinutes * ADJUSTED_ASSIGNMENT_MULTIPLIER))
 }
 
 function adjustedDeadlineDurationMinutes(rawMinutes: number) {
@@ -70,8 +70,8 @@ function adjustedDeadlineDurationMinutes(rawMinutes: number) {
   return adjustedAssignmentMinutes(rawMinutes)
 }
 
-function officialDeadlineFromAddedAssignments(baseDeadline: Date, rawTasks: TaskEntry[]) {
-  const rawTotalMinutes = rawTasks.reduce((sum, task) => sum + task.minutes, 0)
+function officialDeadlineFromAddedAssignments(baseDeadline: Date, rawAssignments: AssignmentEntry[]) {
+  const rawTotalMinutes = rawAssignments.reduce((sum, item) => sum + item.minutes, 0)
   return addWorkMinutes(baseDeadline, adjustedAssignmentMinutes(rawTotalMinutes))
 }
 
@@ -112,11 +112,11 @@ function dateKey(d: Date) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
 }
 
-function sanitizeTaskEntries(entries: unknown) {
-  if (!Array.isArray(entries)) return [] as TaskEntry[]
+function sanitizeAssignmentEntries(entries: unknown) {
+  if (!Array.isArray(entries)) return [] as AssignmentEntry[]
   return entries.filter(
     (item) => typeof item?.text === 'string' && Number.isFinite(item?.minutes) && item.minutes > 0
-  ) as TaskEntry[]
+  ) as AssignmentEntry[]
 }
 
 type StoredAssignmentDraftV2 = {
@@ -130,7 +130,7 @@ type AssignmentDraftState = {
   createdAt?: string
   owner: string
   workMinutes?: number
-  tasks: TaskEntry[]
+  relatedAssignments: AssignmentEntry[]
   comments: string[]
 }
 
@@ -200,9 +200,9 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
     if (assignments.length === 0) return null
     const current =
       assignments.find((assignment) => assignment.id === selectedAssignmentId) ?? assignments[0]
-    const tasks = current.children
+    const relatedAssignments = current.children
       .map((child) => ({ text: child.title, minutes: child.workMinutes ?? 0 }))
-      .filter((task) => task.text.trim().length > 0 && task.minutes > 0)
+      .filter((item) => item.text.trim().length > 0 && item.minutes > 0)
     if (Number.isNaN(new Date(current.deadline).getTime())) return null
     return {
       assignments,
@@ -211,7 +211,7 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
       ...(typeof current.createdAt === 'string' ? { createdAt: current.createdAt } : {}),
       owner: current.owner ?? '',
       ...(typeof current.workMinutes === 'number' ? { workMinutes: current.workMinutes } : {}),
-      tasks: sanitizeTaskEntries(tasks),
+      relatedAssignments: sanitizeAssignmentEntries(relatedAssignments),
       comments: current.comments ?? [],
     } as AssignmentDraftState
   } catch {
@@ -226,16 +226,16 @@ function buildDraftAssignments(
   assignmentTitle: string,
   owner: string,
   workMinutes: number | undefined,
-  tasks: TaskEntry[],
-  taskFinishTimes: Date[],
+  relatedAssignments: AssignmentEntry[],
+  assignmentFinishTimes: Date[],
   comments: string[]
 ) : DraftAssignment {
-  const taskAssignments = tasks.map((task, index) =>
+  const childAssignmentEntries = relatedAssignments.map((item, index) =>
     normalizeDraftAssignment(buildAssignment({
-      id: `${assignmentId}-task-${index}`,
-      title: task.text,
-      deadline: (taskFinishTimes[index] ?? deadline).toISOString(),
-      workMinutes: task.minutes,
+      id: `${assignmentId}-item-${index}`,
+      title: item.text,
+      deadline: (assignmentFinishTimes[index] ?? deadline).toISOString(),
+      workMinutes: item.minutes,
       comments: [],
     })) as DraftAssignment
   )
@@ -251,7 +251,7 @@ function buildDraftAssignments(
   })) as DraftAssignment
   return {
     ...root,
-    children: taskAssignments,
+    children: childAssignmentEntries,
   }
 }
 
@@ -288,10 +288,10 @@ function readStoredBool(key: string, fallback: boolean) {
   return saved === 'true'
 }
 
-function readLatestTaskAssignment(tasks: TaskEntry[], taskFinishTimes: Date[]) {
-  for (let i = tasks.length - 1; i >= 0; i -= 1) {
-    const title = tasks[i]?.text?.trim()
-    const deadline = taskFinishTimes[i]
+function readLatestAssignment(relatedAssignments: AssignmentEntry[], assignmentFinishTimes: Date[]) {
+  for (let i = relatedAssignments.length - 1; i >= 0; i -= 1) {
+    const title = relatedAssignments[i]?.text?.trim()
+    const deadline = assignmentFinishTimes[i]
     if (!title) continue
     if (!deadline || Number.isNaN(deadline.getTime())) continue
     return { title, deadline }
@@ -331,19 +331,19 @@ export default function App({
   const [deadline, setDeadline] = useState(
     () => readStoredDate(LS_DEADLINE_KEY) ?? (storedDraft ? new Date(storedDraft.deadline) : new Date())
   )
-  const [tasks, setTasks] = useState<TaskEntry[]>(() => storedDraft?.tasks ?? [])
-  const [recentTasks, setRecentTasks] = useState<string[]>(() =>
-    readStoredStringList(LS_RECENT_TASKS_KEY)
+  const [relatedAssignments, setChildAssignments] = useState<AssignmentEntry[]>(() => storedDraft?.relatedAssignments ?? [])
+  const [recentAssignments, setRecentAssignments] = useState<string[]>(() =>
+    readStoredStringList(LS_RECENT_ASSIGNMENTS_KEY)
   )
   const [changeBaseDeadline, setChangeBaseDeadline] = useState<Date | null>(() =>
     readStoredDate(LS_CHANGE_BASE_KEY)
   )
-  const [taskFinishBase, setTaskFinishBase] = useState<Date | null>(() =>
-    readStoredDate(LS_TASK_FINISH_BASE_KEY)
+  const [assignmentFinishBase, setAssignmentFinishBase] = useState<Date | null>(() =>
+    readStoredDate(LS_ASSIGNMENT_FINISH_BASE_KEY)
   )
-  const [assignmentName, setTaskName] = useState('')
-  const [taskHours, setTaskHours] = useState('')
-  const [taskMinutes, setTaskMinutes] = useState('')
+  const [assignmentName, setAssignmentName] = useState('')
+  const [assignmentHours, setAssignmentHours] = useState('')
+  const [assignmentMinutes, setAssignmentMinutes] = useState('')
   const [isRecentOpen, setIsRecentOpen] = useState(false)
   const [recentActiveIndex, setRecentActiveIndex] = useState<number>(-1)
   const [deadlineExtensionAssignment, setDeadlineExtensionAssignment] = useState(
@@ -364,8 +364,8 @@ export default function App({
   const [isAssignmentHistoryPanelOpen, setIsAssignmentHistoryPanelOpen] = useState(() =>
     readStoredBool(LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY, false)
   )
-  const [isTasksPanelOpen, setIsTasksPanelOpen] = useState(() =>
-    readStoredBool(LS_PANEL_TASKS_OPEN_KEY, false)
+  const [isAssignmentsPanelOpen, setIsAssignmentsPanelOpen] = useState(() =>
+    readStoredBool(LS_PANEL_ASSIGNMENTS_OPEN_KEY, false)
   )
   const [isNextAssignmentPanelOpen, setIsNextAssignmentPanelOpen] = useState(() =>
     readStoredBool(LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY, false)
@@ -383,7 +383,7 @@ export default function App({
   const [durationHoursInput, setDurationHoursInput] = useState('')
   const [durationMinutesInput, setDurationMinutesInput] = useState('')
 
-  const projectionTasks = useMemo(() => tasks, [tasks])
+  const projectionAssignments = useMemo(() => relatedAssignments, [relatedAssignments])
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
@@ -411,8 +411,8 @@ export default function App({
   }, [deadline])
 
   useEffect(() => {
-    localStorage.setItem(LS_RECENT_TASKS_KEY, JSON.stringify(recentTasks))
-  }, [recentTasks])
+    localStorage.setItem(LS_RECENT_ASSIGNMENTS_KEY, JSON.stringify(recentAssignments))
+  }, [recentAssignments])
 
   useEffect(() => {
     if (changeBaseDeadline) {
@@ -423,12 +423,12 @@ export default function App({
   }, [changeBaseDeadline])
 
   useEffect(() => {
-    if (taskFinishBase) {
-      localStorage.setItem(LS_TASK_FINISH_BASE_KEY, taskFinishBase.toISOString())
+    if (assignmentFinishBase) {
+      localStorage.setItem(LS_ASSIGNMENT_FINISH_BASE_KEY, assignmentFinishBase.toISOString())
     } else {
-      localStorage.removeItem(LS_TASK_FINISH_BASE_KEY)
+      localStorage.removeItem(LS_ASSIGNMENT_FINISH_BASE_KEY)
     }
-  }, [taskFinishBase])
+  }, [assignmentFinishBase])
 
   useEffect(() => {
     const todayKey = dateKey(now)
@@ -450,16 +450,16 @@ export default function App({
       now.getTime() >= cutoff.getTime() ? todayKey : yesterdayKey
     )
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTasks([])
-    setTaskName('')
-    setTaskHours('')
-    setTaskMinutes('')
+    setChildAssignments([])
+    setAssignmentName('')
+    setAssignmentHours('')
+    setAssignmentMinutes('')
     setChangeBaseDeadline(null)
-    setTaskFinishBase(null)
+    setAssignmentFinishBase(null)
   }, [deadline, now])
 
   const workMsLeft = useMemo(() => workMsBetween(now, deadline), [now, deadline])
-  const currentTaskMultiplier = ADJUSTED_TASK_MULTIPLIER
+  const currentAssignmentMultiplier = ADJUSTED_ASSIGNMENT_MULTIPLIER
   const displayWorkMsLeft = workMsLeft
   const parts = useMemo(() => msToParts(displayWorkMsLeft), [displayWorkMsLeft])
   const displayDeadline = deadline
@@ -469,31 +469,31 @@ export default function App({
     [deadline, now]
   )
   const showDeadlineExtensionReminder = useMemo(
-    () => shouldShowDeadlineExtensionReminder(now, deadline, projectionTasks.length > 0),
-    [deadline, now, projectionTasks.length]
+    () => shouldShowDeadlineExtensionReminder(now, deadline, projectionAssignments.length > 0),
+    [deadline, now, projectionAssignments.length]
   )
-  const taskFinishStart = useMemo(
-    () => pickTaskFinishStart(now, taskFinishBase),
-    [now, taskFinishBase]
+  const assignmentFinishStart = useMemo(
+    () => pickAssignmentFinishStart(now, assignmentFinishBase),
+    [now, assignmentFinishBase]
   )
-  const taskFinishTimes = useMemo(
-    () => calculateTaskFinishTimes(taskFinishStart, projectionTasks),
-    [projectionTasks, taskFinishStart]
+  const assignmentFinishTimes = useMemo(
+    () => calculateAssignmentFinishTimes(assignmentFinishStart, projectionAssignments),
+    [projectionAssignments, assignmentFinishStart]
   )
-  const adjustedTasks = useMemo(
+  const adjustedAssignments = useMemo(
     () =>
-      projectionTasks.map((task) => ({
-        ...task,
+      projectionAssignments.map((item) => ({
+        ...item,
         minutes:
-          currentTaskMultiplier === ADJUSTED_TASK_MULTIPLIER
-            ? adjustedAssignmentMinutes(task.minutes)
-            : task.minutes,
+          currentAssignmentMultiplier === ADJUSTED_ASSIGNMENT_MULTIPLIER
+            ? adjustedAssignmentMinutes(item.minutes)
+            : item.minutes,
       })),
-    [currentTaskMultiplier, projectionTasks]
+    [currentAssignmentMultiplier, projectionAssignments]
   )
-  const adjustedTaskFinishTimes = useMemo(
-    () => calculateTaskFinishTimes(taskFinishStart, adjustedTasks),
-    [adjustedTasks, taskFinishStart]
+  const adjustedAssignmentFinishTimes = useMemo(
+    () => calculateAssignmentFinishTimes(assignmentFinishStart, adjustedAssignments),
+    [adjustedAssignments, assignmentFinishStart]
   )
   useEffect(() => {
     if (!persistDraft) return
@@ -508,8 +508,8 @@ export default function App({
       deadlineExtensionAssignment,
       assignmentOwner,
       workMinutes,
-      tasks,
-      taskFinishTimes,
+      relatedAssignments,
+      assignmentFinishTimes,
       comments
     )
     const currentDraft = readStoredAssignmentDraft()
@@ -531,8 +531,8 @@ export default function App({
     persistDraft,
     selectedAssignmentId,
     storedDraft,
-    tasks,
-    taskFinishTimes,
+    relatedAssignments,
+    assignmentFinishTimes,
     workMinutes,
   ])
   const exportAssignments = useMemo(() => storedDraft?.assignments ?? [], [storedDraft])
@@ -623,8 +623,8 @@ export default function App({
   }, [isAssignmentHistoryPanelOpen])
 
   useEffect(() => {
-    localStorage.setItem(LS_PANEL_TASKS_OPEN_KEY, String(isTasksPanelOpen))
-  }, [isTasksPanelOpen])
+    localStorage.setItem(LS_PANEL_ASSIGNMENTS_OPEN_KEY, String(isAssignmentsPanelOpen))
+  }, [isAssignmentsPanelOpen])
 
   useEffect(() => {
     localStorage.setItem(
@@ -635,24 +635,24 @@ export default function App({
 
   const updateDeadline = (
     nextDeadline: Date,
-    options?: { tasks?: TaskEntry[]; resetDrafts?: boolean; captureWorkMinutes?: boolean }
+    options?: { relatedAssignments?: AssignmentEntry[]; resetDrafts?: boolean; captureWorkMinutes?: boolean }
   ) => {
     if (options?.captureWorkMinutes) {
       setWorkMinutes(deadlineWorkMinutes(now, nextDeadline))
     }
     const sameDeadline = nextDeadline.getTime() === deadline.getTime()
     if (sameDeadline && options?.resetDrafts) {
-      setTasks([])
+      setChildAssignments([])
       setChangeBaseDeadline(null)
-      setTaskFinishBase(null)
+      setAssignmentFinishBase(null)
       return
     }
     if (sameDeadline) return
     setDeadline(nextDeadline)
     if (options?.resetDrafts) {
-      setTasks([])
+      setChildAssignments([])
       setChangeBaseDeadline(null)
-      setTaskFinishBase(null)
+      setAssignmentFinishBase(null)
     }
   }
 
@@ -712,15 +712,15 @@ export default function App({
   }
 
   const deadlineMessageInput = useMemo(() => {
-    const messageTasks = adjustedTasks
+    const messageAssignments = adjustedAssignments
     const messageDeadline = deadline
     return {
       assignmentTitle: deadlineExtensionAssignment,
       deadline: messageDeadline.toISOString(),
-      tasks: messageTasks,
+      assignments: messageAssignments,
     }
   }, [
-    adjustedTasks,
+    adjustedAssignments,
     deadline,
     deadlineExtensionAssignment,
   ])
@@ -728,12 +728,12 @@ export default function App({
   const deadlineExtensionMessage = useMemo(() => {
     if (!deadlineExtensionAssignment.trim()) return ''
     if (!assignmentOwner.trim()) return ''
-    if (tasks.length === 0) return ''
+    if (relatedAssignments.length === 0) return ''
     const messagePreviousDeadline = changeBaseDeadline ?? deadline
     return formatDeadlineExtensionMessage({
       previous: messagePreviousDeadline,
       next: new Date(deadlineMessageInput.deadline),
-      tasks: deadlineMessageInput.tasks,
+      assignments: deadlineMessageInput.assignments,
       assignment: deadlineMessageInput.assignmentTitle,
       assignee: assignmentOwner,
     })
@@ -743,26 +743,26 @@ export default function App({
     changeBaseDeadline,
     deadlineExtensionAssignment,
     deadlineMessageInput,
-    tasks,
+    relatedAssignments,
   ])
 
-  const filteredRecentTaskItems = useMemo(() => {
+  const filteredRecentAssignmentItems = useMemo(() => {
     const needle = assignmentName.trim().toLowerCase()
-    if (!needle) return recentTasks
-    return recentTasks.filter((item) => item.toLowerCase().includes(needle))
-  }, [recentTasks, assignmentName])
+    if (!needle) return recentAssignments
+    return recentAssignments.filter((item) => item.toLowerCase().includes(needle))
+  }, [recentAssignments, assignmentName])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRecentActiveIndex(filteredRecentTaskItems.length > 0 ? 0 : -1)
-  }, [filteredRecentTaskItems])
+    setRecentActiveIndex(filteredRecentAssignmentItems.length > 0 ? 0 : -1)
+  }, [filteredRecentAssignmentItems])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDeadlineExtensionCopyState('idle')
   }, [deadlineExtensionMessage])
 
-  const previousAssignment = readLatestTaskAssignment(tasks, adjustedTaskFinishTimes)
+  const previousAssignment = readLatestAssignment(relatedAssignments, adjustedAssignmentFinishTimes)
 
   const nextAssignmentMessage = useMemo(() => {
     if (!previousAssignment) return ''
@@ -816,39 +816,39 @@ export default function App({
     }
   }
 
-  const addTaskEntry = () => {
-    const minutes = minutesFromTimeParts(taskHours, taskMinutes)
+  const addAssignmentEntry = () => {
+    const minutes = minutesFromTimeParts(assignmentHours, assignmentMinutes)
     if (!assignmentName.trim() || minutes === null) return
-    const entry: TaskEntry = {
+    const entry: AssignmentEntry = {
       text: assignmentName.trim(),
       minutes: Math.round(minutes),
     }
-    setRecentTasks((prev) => updateRecentTaskNames(prev, entry.text))
-    const nextTasks = sanitizeTaskEntries([...tasks, entry])
-    const baseDeadline = pickTaskBatchBase(deadline, changeBaseDeadline)
-    const dueBase = pickTaskBatchBase(now, taskFinishBase)
+    setRecentAssignments((prev) => updateRecentAssignmentNames(prev, entry.text))
+    const nextAssignments = sanitizeAssignmentEntries([...relatedAssignments, entry])
+    const baseDeadline = pickAssignmentBatchBase(deadline, changeBaseDeadline)
+    const dueBase = pickAssignmentBatchBase(now, assignmentFinishBase)
     if (!changeBaseDeadline) {
       setChangeBaseDeadline(baseDeadline)
     }
-    if (!taskFinishBase) {
-      setTaskFinishBase(dueBase)
+    if (!assignmentFinishBase) {
+      setAssignmentFinishBase(dueBase)
     }
-    const nextDeadline = officialDeadlineFromAddedAssignments(baseDeadline, nextTasks)
-    setTasks(nextTasks)
+    const nextDeadline = officialDeadlineFromAddedAssignments(baseDeadline, nextAssignments)
+    setChildAssignments(nextAssignments)
     setDeadline(nextDeadline)
     if (deadlineInputMode === 'direct') {
       setDirectDeadlineInput(toDatetimeLocalValue(nextDeadline))
     }
-    setTaskName('')
-    setTaskHours('')
-    setTaskMinutes('')
+    setAssignmentName('')
+    setAssignmentHours('')
+    setAssignmentMinutes('')
     setIsAddAssignmentFormOpen(false)
   }
 
-  const removeTaskEntry = (index: number) => {
-    const nextTasks = sanitizeTaskEntries(tasks.filter((_, i) => i !== index))
-    setTasks(nextTasks)
-    if (nextTasks.length === 0) {
+  const removeAssignmentEntry = (index: number) => {
+    const nextAssignments = sanitizeAssignmentEntries(relatedAssignments.filter((_, i) => i !== index))
+    setChildAssignments(nextAssignments)
+    if (nextAssignments.length === 0) {
       if (changeBaseDeadline) {
         setDeadline(changeBaseDeadline)
         if (deadlineInputMode === 'direct') {
@@ -856,12 +856,12 @@ export default function App({
         }
       }
       setChangeBaseDeadline(null)
-      setTaskFinishBase(null)
+      setAssignmentFinishBase(null)
       return
     }
 
     if (changeBaseDeadline) {
-      const nextDeadline = officialDeadlineFromAddedAssignments(changeBaseDeadline, nextTasks)
+      const nextDeadline = officialDeadlineFromAddedAssignments(changeBaseDeadline, nextAssignments)
       setDeadline(nextDeadline)
       if (deadlineInputMode === 'direct') {
         setDirectDeadlineInput(toDatetimeLocalValue(nextDeadline))
@@ -869,9 +869,9 @@ export default function App({
     }
   }
 
-  const onTaskTimeChange = (nextHours: string, nextMinutes: string) => {
-    setTaskHours(nextHours)
-    setTaskMinutes(nextMinutes)
+  const onAssignmentTimeChange = (nextHours: string, nextMinutes: string) => {
+    setAssignmentHours(nextHours)
+    setAssignmentMinutes(nextMinutes)
   }
 
   const onExportAssignmentHistoryJson = () => {
@@ -925,20 +925,20 @@ export default function App({
         setDeadlineExtensionAssignment(importedState.assignmentTitle)
         setAssignmentOwner(importedState.owner)
         setWorkMinutes(importedState.workMinutes)
-        setTasks(importedState.tasks)
+        setChildAssignments(importedState.relatedAssignments)
         setComments(importedState.comments)
       } else {
         setDeadlineExtensionAssignment('')
         setAssignmentOwner('')
         setWorkMinutes(undefined)
-        setTasks([])
+        setChildAssignments([])
         setComments([])
       }
       setChangeBaseDeadline(null)
-      setTaskFinishBase(null)
-      setTaskName('')
-      setTaskHours('')
-      setTaskMinutes('')
+      setAssignmentFinishBase(null)
+      setAssignmentName('')
+      setAssignmentHours('')
+      setAssignmentMinutes('')
       setImportDraftState('imported')
     } catch {
       setImportDraftState('failed')
@@ -1181,17 +1181,17 @@ export default function App({
                   <fieldset disabled={!isAddAssignmentFormOpen} className="messageFieldset">
                     <div className="assignmentFields">
                   <div className="fieldGroup assignmentTextField">
-                    <label className="fieldLabel" htmlFor="task-name">
+                    <label className="fieldLabel" htmlFor="assignment-name">
                       Name
                     </label>
                     <div className="assignmentInputWrap">
                       <input
-                        id="task-name"
+                        id="assignment-name"
                         type="text"
                         value={assignmentName}
                         onChange={(e) => {
                           const nextValue = e.target.value
-                          setTaskName(nextValue)
+                          setAssignmentName(nextValue)
                           if (nextValue.trim().length === 0) {
                             setIsRecentOpen(true)
                           }
@@ -1199,23 +1199,23 @@ export default function App({
                         onFocus={() => setIsRecentOpen(true)}
                         onBlur={() => setIsRecentOpen(false)}
                         onKeyDown={(event) => {
-                          if (!isRecentOpen || filteredRecentTaskItems.length === 0) return
+                          if (!isRecentOpen || filteredRecentAssignmentItems.length === 0) return
                           if (event.key === 'ArrowDown') {
                             event.preventDefault()
                             setRecentActiveIndex((current) =>
-                              current < filteredRecentTaskItems.length - 1 ? current + 1 : 0
+                              current < filteredRecentAssignmentItems.length - 1 ? current + 1 : 0
                             )
                           } else if (event.key === 'ArrowUp') {
                             event.preventDefault()
                             setRecentActiveIndex((current) =>
-                              current > 0 ? current - 1 : filteredRecentTaskItems.length - 1
+                              current > 0 ? current - 1 : filteredRecentAssignmentItems.length - 1
                             )
                           } else if (event.key === 'Enter') {
                             if (recentActiveIndex < 0) return
                             event.preventDefault()
-                            const picked = filteredRecentTaskItems[recentActiveIndex]
+                            const picked = filteredRecentAssignmentItems[recentActiveIndex]
                             if (!picked) return
-                            setTaskName(picked)
+                            setAssignmentName(picked)
                             setIsRecentOpen(false)
                           } else if (event.key === 'Escape') {
                             event.preventDefault()
@@ -1224,27 +1224,27 @@ export default function App({
                         }}
                       placeholder="Name"
                       aria-label="Name"
-                      aria-expanded={isRecentOpen && filteredRecentTaskItems.length > 0}
-                      aria-controls="task-recent-list"
+                      aria-expanded={isRecentOpen && filteredRecentAssignmentItems.length > 0}
+                      aria-controls="assignment-recent-list"
                     />
-                      {isRecentOpen && filteredRecentTaskItems.length > 0 && (
+                      {isRecentOpen && filteredRecentAssignmentItems.length > 0 && (
                         <div
-                          id="task-recent-list"
+                          id="assignment-recent-list"
                           className="assignmentRecent"
                           role="listbox"
                           aria-label="Recent assignments"
                         >
-                          {filteredRecentTaskItems.map((name) => (
+                          {filteredRecentAssignmentItems.map((name) => (
                             <button
                               key={name}
                               type="button"
                               className="assignmentRecentItem"
                               data-state={
-                                name === filteredRecentTaskItems[recentActiveIndex] ? 'active' : 'idle'
+                                name === filteredRecentAssignmentItems[recentActiveIndex] ? 'active' : 'idle'
                               }
                               onMouseDown={(event) => {
                                 event.preventDefault()
-                                setTaskName(name)
+                                setAssignmentName(name)
                                 setIsRecentOpen(false)
                               }}
                               role="option"
@@ -1257,11 +1257,11 @@ export default function App({
                     </div>
                   </div>
                   <HoursMinutesInput
-                    hoursText={taskHours}
-                    minutesText={taskMinutes}
-                    onChange={onTaskTimeChange}
-                    hoursInputId="task-hours"
-                    minutesInputId="task-minutes"
+                    hoursText={assignmentHours}
+                    minutesText={assignmentMinutes}
+                    onChange={onAssignmentTimeChange}
+                    hoursInputId="assignment-hours"
+                    minutesInputId="assignment-minutes"
                     hoursAriaLabel="Hours"
                     minutesAriaLabel="Minutes"
                     increaseHoursLabel="Increase hours by 1"
@@ -1274,8 +1274,8 @@ export default function App({
                       Action
                     </span>
                     <button
-                      onClick={addTaskEntry}
-                      disabled={!assignmentName.trim() || minutesFromTimeParts(taskHours, taskMinutes) === null}
+                      onClick={addAssignmentEntry}
+                      disabled={!assignmentName.trim() || minutesFromTimeParts(assignmentHours, assignmentMinutes) === null}
                       className="btn-primary"
                     >
                       <i className="las la-plus" aria-hidden="true"></i> Add assignment
@@ -1287,24 +1287,24 @@ export default function App({
               </div>
             </div>
 
-            {tasks.length > 0 && (
+            {relatedAssignments.length > 0 && (
               <div className="assignmentList">
-                {tasks.map((entry, index) => (
+                {relatedAssignments.map((entry, index) => (
                   <AssignmentRow
                     key={`${entry.text}-${index}`}
                     title={entry.text}
                     meta={
                       <span aria-label="Assignment due time display" className="assignmentDueText">
-                        <span className="assignmentDueTime">{fmtTime(adjustedTaskFinishTimes[index])}</span>
+                        <span className="assignmentDueTime">{fmtTime(adjustedAssignmentFinishTimes[index])}</span>
                         <span aria-hidden="true"> • </span>
                         <span className="assignmentDueDuration">
-                          {formatDuration(adjustedTasks[index].minutes)}
+                          {formatDuration(adjustedAssignments[index].minutes)}
                         </span>
                       </span>
                     }
                     action={
                       <button
-                        onClick={() => removeTaskEntry(index)}
+                        onClick={() => removeAssignmentEntry(index)}
                         aria-label="Remove assignment"
                         className="btn-secondary assignmentRemoveButton"
                       >
@@ -1399,11 +1399,11 @@ export default function App({
             <div className="assignmentSectionTitle sectionHeading">Messages</div>
             <AccordionItem
               title="Deadline extension message"
-              isOpen={isTasksPanelOpen}
-              onToggle={() => setIsTasksPanelOpen((prev) => !prev)}
-              panelId="tasks-panel"
+              isOpen={isAssignmentsPanelOpen}
+              onToggle={() => setIsAssignmentsPanelOpen((prev) => !prev)}
+              panelId="relatedAssignments-panel"
             >
-              <fieldset disabled={!isTasksPanelOpen} className="messageFieldset">
+              <fieldset disabled={!isAssignmentsPanelOpen} className="messageFieldset">
                 <div className="messageBody">
                   <div className="messagePreview" aria-label="Deadline extension message preview">
                     {deadlineExtensionMessage ||

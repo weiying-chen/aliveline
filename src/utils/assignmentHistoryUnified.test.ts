@@ -16,8 +16,8 @@ describe('buildAssignmentHistoryEntry', () => {
         assignment: ' Translation batch ',
         deadline,
         confirmedBy: '  Emily Ding ',
-        tasks: [
-          { text: 'Task A', minutes: 90 },
+        assignments: [
+          { text: 'Assignment A', minutes: 90 },
           { text: '  ', minutes: 30 },
         ],
       },
@@ -27,7 +27,7 @@ describe('buildAssignmentHistoryEntry', () => {
     expect(entry.createdAt).toBe('2026-04-27T10:30:00.000Z')
     expect(entry.totalMinutes).toBe(90)
     expect(entry.assignments[0].title).toBe('Translation batch')
-    expect(entry.assignments[1].title).toBe('Task A')
+    expect(entry.assignments[1].title).toBe('Assignment A')
   })
 })
 
@@ -38,13 +38,13 @@ describe('month filter and sum', () => {
         assignment: 'A',
         deadline: new Date('2026-03-31T12:00:00.000Z'),
         confirmedBy: '',
-        tasks: [],
+        assignments: [],
       }),
       buildAssignmentHistoryEntry({
         assignment: 'B',
         deadline: new Date('2026-04-15T12:00:00.000Z'),
         confirmedBy: '',
-        tasks: [{ text: 'Task B', minutes: 60 }],
+        assignments: [{ text: 'Assignment B', minutes: 60 }],
       }),
     ]
 
@@ -62,9 +62,9 @@ describe('exportAssignmentHistoryJson', () => {
           assignment: 'Alpha',
           deadline: new Date('2026-04-02T09:00:00.000Z'),
           confirmedBy: 'Emily',
-          tasks: [
-            { text: 'Task A', minutes: 30 },
-            { text: 'Task B', minutes: 60 },
+          assignments: [
+            { text: 'Assignment A', minutes: 30 },
+            { text: 'Assignment B', minutes: 60 },
           ],
         },
         new Date('2026-04-01T08:00:00.000Z')
@@ -74,6 +74,6 @@ describe('exportAssignmentHistoryJson', () => {
     const parsed = JSON.parse(json)
     expect(parsed[0].rootAssignmentId).toBe('root')
     expect(parsed[0].assignments[0].title).toBe('Alpha')
-    expect(parsed[0].assignments[1].title).toBe('Task A')
+    expect(parsed[0].assignments[1].title).toBe('Assignment A')
   })
 })

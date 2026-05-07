@@ -43,7 +43,7 @@ describe('App deadline behavior', () => {
     cleanup()
   })
 
-  it('extends main deadline when adding task entries', () => {
+  it('extends main deadline when adding item entries', () => {
     const { container } = renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
@@ -63,7 +63,7 @@ describe('App deadline behavior', () => {
     expect(deadlineTextAfter).not.toBe(deadlineTextBefore)
   })
 
-  it('shows deadline message with previous and updated deadline after adding task time', () => {
+  it('shows deadline message with previous and updated deadline after adding item time', () => {
     const { container } = renderApp()
     const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
     fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
@@ -113,7 +113,7 @@ describe('App deadline behavior', () => {
     expect(container.querySelector('.deadline')?.textContent).toContain('2:36 PM')
   })
 
-  it('shows the same task due time under unified model', () => {
+  it('shows the same item due time under unified model', () => {
     renderApp()
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
@@ -325,7 +325,7 @@ describe('App deadline behavior', () => {
     )
   })
 
-  it('uses the same 10-minute rounding as task time', () => {
+  it('uses the same 10-minute rounding as item time', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
     renderApp()
@@ -337,7 +337,7 @@ describe('App deadline behavior', () => {
     expect(remaining).toEqual({ hours: 0, minutes: 20 })
   })
 
-  it('keeps deadline unchanged when tasks are added later', () => {
+  it('keeps deadline unchanged when assignments are added later', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T10:00:00'))
     renderApp()
@@ -350,7 +350,7 @@ describe('App deadline behavior', () => {
     })
 
     openAddAssignmentForm()
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Late added task' } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Late added item' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
@@ -483,8 +483,8 @@ describe('App deadline behavior', () => {
           comments: [],
           children: [
             {
-              id: 'imported-task-0',
-              title: 'Imported task',
+              id: 'imported-item-0',
+              title: 'Imported item',
               deadline: '2026-04-10T12:00:00.000Z',
               comments: [],
               workMinutes: 50,
@@ -537,7 +537,7 @@ describe('App deadline behavior', () => {
       target: { value: '2026-04-10T12:00' },
     })
     openAddAssignmentForm()
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Assignment A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '30' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
@@ -571,8 +571,8 @@ describe('App deadline behavior', () => {
             comments: [],
             children: [
               {
-                id: 'boot-task-0',
-                title: 'Boot task',
+                id: 'boot-item-0',
+                title: 'Boot item',
                 deadline: '2026-04-10T12:00:00.000Z',
                 comments: [],
                 workMinutes: 50,
@@ -613,19 +613,19 @@ describe('App deadline behavior', () => {
       target: { value: '2026-04-10T12:00' },
     })
     fireEvent.change(screen.getByLabelText('Assignment title'), {
-      target: { value: 'Task mutation assignment' },
+      target: { value: 'Assignment mutation assignment' },
     })
     openAddAssignmentForm()
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Assignment A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     let draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
     expect(Array.isArray(draft.assignments)).toBe(true)
-    const firstTask = draft.assignments[0]?.children?.[0]
-    expect(firstTask?.title).toBe('Task A')
-    expect(firstTask?.workMinutes).toBe(80)
+    const firstAssignment = draft.assignments[0]?.children?.[0]
+    expect(firstAssignment?.title).toBe('Assignment A')
+    expect(firstAssignment?.workMinutes).toBe(80)
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove assignment' }))
     draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
@@ -645,7 +645,7 @@ describe('App deadline behavior', () => {
     expect(draft.assignments[0]?.workMinutes).toBe(120)
 
     openAddAssignmentForm()
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Assignment A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
@@ -717,12 +717,11 @@ describe('App deadline behavior', () => {
       target: { value: 'Legacy key check' },
     })
     openAddAssignmentForm()
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Task A' } })
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Assignment A' } })
     fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '1' } })
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    expect(localStorage.getItem('aliveline:tasks')).toBeNull()
     expect(localStorage.getItem('aliveline:deadline-extension-assignment')).toBeNull()
     expect(localStorage.getItem('aliveline:assignments')).toBeTruthy()
   })

@@ -11,7 +11,7 @@ export function formatMessageDate(d: Date) {
   return `${month}/${day}（${weekday}）${hours}:${minutes}`
 }
 
-export type TaskEntry = {
+export type AssignmentEntry = {
   text: string
   minutes: number
 }
@@ -19,26 +19,26 @@ export type TaskEntry = {
 type DeadlineExtensionMessageOptions = {
   previous: Date
   next: Date
-  tasks?: TaskEntry[]
+  assignments?: AssignmentEntry[]
   assignment?: string
   assignee?: string
 }
 
-function formatTaskLine(task: TaskEntry) {
-  const trimmed = task.text.trim()
+function formatAssignmentLine(item: AssignmentEntry) {
+  const trimmed = item.text.trim()
   if (!trimmed) return ''
-  return `${trimmed} ${formatDurationForMessage(task.minutes)}`
+  return `${trimmed} ${formatDurationForMessage(item.minutes)}`
 }
 
-function aggregateTasksForMessage(tasks: TaskEntry[]) {
+function aggregateAssignmentsForMessage(assignments: AssignmentEntry[]) {
   const totals = new Map<string, number>()
   const orderedNames: string[] = []
 
-  for (const task of tasks) {
-    const name = task.text.trim()
-    if (!name || task.minutes <= 0) continue
+  for (const item of assignments) {
+    const name = item.text.trim()
+    if (!name || item.minutes <= 0) continue
     if (!totals.has(name)) orderedNames.push(name)
-    totals.set(name, (totals.get(name) ?? 0) + task.minutes)
+    totals.set(name, (totals.get(name) ?? 0) + item.minutes)
   }
 
   return orderedNames.map((name) => ({
@@ -66,16 +66,16 @@ function formatDurationForMessage(totalMinutes: number) {
 export function formatDeadlineExtensionMessage({
   previous,
   next,
-  tasks,
+  assignments,
   assignment,
   assignee,
 }: DeadlineExtensionMessageOptions) {
-  const sanitizedTasks = aggregateTasksForMessage(tasks ?? [])
-  const totalMinutes = sanitizedTasks.reduce((sum, item) => sum + item.minutes, 0)
-  const taskLines = sanitizedTasks.map(formatTaskLine).filter((line) => line.length > 0).join('\n')
+  const sanitizedAssignments = aggregateAssignmentsForMessage(assignments ?? [])
+  const totalMinutes = sanitizedAssignments.reduce((sum, item) => sum + item.minutes, 0)
+  const assignmentLines = sanitizedAssignments.map(formatAssignmentLine).filter((line) => line.length > 0).join('\n')
   const prefix =
-    taskLines.length > 0
-      ? `今日做其他事時間是 ${formatDurationForMessage(totalMinutes)}\n\n${taskLines}\n\n`
+    assignmentLines.length > 0
+      ? `今日做其他事時間是 ${formatDurationForMessage(totalMinutes)}\n\n${assignmentLines}\n\n`
       : ''
   const assignmentPrefix = assignment?.trim() ? `${assignment.trim()}，` : ''
   const assigneeText = assignee?.trim() ? `，請${assignee.trim()}幫我確認` : ''

@@ -1,4 +1,4 @@
-import { applyMinutesDeltaWithCarry, normalizeTaskTimeParts, stepHoursText } from '../utils/taskTime'
+import { applyMinutesDeltaWithCarry, normalizeAssignmentTimeParts, stepHoursText } from '../utils/assignmentTime'
 
 type HoursMinutesInputProps = {
   hoursText: string
@@ -46,7 +46,7 @@ export function HoursMinutesInput({
   }
 
   const onMinutesChange = (value: string) => {
-    const normalized = normalizeTaskTimeParts(hoursText, value)
+    const normalized = normalizeAssignmentTimeParts(hoursText, value)
     onChange(normalized.hoursText, normalized.minutesText)
   }
 

@@ -2,7 +2,7 @@ import { formatDuration } from './deadlineHistory'
 import { fmtTime } from './time'
 import { addWorkMinutes } from './workTime'
 
-export type TaskMinutesEntry = {
+export type AssignmentMinutesEntry = {
   minutes: number
 }
 
@@ -36,7 +36,7 @@ export function minutesFromTimeParts(hoursText: string, minutesText: string) {
   return total > 0 ? total : null
 }
 
-export function normalizeTaskTimeParts(hoursText: string, minutesText: string) {
+export function normalizeAssignmentTimeParts(hoursText: string, minutesText: string) {
   const trimmedHours = hoursText.trim()
   const trimmedMinutes = minutesText.trim()
 
@@ -65,23 +65,23 @@ export function normalizeTaskTimeParts(hoursText: string, minutesText: string) {
   }
 }
 
-export function calculateTaskFinishTimes(start: Date, tasks: TaskMinutesEntry[]) {
+export function calculateAssignmentFinishTimes(start: Date, assignments: AssignmentMinutesEntry[]) {
   let totalMinutes = 0
-  return tasks.map((task) => {
-    totalMinutes += task.minutes
+  return assignments.map((item) => {
+    totalMinutes += item.minutes
     return addWorkMinutes(start, totalMinutes)
   })
 }
 
-export function pickTaskFinishStart(now: Date, changeBaseDeadline: Date | null) {
+export function pickAssignmentFinishStart(now: Date, changeBaseDeadline: Date | null) {
   return changeBaseDeadline ?? now
 }
 
-export function pickTaskBatchBase(now: Date, changeBaseDeadline: Date | null) {
+export function pickAssignmentBatchBase(now: Date, changeBaseDeadline: Date | null) {
   return changeBaseDeadline ?? now
 }
 
-export function formatTaskTimeWithDuration(finishAt: Date, minutes: number) {
+export function formatAssignmentTimeWithDuration(finishAt: Date, minutes: number) {
   return `Due ${fmtTime(finishAt)} • ${formatDuration(minutes)}`
 }
 
@@ -93,7 +93,7 @@ export function stepMinutesText(current: string, delta: number) {
 
 export function applyMinutesDeltaWithCarry(hoursText: string, minutesText: string, delta: number) {
   const nextMinutes = stepMinutesText(minutesText, delta)
-  return normalizeTaskTimeParts(hoursText, nextMinutes)
+  return normalizeAssignmentTimeParts(hoursText, nextMinutes)
 }
 
 export function stepHoursText(current: string, delta: number) {

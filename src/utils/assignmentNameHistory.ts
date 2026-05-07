@@ -1,6 +1,6 @@
-import type { TaskEntry } from './deadlineHistory'
+import type { AssignmentEntry } from './deadlineHistory'
 
-export function recentTaskNames(entries: TaskEntry[], limit = 6) {
+export function recentAssignmentNames(entries: AssignmentEntry[], limit = 6) {
   if (!Array.isArray(entries) || limit <= 0) return []
   const names: string[] = []
   const seen = new Set<string>()
@@ -19,7 +19,7 @@ export function recentTaskNames(entries: TaskEntry[], limit = 6) {
   return names
 }
 
-export function updateRecentTaskNames(recent: string[], name: string, limit = 6) {
+export function updateRecentAssignmentNames(recent: string[], name: string, limit = 6) {
   if (!Array.isArray(recent) || limit <= 0) return []
   if (typeof name !== 'string') return recent.slice(0, limit)
   const trimmed = name.trim()

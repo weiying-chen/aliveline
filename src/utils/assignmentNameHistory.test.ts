@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { recentTaskNames, updateRecentTaskNames } from './taskHistory'
+import { recentAssignmentNames, updateRecentAssignmentNames } from './assignmentNameHistory'
 
-describe('recentTaskNames', () => {
+describe('recentAssignmentNames', () => {
   it('returns an empty list when there are no entries', () => {
-    expect(recentTaskNames([])).toEqual([])
+    expect(recentAssignmentNames([])).toEqual([])
   })
 
   it('returns the most recent unique names first', () => {
@@ -16,7 +16,7 @@ describe('recentTaskNames', () => {
       { text: 'Two', minutes: 5 },
     ]
 
-    expect(recentTaskNames(entries)).toEqual(['Two', 'Three', 'One'])
+    expect(recentAssignmentNames(entries)).toEqual(['Two', 'Three', 'One'])
   })
 
   it('trims names and skips empty strings', () => {
@@ -27,7 +27,7 @@ describe('recentTaskNames', () => {
       { text: 'Alpha', minutes: 40 },
     ]
 
-    expect(recentTaskNames(entries)).toEqual(['Alpha', 'Beta'])
+    expect(recentAssignmentNames(entries)).toEqual(['Alpha', 'Beta'])
   })
 
   it('respects the limit', () => {
@@ -38,13 +38,13 @@ describe('recentTaskNames', () => {
       { text: 'Four', minutes: 10 },
     ]
 
-    expect(recentTaskNames(entries, 2)).toEqual(['Four', 'Three'])
+    expect(recentAssignmentNames(entries, 2)).toEqual(['Four', 'Three'])
   })
 })
 
-describe('updateRecentTaskNames', () => {
+describe('updateRecentAssignmentNames', () => {
   it('adds a new name to the front', () => {
-    expect(updateRecentTaskNames(['Beta', 'Alpha'], 'Gamma')).toEqual([
+    expect(updateRecentAssignmentNames(['Beta', 'Alpha'], 'Gamma')).toEqual([
       'Gamma',
       'Beta',
       'Alpha',
@@ -52,14 +52,14 @@ describe('updateRecentTaskNames', () => {
   })
 
   it('dedupes and moves existing names to the front', () => {
-    expect(updateRecentTaskNames(['Beta', 'Alpha'], 'Alpha')).toEqual(['Alpha', 'Beta'])
+    expect(updateRecentAssignmentNames(['Beta', 'Alpha'], 'Alpha')).toEqual(['Alpha', 'Beta'])
   })
 
   it('trims and skips empty values', () => {
-    expect(updateRecentTaskNames(['Beta'], '  ')).toEqual(['Beta'])
+    expect(updateRecentAssignmentNames(['Beta'], '  ')).toEqual(['Beta'])
   })
 
   it('respects the limit', () => {
-    expect(updateRecentTaskNames(['One', 'Two', 'Three'], 'Four', 2)).toEqual(['Four', 'One'])
+    expect(updateRecentAssignmentNames(['One', 'Two', 'Three'], 'Four', 2)).toEqual(['Four', 'One'])
   })
 })

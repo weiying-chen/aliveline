@@ -168,9 +168,9 @@ export function shouldShowEarlyFinishReminder(now: Date, deadline: Date) {
 export function shouldShowDeadlineExtensionReminder(
   now: Date,
   deadline: Date,
-  hasPendingExtensionTasks: boolean = true
+  hasPendingExtensionAssignments: boolean = true
 ) {
-  if (!hasPendingExtensionTasks) return false
+  if (!hasPendingExtensionAssignments) return false
   if (!isWorkday(now)) return false
   const dayStart = new Date(now)
   dayStart.setHours(0, 0, 0, 0)
