@@ -7,7 +7,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AssignmentsPage } from './AssignmentsPage'
 import { buildAssignment } from '../utils/assignmentModel'
 
-const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
+const LS_ASSIGNMENTS_KEY = 'aliveline:assignments'
 
 describe('AssignmentsPage', () => {
   beforeEach(() => {
@@ -26,7 +26,7 @@ describe('AssignmentsPage', () => {
     })
 
     localStorage.setItem(
-      LS_ASSIGNMENT_DRAFT_KEY,
+      LS_ASSIGNMENTS_KEY,
       JSON.stringify({ assignments: [{ ...old, children: [] }] })
     )
 
@@ -43,7 +43,7 @@ describe('AssignmentsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add assignment from list page' }))
 
-    const saved = JSON.parse(localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY) ?? '{}')
+    const saved = JSON.parse(localStorage.getItem(LS_ASSIGNMENTS_KEY) ?? '{}')
     expect(saved.assignments[0].id).toBe('assignment-1714540800000')
     expect(saved.assignments[1].id).toBe('assignment-old')
   })

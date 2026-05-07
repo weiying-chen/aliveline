@@ -448,7 +448,7 @@ describe('App deadline behavior', () => {
         },
       ],
     }
-    localStorage.setItem('aliveline:assignment-draft', JSON.stringify(draft))
+    localStorage.setItem('aliveline:assignments', JSON.stringify(draft))
 
     render(
       <MemoryRouter>
@@ -561,7 +561,7 @@ describe('App deadline behavior', () => {
     const d = `${now.getDate()}`.padStart(2, '0')
     localStorage.setItem('aliveline:daily-clear', `${y}-${m}-${d}`)
     localStorage.setItem(
-      'aliveline:assignment-draft',
+      'aliveline:assignments',
       JSON.stringify({
         assignments: [
           {
@@ -621,14 +621,14 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    let draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
+    let draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
     expect(Array.isArray(draft.assignments)).toBe(true)
     const firstTask = draft.assignments[0]?.children?.[0]
     expect(firstTask?.title).toBe('Task A')
     expect(firstTask?.estimateMinutes).toBe(80)
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove assignment' }))
-    draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
+    draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
     expect(draft.assignments[0]?.children ?? []).toEqual([])
   })
 
@@ -641,7 +641,7 @@ describe('App deadline behavior', () => {
       target: { value: '2026-04-15T13:00' },
     })
 
-    let draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
+    let draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
     expect(draft.assignments[0]?.workMinutes).toBe(120)
 
     openAddAssignmentForm()
@@ -650,7 +650,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
+    draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
     expect(draft.assignments[0]?.workMinutes).toBe(120)
   })
 
@@ -661,7 +661,7 @@ describe('App deadline behavior', () => {
     const d = `${now.getDate()}`.padStart(2, '0')
     localStorage.setItem('aliveline:daily-clear', `${y}-${m}-${d}`)
     localStorage.setItem(
-      'aliveline:assignment-draft',
+      'aliveline:assignments',
       JSON.stringify({
         assignments: [
           {
@@ -698,7 +698,7 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    const draft = JSON.parse(localStorage.getItem('aliveline:assignment-draft') ?? '{}')
+    const draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
     const edited = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a')
     expect(edited.title).toBe('Edited child assignment')
     expect(edited.owner).toBe('Alice')
@@ -724,11 +724,11 @@ describe('App deadline behavior', () => {
 
     expect(localStorage.getItem('aliveline:tasks')).toBeNull()
     expect(localStorage.getItem('aliveline:deadline-extension-assignment')).toBeNull()
-    expect(localStorage.getItem('aliveline:assignment-draft')).toBeTruthy()
+    expect(localStorage.getItem('aliveline:assignments')).toBeTruthy()
   })
 
   it('ignores malformed draft key payload', () => {
-    localStorage.setItem('aliveline:assignment-draft', '{"deadlineIso":123}')
+    localStorage.setItem('aliveline:assignments', '{"deadlineIso":123}')
     localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
 
     renderApp()

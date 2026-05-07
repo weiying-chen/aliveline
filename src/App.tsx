@@ -57,7 +57,7 @@ const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
 const LS_DEADLINE_EXTENSION_REMINDER_NOTIFIED_KEY = 'aliveline:deadline-extension-reminder-notified'
 const LS_DEADLINE_EXTENSION_REMINDER_REQUESTED_KEY = 'aliveline:deadline-extension-reminder-requested'
-const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
+const LS_ASSIGNMENTS_KEY = 'aliveline:assignments'
 const ADJUSTED_TASK_MULTIPLIER = 0.8
 
 function adjustedAssignmentMinutes(rawMinutes: number) {
@@ -180,7 +180,7 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
 }
 
 function readStoredAssignmentDraft(selectedAssignmentId?: string) {
-  const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
+  const saved = localStorage.getItem(LS_ASSIGNMENTS_KEY)
   if (!saved) return null
   try {
     const parsed = JSON.parse(saved) as {
@@ -507,7 +507,7 @@ export default function App({
     const nextDraft: StoredAssignmentDraftV2 = {
       assignments,
     }
-    localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
+    localStorage.setItem(LS_ASSIGNMENTS_KEY, JSON.stringify(nextDraft))
   }, [
     assignmentOwner,
     comments,
@@ -860,7 +860,7 @@ export default function App({
   }
 
   const onExportAssignmentHistoryJson = () => {
-    const rawDraft = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
+    const rawDraft = localStorage.getItem(LS_ASSIGNMENTS_KEY)
     const exportMonth = historyMonth.trim() || 'all'
     let content = JSON.stringify({ assignments: [], exportMonth }, null, 2)
     if (rawDraft) {
@@ -896,7 +896,7 @@ export default function App({
         .map((item) => normalizeDraftAssignment(item))
         .filter((item): item is DraftAssignment => Boolean(item))
       const importedDraft: StoredAssignmentDraftV2 = { assignments: normalizedAssignments }
-      localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(importedDraft))
+      localStorage.setItem(LS_ASSIGNMENTS_KEY, JSON.stringify(importedDraft))
 
       const importedState =
         normalizedAssignments.length > 0 ? readStoredAssignmentDraft(selectedAssignmentId) : null

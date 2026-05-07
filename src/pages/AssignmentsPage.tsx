@@ -7,14 +7,14 @@ import { buildAssignment } from '../utils/assignmentModel'
 import { fmtDate } from '../utils/time'
 import type { Assignment } from '../utils/assignmentModel'
 
-const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
+const LS_ASSIGNMENTS_KEY = 'aliveline:assignments'
 
 type AssignmentDraftV2 = {
   assignments: (Assignment & { children?: Assignment[] })[]
 }
 
 function readDraft() {
-  const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
+  const saved = localStorage.getItem(LS_ASSIGNMENTS_KEY)
   if (!saved) return null
   try {
     const parsed = JSON.parse(saved) as AssignmentDraftV2
@@ -51,7 +51,7 @@ export function AssignmentsPage() {
     )
     if (!hadLegacyDefault) return
     localStorage.setItem(
-      LS_ASSIGNMENT_DRAFT_KEY,
+      LS_ASSIGNMENTS_KEY,
       JSON.stringify({
         ...draft,
         assignments,
@@ -92,7 +92,7 @@ export function AssignmentsPage() {
     ]
 
     localStorage.setItem(
-      LS_ASSIGNMENT_DRAFT_KEY,
+      LS_ASSIGNMENTS_KEY,
       JSON.stringify({
         assignments: nextAssignments,
       } satisfies AssignmentDraftV2)
