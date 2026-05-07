@@ -337,17 +337,6 @@ function readHistoryRootAssignment(entry: AssignmentHistoryEntry) {
   return { title: root.title.trim(), deadline }
 }
 
-function readLatestTaskAssignment(tasks: TaskEntry[], finishTimes: Date[]) {
-  for (let index = tasks.length - 1; index >= 0; index -= 1) {
-    const title = tasks[index]?.text.trim()
-    const finishTime = finishTimes[index]
-    if (title && finishTime && !Number.isNaN(finishTime.getTime())) {
-      return { title, deadline: finishTime }
-    }
-  }
-  return null
-}
-
 function downloadTextFile(fileName: string, content: string, contentType: string) {
   const blob = new Blob([content], { type: contentType })
   const url = URL.createObjectURL(blob)
@@ -850,8 +839,7 @@ export default function App({
   }, [deadlineExtensionMessage])
 
   const previousAssignment =
-    (assignmentHistory.length > 0 ? readHistoryRootAssignment(assignmentHistory[0]) : null) ??
-    readLatestTaskAssignment(tasks, adjustedTaskFinishTimes)
+    assignmentHistory.length > 0 ? readHistoryRootAssignment(assignmentHistory[0]) : null
 
   const nextAssignmentMessage = useMemo(() => {
     if (!previousAssignment) return ''
@@ -873,7 +861,7 @@ export default function App({
   ])
 
   const nextAssignmentMessageHint = useMemo(() => {
-    if (!previousAssignment) return 'Add an affecting deadline first to generate this message.'
+    if (!previousAssignment) return 'Add a previous assignment history entry to generate this message.'
     if (!deadlineExtensionAssignment.trim() || !assignmentOwner.trim()) {
       return 'Set assignment title and owner to generate the message.'
     }
