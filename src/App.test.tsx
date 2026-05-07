@@ -480,6 +480,7 @@ describe('App deadline behavior', () => {
           id: 'imported-assignment',
           title: 'Imported assignment',
           deadline: '2026-04-10T12:00:00.000Z',
+          contentMinutes: 18,
           comments: [],
           children: [
             {
@@ -507,6 +508,7 @@ describe('App deadline behavior', () => {
     })
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
     expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('40m')
+    expect((screen.getByLabelText('Content length (min)') as HTMLInputElement).value).toBe('18')
     expect(screen.getByLabelText('Import assignment draft status').textContent).toBe('Imported.')
   })
 
@@ -687,6 +689,9 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Owner'), {
       target: { value: 'Alice' },
     })
+    fireEvent.change(screen.getByLabelText('Content length (min)'), {
+      target: { value: '23' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Toggle comment form' }))
     fireEvent.change(screen.getByLabelText('Comment'), {
       target: { value: 'Use simpler wording in paragraph 2' },
@@ -702,6 +707,7 @@ describe('App deadline behavior', () => {
     const edited = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a')
     expect(edited.title).toBe('Edited child assignment')
     expect(edited.owner).toBe('Alice')
+    expect(edited.contentMinutes).toBe(23)
     expect(Array.isArray(edited.children)).toBe(true)
     expect(edited.children).toHaveLength(1)
     expect(edited.comments).toEqual(['Use simpler wording in paragraph 2'])

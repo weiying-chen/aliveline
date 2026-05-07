@@ -130,6 +130,7 @@ type AssignmentDraftState = {
   createdAt?: string
   owner: string
   workMinutes?: number
+  contentMinutes?: number
   relatedAssignments: AssignmentEntry[]
   comments: string[]
 }
@@ -211,6 +212,7 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
       ...(typeof current.createdAt === 'string' ? { createdAt: current.createdAt } : {}),
       owner: current.owner ?? '',
       ...(typeof current.workMinutes === 'number' ? { workMinutes: current.workMinutes } : {}),
+      ...(typeof current.contentMinutes === 'number' ? { contentMinutes: current.contentMinutes } : {}),
       relatedAssignments: sanitizeAssignmentEntries(relatedAssignments),
       comments: current.comments ?? [],
     } as AssignmentDraftState
@@ -226,6 +228,7 @@ function buildDraftAssignments(
   assignmentTitle: string,
   owner: string,
   workMinutes: number | undefined,
+  contentMinutes: number | undefined,
   relatedAssignments: AssignmentEntry[],
   assignmentFinishTimes: Date[],
   comments: string[]
@@ -247,6 +250,7 @@ function buildDraftAssignments(
     owner,
     deadline: deadline.toISOString(),
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
+    ...(typeof contentMinutes === 'number' ? { contentMinutes } : {}),
     comments,
   })) as DraftAssignment
   return {
@@ -354,6 +358,9 @@ export default function App({
   )
   const [assignmentOwner, setAssignmentOwner] = useState(() => storedDraft?.owner ?? '')
   const [workMinutes, setWorkMinutes] = useState<number | undefined>(() => storedDraft?.workMinutes)
+  const [contentMinutes, setContentMinutes] = useState<number | undefined>(
+    () => storedDraft?.contentMinutes
+  )
   const [deadlineExtensionCopyState, setDeadlineExtensionCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle')
@@ -508,6 +515,7 @@ export default function App({
       deadlineExtensionAssignment,
       assignmentOwner,
       workMinutes,
+      contentMinutes,
       relatedAssignments,
       assignmentFinishTimes,
       comments
@@ -534,6 +542,7 @@ export default function App({
     relatedAssignments,
     assignmentFinishTimes,
     workMinutes,
+    contentMinutes,
   ])
   const exportAssignments = useMemo(() => storedDraft?.assignments ?? [], [storedDraft])
   const exportHistoryMinutes = useMemo(
@@ -925,12 +934,14 @@ export default function App({
         setDeadlineExtensionAssignment(importedState.assignmentTitle)
         setAssignmentOwner(importedState.owner)
         setWorkMinutes(importedState.workMinutes)
+        setContentMinutes(importedState.contentMinutes)
         setChildAssignments(importedState.relatedAssignments)
         setComments(importedState.comments)
       } else {
         setDeadlineExtensionAssignment('')
         setAssignmentOwner('')
         setWorkMinutes(undefined)
+        setContentMinutes(undefined)
         setChildAssignments([])
         setComments([])
       }
@@ -1044,19 +1055,46 @@ export default function App({
                 onChange={(e) => setDeadlineExtensionAssignment(e.target.value)}
                 placeholder="Assignment"
               />
-              <div className="assignmentOverviewOwnerField">
-                <label className="label" htmlFor="assignment-owner">
-                  Owner
-                </label>
-                <input
-                  id="assignment-owner"
-                  type="text"
-                  className="assignmentOverviewOwnerInput"
-                  value={assignmentOwner}
-                  onChange={(e) => setAssignmentOwner(e.target.value)}
-                  placeholder="Owner"
-                  aria-label="Owner"
-                />
+              <div className="assignmentOverviewMetaRow">
+                <div className="assignmentOverviewOwnerField">
+                  <label className="label" htmlFor="assignment-owner">
+                    Owner
+                  </label>
+                  <input
+                    id="assignment-owner"
+                    type="text"
+                    className="assignmentOverviewOwnerInput"
+                    value={assignmentOwner}
+                    onChange={(e) => setAssignmentOwner(e.target.value)}
+                    placeholder="Owner"
+                    aria-label="Owner"
+                  />
+                </div>
+                <div className="assignmentOverviewOwnerField">
+                  <label className="label" htmlFor="assignment-content-minutes">
+                    Content length (min)
+                  </label>
+                  <input
+                    id="assignment-content-minutes"
+                    type="number"
+                    min={0}
+                    step={1}
+                    className="assignmentOverviewOwnerInput"
+                    value={typeof contentMinutes === 'number' ? String(contentMinutes) : ''}
+                    onChange={(e) => {
+                      const nextValue = e.target.value.trim()
+                      if (!nextValue) {
+                        setContentMinutes(undefined)
+                        return
+                      }
+                      const parsed = Number(nextValue)
+                      if (!Number.isFinite(parsed) || parsed < 0) return
+                      setContentMinutes(Math.round(parsed))
+                    }}
+                    placeholder="0"
+                    aria-label="Content length (min)"
+                  />
+                </div>
               </div>
             </div>
 
