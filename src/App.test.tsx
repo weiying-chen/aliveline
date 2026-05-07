@@ -210,7 +210,7 @@ describe('App deadline behavior', () => {
     expect((screen.getByLabelText('Deadline duration minutes') as HTMLInputElement).value).toBe('13')
   })
 
-  it('keeps deadline input values when switching modes', () => {
+  it('keeps mode datetime inputs aligned to current deadline when switching modes', () => {
     renderApp()
 
     fireEvent.change(screen.getByLabelText('Deadline time'), {
@@ -218,6 +218,9 @@ describe('App deadline behavior', () => {
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
+    expect((screen.getByLabelText('Deadline start time') as HTMLInputElement).value).toBe(
+      '2026-04-10T11:15'
+    )
     fireEvent.change(screen.getByLabelText('Deadline start time'), {
       target: { value: '2026-04-10T12:00' },
     })
@@ -229,11 +232,11 @@ describe('App deadline behavior', () => {
     })
 
     fireEvent.click(screen.getByRole('button', { name: 'Pick exact date/time' }))
-    expect((screen.getByLabelText('Deadline time') as HTMLInputElement).value).toBe('2026-04-10T11:15')
+    expect((screen.getByLabelText('Deadline time') as HTMLInputElement).value).toBe('2026-04-10T14:24')
 
     fireEvent.click(screen.getByRole('button', { name: 'Start date + duration' }))
     expect((screen.getByLabelText('Deadline start time') as HTMLInputElement).value).toBe(
-      '2026-04-10T13:00'
+      '2026-04-10T14:24'
     )
     expect((screen.getByLabelText('Deadline duration hours') as HTMLInputElement).value).toBe('1')
     expect((screen.getByLabelText('Deadline duration minutes') as HTMLInputElement).value).toBe('45')

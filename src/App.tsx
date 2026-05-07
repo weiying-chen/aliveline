@@ -779,6 +779,17 @@ export default function App({
     updateDeadlineFromDurationInputs(durationStartInput, nextHours, nextMinutes)
   }
 
+  const onSwitchDeadlineInputMode = (nextMode: DeadlineInputMode) => {
+    if (nextMode === deadlineInputMode) return
+    const deadlineValue = toDatetimeLocalValue(deadline)
+    if (nextMode === 'direct') {
+      setDirectDeadlineInput(deadlineValue)
+    } else {
+      setDurationStartInput(deadlineValue)
+    }
+    setDeadlineInputMode(nextMode)
+  }
+
   const focusDeadlineInput = () => {
     if (deadlineInputMode === 'duration') {
       durationStartRef.current?.focus()
@@ -1179,7 +1190,7 @@ export default function App({
                 <button
                   type="button"
                   className={`btn-secondary ${deadlineInputMode === 'direct' ? 'isActive' : ''}`}
-                  onClick={() => setDeadlineInputMode('direct')}
+                  onClick={() => onSwitchDeadlineInputMode('direct')}
                   aria-label="Pick exact date/time"
                   title="Pick exact date/time"
                 >
@@ -1188,7 +1199,7 @@ export default function App({
                 <button
                   type="button"
                   className={`btn-secondary ${deadlineInputMode === 'duration' ? 'isActive' : ''}`}
-                  onClick={() => setDeadlineInputMode('duration')}
+                  onClick={() => onSwitchDeadlineInputMode('duration')}
                   aria-label="Start date + duration"
                   title="Start date + duration"
                 >
