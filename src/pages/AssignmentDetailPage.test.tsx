@@ -7,7 +7,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AssignmentDetailPage } from './AssignmentDetailPage'
 import { buildAssignment } from '../utils/assignmentModel'
 
-const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
+const LS_ASSIGNMENTS_KEY = 'aliveline:assignments'
 
 vi.mock('../App', () => ({
   default: ({ selectedAssignmentId }: { selectedAssignmentId?: string }) => (
@@ -33,7 +33,7 @@ describe('AssignmentDetailPage', () => {
     })
 
     localStorage.setItem(
-      LS_ASSIGNMENT_DRAFT_KEY,
+      LS_ASSIGNMENTS_KEY,
       JSON.stringify({
         assignments: [{ ...activeRoot, children: [] }, { ...another, children: [] }],
       })

@@ -3,14 +3,14 @@ import { Navigate, useParams } from 'react-router-dom'
 import App from '../App'
 import type { Assignment } from '../utils/assignmentModel'
 
-const LS_ASSIGNMENT_DRAFT_KEY = 'aliveline:assignment-draft'
+const LS_ASSIGNMENTS_KEY = 'aliveline:assignments'
 
 type AssignmentDraftV2 = {
   assignments: (Assignment & { children?: Assignment[] })[]
 }
 
 function readDraft() {
-  const saved = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
+  const saved = localStorage.getItem(LS_ASSIGNMENTS_KEY)
   if (!saved) return null as AssignmentDraftV2 | null
   try {
     const parsed = JSON.parse(saved) as AssignmentDraftV2
