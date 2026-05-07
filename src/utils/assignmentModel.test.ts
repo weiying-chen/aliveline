@@ -16,6 +16,7 @@ describe('buildAssignment', () => {
       owner: '  PM Chen  ',
       deadline: '2026-05-01T10:00:00.000Z',
       workMinutes: 93.7,
+      contentMinutes: 18.2,
       relations: [
         { assignmentId: 'a2', type: 'blocks' },
         { assignmentId: ' a2 ', type: 'blocks' },
@@ -32,6 +33,7 @@ describe('buildAssignment', () => {
       owner: 'PM Chen',
       deadline: '2026-05-01T10:00:00.000Z',
       workMinutes: 94,
+      contentMinutes: 18,
       relations: [
         { assignmentId: 'a2', type: 'blocks' },
         { assignmentId: 'a3', type: 'extends' },
@@ -49,6 +51,7 @@ describe('buildAssignment', () => {
 
     expect(assignment.relations).toEqual([])
     expect(assignment.workMinutes).toBeUndefined()
+    expect(assignment.contentMinutes).toBeUndefined()
     expect(assignment.comments).toEqual([])
     expect(assignment.owner).toBeUndefined()
   })

@@ -141,6 +141,7 @@ type DraftAssignment = {
   owner?: string
   deadline: string
   workMinutes?: number
+  contentMinutes?: number
   comments: string[]
   children: DraftAssignment[]
 }
@@ -164,6 +165,10 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
     typeof item.workMinutes === 'number' && Number.isFinite(item.workMinutes) && item.workMinutes >= 0
       ? Math.round(item.workMinutes)
       : undefined
+  const contentMinutes =
+    typeof item.contentMinutes === 'number' && Number.isFinite(item.contentMinutes) && item.contentMinutes >= 0
+      ? Math.round(item.contentMinutes)
+      : undefined
   const childrenInput = Array.isArray(item.children) ? item.children : []
   const children = childrenInput
     .map((child) => normalizeDraftAssignment(child))
@@ -175,6 +180,7 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
     ...(owner ? { owner } : {}),
     deadline: item.deadline,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
+    ...(typeof contentMinutes === 'number' ? { contentMinutes } : {}),
     comments,
     children,
   }
