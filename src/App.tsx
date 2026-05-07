@@ -369,6 +369,7 @@ export default function App({
 }: AppProps = {}) {
   const deadlineRef = useRef<PickerInput | null>(null)
   const durationStartRef = useRef<PickerInput | null>(null)
+  const fallbackAssignmentIdRef = useRef(`assignment-${Date.now()}`)
   const storedDraft = useMemo(
     () => readStoredAssignmentDraft(selectedAssignmentId),
     [selectedAssignmentId]
@@ -543,7 +544,10 @@ export default function App({
   )
   useEffect(() => {
     if (!persistDraft) return
-    const targetAssignmentId = selectedAssignmentId ?? `assignment-${Date.now()}`
+    const targetAssignmentId =
+      selectedAssignmentId ??
+      storedDraft?.assignments[0]?.id ??
+      fallbackAssignmentIdRef.current
     const nextAssignment = buildDraftAssignments(
       targetAssignmentId,
       deadline,
@@ -564,7 +568,18 @@ export default function App({
       assignments,
     }
     localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(nextDraft))
-  }, [assignmentOwner, comments, deadline, deadlineExtensionAssignment, persistDraft, selectedAssignmentId, tasks, taskFinishTimes, workMinutes])
+  }, [
+    assignmentOwner,
+    comments,
+    deadline,
+    deadlineExtensionAssignment,
+    persistDraft,
+    selectedAssignmentId,
+    storedDraft,
+    tasks,
+    taskFinishTimes,
+    workMinutes,
+  ])
   const selectedHistoryMonth = useMemo(() => {
     const match = /^(\d{4})-(\d{2})$/.exec(historyMonth)
     if (!match) return null
