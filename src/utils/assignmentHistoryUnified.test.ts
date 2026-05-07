@@ -24,7 +24,7 @@ describe('buildAssignmentHistoryEntry', () => {
       now
     )
 
-    expect(entry.createdAtIso).toBe('2026-04-27T10:30:00.000Z')
+    expect(entry.createdAt).toBe('2026-04-27T10:30:00.000Z')
     expect(entry.totalMinutes).toBe(90)
     expect(entry.assignments[0].title).toBe('Translation batch')
     expect(entry.assignments[1].title).toBe('Task A')

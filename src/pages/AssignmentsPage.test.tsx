@@ -25,7 +25,7 @@ describe('AssignmentsPage', () => {
     const old = buildAssignment({
       id: 'assignment-old',
       title: 'Old assignment',
-      deadlineIso: '2026-05-01T08:00:00.000Z',
+      deadline: '2026-05-01T08:00:00.000Z',
     })
 
     localStorage.setItem(
@@ -45,7 +45,7 @@ describe('AssignmentsPage', () => {
 
     const saved = JSON.parse(localStorage.getItem(LS_ASSIGNMENTS_KEY) ?? '{}')
     expect(saved.assignments[0].id).toBe(`assignment-${new Date('2024-05-01T00:00:00.000Z').getTime()}`)
-    expect(saved.assignments[0].createdAtIso).toBe('2024-05-01T00:00:00.000Z')
+    expect(saved.assignments[0].createdAt).toBe('2024-05-01T00:00:00.000Z')
     expect(saved.assignments[1].id).toBe('assignment-old')
   })
 })

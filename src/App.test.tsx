@@ -435,14 +435,14 @@ describe('App deadline behavior', () => {
         {
           id: 'legacy-root',
           title: 'Assignment',
-          deadlineIso: '2026-05-02T02:48:00.000Z',
+          deadline: '2026-05-02T02:48:00.000Z',
           relations: [{ assignmentId: 'assignment-a', type: 'extends' }],
           comments: [],
         },
         {
           id: 'assignment-a',
           title: 'Visible assignment',
-          deadlineIso: '2026-05-02T02:48:00.000Z',
+          deadline: '2026-05-02T02:48:00.000Z',
           relations: [],
           comments: [],
         },
@@ -479,13 +479,13 @@ describe('App deadline behavior', () => {
         {
           id: 'imported-assignment',
           title: 'Imported assignment',
-          deadlineIso: '2026-04-10T12:00:00.000Z',
+          deadline: '2026-04-10T12:00:00.000Z',
           comments: [],
           children: [
             {
               id: 'imported-task-0',
               title: 'Imported task',
-              deadlineIso: '2026-04-10T12:00:00.000Z',
+              deadline: '2026-04-10T12:00:00.000Z',
               comments: [],
               estimateMinutes: 50,
               children: [],
@@ -567,13 +567,13 @@ describe('App deadline behavior', () => {
           {
             id: 'boot-assignment',
             title: 'Boot assignment',
-            deadlineIso: '2026-04-10T12:00:00.000Z',
+            deadline: '2026-04-10T12:00:00.000Z',
             comments: [],
             children: [
               {
                 id: 'boot-task-0',
                 title: 'Boot task',
-                deadlineIso: '2026-04-10T12:00:00.000Z',
+                deadline: '2026-04-10T12:00:00.000Z',
                 comments: [],
                 estimateMinutes: 50,
                 children: [],
@@ -667,7 +667,7 @@ describe('App deadline behavior', () => {
           {
             id: 'assignment-a',
             title: 'Child assignment',
-            deadlineIso: '2026-04-10T12:00:00.000Z',
+            deadline: '2026-04-10T12:00:00.000Z',
             comments: [],
             children: [],
           },
@@ -728,7 +728,7 @@ describe('App deadline behavior', () => {
   })
 
   it('ignores malformed draft key payload', () => {
-    localStorage.setItem('aliveline:assignments', '{"deadlineIso":123}')
+    localStorage.setItem('aliveline:assignments', '{"deadline":123}')
     localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
 
     renderApp()

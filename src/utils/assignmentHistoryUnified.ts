@@ -2,8 +2,8 @@ import type { TaskEntry } from './deadlineHistory'
 import { buildAssignment, type Assignment } from './assignmentModel'
 
 export type AssignmentHistoryEntry = {
-  createdAtIso: string
-  deadlineIso: string
+  createdAt: string
+  deadline: string
   confirmedBy: string
   nextAssignment: string
   nextAssignmentConfirmedBy: string
@@ -37,26 +37,26 @@ export function buildAssignmentHistoryEntry(
   createdAt: Date = new Date()
 ): AssignmentHistoryEntry {
   const tasks = sanitizeTasks(input.tasks)
-  const deadlineIso = input.deadline.toISOString()
+  const deadline = input.deadline.toISOString()
   const rootAssignmentId = 'root'
   const taskAssignments = tasks.map((task, index) =>
     buildAssignment({
       id: `task-${index}`,
       title: task.text,
-      deadlineIso,
+      deadline,
       estimateMinutes: task.minutes,
     })
   )
   const root = buildAssignment({
     id: rootAssignmentId,
     title: input.assignment.trim(),
-    deadlineIso,
+    deadline,
     relations: taskAssignments.map((task) => ({ assignmentId: task.id, type: 'extends' })),
   })
 
   return {
-    createdAtIso: createdAt.toISOString(),
-    deadlineIso,
+    createdAt: createdAt.toISOString(),
+    deadline,
     confirmedBy: input.confirmedBy.trim(),
     nextAssignment: input.nextAssignment?.trim() ?? '',
     nextAssignmentConfirmedBy: input.nextAssignmentConfirmedBy?.trim() ?? '',
@@ -73,7 +73,7 @@ export function filterAssignmentHistoryEntriesByMonth(
   month: number
 ) {
   return entries.filter((entry) => {
-    const deadline = new Date(entry.deadlineIso)
+    const deadline = new Date(entry.deadline)
     if (Number.isNaN(deadline.getTime())) return false
     return deadline.getFullYear() === year && deadline.getMonth() + 1 === month
   })

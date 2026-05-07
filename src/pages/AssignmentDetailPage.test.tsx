@@ -24,12 +24,12 @@ describe('AssignmentDetailPage', () => {
     const activeRoot = buildAssignment({
       id: 'assignment-a',
       title: 'Active root',
-      deadlineIso: '2026-05-01T10:00:00.000Z',
+      deadline: '2026-05-01T10:00:00.000Z',
     })
     const another = buildAssignment({
       id: 'assignment-b',
       title: 'Another root',
-      deadlineIso: '2026-05-01T11:00:00.000Z',
+      deadline: '2026-05-01T11:00:00.000Z',
     })
 
     localStorage.setItem(

@@ -3,7 +3,7 @@ import type { TaskEntry } from './deadlineHistory'
 
 export type LegacyAssignmentDraft = {
   assignmentTitle: string
-  deadlineIso: string
+  deadline: string
   tasks: TaskEntry[]
 }
 
@@ -21,7 +21,7 @@ export function fromLegacyAssignmentDraft(draft: LegacyAssignmentDraft): Assignm
     buildAssignment({
       id: `legacy-task-${index}`,
       title: task.text,
-      deadlineIso: draft.deadlineIso,
+      deadline: draft.deadline,
       estimateMinutes: task.minutes,
     })
   )
@@ -29,7 +29,7 @@ export function fromLegacyAssignmentDraft(draft: LegacyAssignmentDraft): Assignm
   const root = buildAssignment({
     id: LEGACY_ROOT_ID,
     title: draft.assignmentTitle,
-    deadlineIso: draft.deadlineIso,
+    deadline: draft.deadline,
     relations: taskAssignments.map((task) => ({ assignmentId: task.id, type: 'extends' })),
   })
 
@@ -40,7 +40,7 @@ export function toLegacyAssignmentDraft(assignments: Assignment[], rootId?: stri
   const root =
     assignments.find((assignment) => assignment.id === rootId) ??
     assignments[0] ??
-    buildAssignment({ id: LEGACY_ROOT_ID, title: '', deadlineIso: new Date(0).toISOString() })
+    buildAssignment({ id: LEGACY_ROOT_ID, title: '', deadline: new Date(0).toISOString() })
 
   const byId = new Map(assignments.map((assignment) => [assignment.id, assignment]))
 
@@ -56,7 +56,7 @@ export function toLegacyAssignmentDraft(assignments: Assignment[], rootId?: stri
 
   return {
     assignmentTitle: root.title,
-    deadlineIso: root.deadlineIso,
+    deadline: root.deadline,
     tasks,
   }
 }

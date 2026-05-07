@@ -125,9 +125,9 @@ type StoredAssignmentDraftV2 = {
 
 type AssignmentDraftState = {
   assignments: DraftAssignment[]
-  deadlineIso: string
+  deadline: string
   assignmentTitle: string
-  createdAtIso?: string
+  createdAt?: string
   owner: string
   workMinutes?: number
   tasks: TaskEntry[]
@@ -137,9 +137,9 @@ type AssignmentDraftState = {
 type DraftAssignment = {
   id: string
   title: string
-  createdAtIso?: string
+  createdAt?: string
   owner?: string
-  deadlineIso: string
+  deadline: string
   workMinutes?: number
   estimateMinutes?: number
   comments: string[]
@@ -151,15 +151,15 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
   const item = input as Record<string, unknown>
   if (typeof item.id !== 'string') return null
   if (typeof item.title !== 'string') return null
-  if (typeof item.deadlineIso !== 'string') return null
+  if (typeof item.deadline !== 'string') return null
   const comments = Array.isArray(item.comments)
     ? item.comments.filter((comment): comment is string => typeof comment === 'string').map((comment) => comment.trim()).filter(Boolean)
     : []
   const owner =
     typeof item.owner === 'string' && item.owner.trim().length > 0 ? item.owner.trim() : undefined
-  const createdAtIso =
-    typeof item.createdAtIso === 'string' && !Number.isNaN(new Date(item.createdAtIso).getTime())
-      ? item.createdAtIso
+  const createdAt =
+    typeof item.createdAt === 'string' && !Number.isNaN(new Date(item.createdAt).getTime())
+      ? item.createdAt
       : undefined
   const estimateMinutes =
     typeof item.estimateMinutes === 'number' && Number.isFinite(item.estimateMinutes) && item.estimateMinutes > 0
@@ -176,9 +176,9 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
   return {
     id: item.id,
     title: item.title.trim(),
-    ...(typeof createdAtIso === 'string' ? { createdAtIso } : {}),
+    ...(typeof createdAt === 'string' ? { createdAt } : {}),
     ...(owner ? { owner } : {}),
-    deadlineIso: item.deadlineIso,
+    deadline: item.deadline,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
     ...(estimateMinutes ? { estimateMinutes } : {}),
     comments,
@@ -203,12 +203,12 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
     const tasks = current.children
       .map((child) => ({ text: child.title, minutes: child.estimateMinutes ?? 0 }))
       .filter((task) => task.text.trim().length > 0 && task.minutes > 0)
-    if (Number.isNaN(new Date(current.deadlineIso).getTime())) return null
+    if (Number.isNaN(new Date(current.deadline).getTime())) return null
     return {
       assignments,
-      deadlineIso: current.deadlineIso,
+      deadline: current.deadline,
       assignmentTitle: current.title,
-      ...(typeof current.createdAtIso === 'string' ? { createdAtIso: current.createdAtIso } : {}),
+      ...(typeof current.createdAt === 'string' ? { createdAt: current.createdAt } : {}),
       owner: current.owner ?? '',
       ...(typeof current.workMinutes === 'number' ? { workMinutes: current.workMinutes } : {}),
       tasks: sanitizeTaskEntries(tasks),
@@ -221,7 +221,7 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
 
 function buildDraftAssignments(
   assignmentId: string,
-  createdAtIso: string,
+  createdAt: string,
   deadline: Date,
   assignmentTitle: string,
   owner: string,
@@ -234,7 +234,7 @@ function buildDraftAssignments(
     normalizeDraftAssignment(buildAssignment({
       id: `${assignmentId}-task-${index}`,
       title: task.text,
-      deadlineIso: (taskFinishTimes[index] ?? deadline).toISOString(),
+      deadline: (taskFinishTimes[index] ?? deadline).toISOString(),
       estimateMinutes: task.minutes,
       comments: [],
     })) as DraftAssignment
@@ -243,9 +243,9 @@ function buildDraftAssignments(
   const root = normalizeDraftAssignment(buildAssignment({
     id: assignmentId,
     title: assignmentTitle,
-    createdAtIso,
+    createdAt,
     owner,
-    deadlineIso: deadline.toISOString(),
+    deadline: deadline.toISOString(),
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
     comments,
   })) as DraftAssignment
@@ -329,7 +329,7 @@ export default function App({
 
   const [now, setNow] = useState(() => new Date())
   const [deadline, setDeadline] = useState(
-    () => readStoredDate(LS_DEADLINE_KEY) ?? (storedDraft ? new Date(storedDraft.deadlineIso) : new Date())
+    () => readStoredDate(LS_DEADLINE_KEY) ?? (storedDraft ? new Date(storedDraft.deadline) : new Date())
   )
   const [tasks, setTasks] = useState<TaskEntry[]>(() => storedDraft?.tasks ?? [])
   const [recentTasks, setRecentTasks] = useState<string[]>(() =>
@@ -349,8 +349,8 @@ export default function App({
   const [deadlineExtensionAssignment, setDeadlineExtensionAssignment] = useState(
     () => storedDraft?.assignmentTitle ?? ''
   )
-  const [createdAtIso] = useState<string>(
-    () => storedDraft?.createdAtIso ?? new Date().toISOString()
+  const [createdAt] = useState<string>(
+    () => storedDraft?.createdAt ?? new Date().toISOString()
   )
   const [assignmentOwner, setAssignmentOwner] = useState(() => storedDraft?.owner ?? '')
   const [workMinutes, setWorkMinutes] = useState<number | undefined>(() => storedDraft?.workMinutes)
@@ -503,7 +503,7 @@ export default function App({
       fallbackAssignmentIdRef.current
     const nextAssignment = buildDraftAssignments(
       targetAssignmentId,
-      createdAtIso,
+      createdAt,
       deadline,
       deadlineExtensionAssignment,
       assignmentOwner,
@@ -524,7 +524,7 @@ export default function App({
     localStorage.setItem(LS_ASSIGNMENTS_KEY, JSON.stringify(nextDraft))
   }, [
     assignmentOwner,
-    createdAtIso,
+    createdAt,
     comments,
     deadline,
     deadlineExtensionAssignment,
@@ -716,7 +716,7 @@ export default function App({
     const messageDeadline = deadline
     return {
       assignmentTitle: deadlineExtensionAssignment,
-      deadlineIso: messageDeadline.toISOString(),
+      deadline: messageDeadline.toISOString(),
       tasks: messageTasks,
     }
   }, [
@@ -732,7 +732,7 @@ export default function App({
     const messagePreviousDeadline = changeBaseDeadline ?? deadline
     return formatDeadlineExtensionMessage({
       previous: messagePreviousDeadline,
-      next: new Date(deadlineMessageInput.deadlineIso),
+      next: new Date(deadlineMessageInput.deadline),
       tasks: deadlineMessageInput.tasks,
       assignment: deadlineMessageInput.assignmentTitle,
       assignee: assignmentOwner,
@@ -916,7 +916,7 @@ export default function App({
       const importedState =
         normalizedAssignments.length > 0 ? readStoredAssignmentDraft(selectedAssignmentId) : null
       if (importedState) {
-        const importedDeadline = new Date(importedState.deadlineIso)
+        const importedDeadline = new Date(importedState.deadline)
         if (!Number.isNaN(importedDeadline.getTime())) {
           setDeadline(importedDeadline)
           setDirectDeadlineInput(toDatetimeLocalValue(importedDeadline))

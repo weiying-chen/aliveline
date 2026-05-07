@@ -11,7 +11,7 @@ describe('fromLegacyAssignmentDraft', () => {
   it('maps legacy assignment and tasks into unified assignments with extends relations', () => {
     const legacy: LegacyAssignmentDraft = {
       assignmentTitle: '  Translation batch  ',
-      deadlineIso: '2026-05-01T10:00:00.000Z',
+      deadline: '2026-05-01T10:00:00.000Z',
       tasks: [
         { text: '  Task A ', minutes: 30 },
         { text: 'Task B', minutes: 95.5 },
@@ -26,7 +26,7 @@ describe('fromLegacyAssignmentDraft', () => {
       {
         id: 'legacy-root',
         title: 'Translation batch',
-        deadlineIso: '2026-05-01T10:00:00.000Z',
+        deadline: '2026-05-01T10:00:00.000Z',
         comments: [],
         relations: [
           { assignmentId: 'legacy-task-0', type: 'extends' },
@@ -36,7 +36,7 @@ describe('fromLegacyAssignmentDraft', () => {
       {
         id: 'legacy-task-0',
         title: 'Task A',
-        deadlineIso: '2026-05-01T10:00:00.000Z',
+        deadline: '2026-05-01T10:00:00.000Z',
         comments: [],
         estimateMinutes: 30,
         relations: [],
@@ -44,7 +44,7 @@ describe('fromLegacyAssignmentDraft', () => {
       {
         id: 'legacy-task-1',
         title: 'Task B',
-        deadlineIso: '2026-05-01T10:00:00.000Z',
+        deadline: '2026-05-01T10:00:00.000Z',
         comments: [],
         estimateMinutes: 96,
         relations: [],
@@ -59,7 +59,7 @@ describe('toLegacyAssignmentDraft', () => {
       {
         id: 'legacy-root',
         title: 'Main assignment',
-        deadlineIso: '2026-05-02T10:00:00.000Z',
+        deadline: '2026-05-02T10:00:00.000Z',
         comments: [],
         relations: [
           { assignmentId: 'a', type: 'extends' },
@@ -69,7 +69,7 @@ describe('toLegacyAssignmentDraft', () => {
       {
         id: 'a',
         title: 'Task A',
-        deadlineIso: '2026-05-02T10:00:00.000Z',
+        deadline: '2026-05-02T10:00:00.000Z',
         comments: [],
         estimateMinutes: 45,
         relations: [],
@@ -77,7 +77,7 @@ describe('toLegacyAssignmentDraft', () => {
       {
         id: 'b',
         title: 'Task B',
-        deadlineIso: '2026-05-02T11:00:00.000Z',
+        deadline: '2026-05-02T11:00:00.000Z',
         comments: [],
         estimateMinutes: 80,
         relations: [],
@@ -86,7 +86,7 @@ describe('toLegacyAssignmentDraft', () => {
 
     expect(toLegacyAssignmentDraft(assignments, 'legacy-root')).toEqual({
       assignmentTitle: 'Main assignment',
-      deadlineIso: '2026-05-02T10:00:00.000Z',
+      deadline: '2026-05-02T10:00:00.000Z',
       tasks: [
         { text: 'Task A', minutes: 45 },
         { text: 'Task B', minutes: 80 },
@@ -99,7 +99,7 @@ describe('toLegacyAssignmentDraft', () => {
       {
         id: 'x',
         title: 'X',
-        deadlineIso: '2026-05-03T10:00:00.000Z',
+        deadline: '2026-05-03T10:00:00.000Z',
         comments: [],
         relations: [],
       },
@@ -107,7 +107,7 @@ describe('toLegacyAssignmentDraft', () => {
 
     expect(toLegacyAssignmentDraft(assignments)).toEqual({
       assignmentTitle: 'X',
-      deadlineIso: '2026-05-03T10:00:00.000Z',
+      deadline: '2026-05-03T10:00:00.000Z',
       tasks: [],
     })
   })

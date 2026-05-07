@@ -8,9 +8,9 @@ export type AssignmentRelation = {
 export type Assignment = {
   id: string
   title: string
-  createdAtIso?: string
+  createdAt?: string
   owner?: string
-  deadlineIso: string
+  deadline: string
   workMinutes?: number
   estimateMinutes?: number
   relations: AssignmentRelation[]
@@ -20,9 +20,9 @@ export type Assignment = {
 type BuildAssignmentInput = {
   id: string
   title: string
-  createdAtIso?: string
+  createdAt?: string
   owner?: string
-  deadlineIso: string
+  deadline: string
   workMinutes?: number
   estimateMinutes?: number
   relations?: AssignmentRelation[]
@@ -68,9 +68,9 @@ function normalizeOwner(owner: string | undefined) {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
-function normalizeCreatedAtIso(createdAtIso: string | undefined) {
-  if (typeof createdAtIso !== 'string') return undefined
-  const trimmed = createdAtIso.trim()
+function normalizeCreatedAtIso(createdAt: string | undefined) {
+  if (typeof createdAt !== 'string') return undefined
+  const trimmed = createdAt.trim()
   if (!trimmed) return undefined
   return Number.isNaN(new Date(trimmed).getTime()) ? undefined : trimmed
 }
@@ -78,13 +78,13 @@ function normalizeCreatedAtIso(createdAtIso: string | undefined) {
 export function buildAssignment(input: BuildAssignmentInput): Assignment {
   const owner = normalizeOwner(input.owner)
   const workMinutes = normalizeWorkMinutes(input.workMinutes)
-  const createdAtIso = normalizeCreatedAtIso(input.createdAtIso)
+  const createdAt = normalizeCreatedAtIso(input.createdAt)
   return {
     id: input.id,
     title: input.title.trim(),
-    ...(typeof createdAtIso === 'string' ? { createdAtIso } : {}),
+    ...(typeof createdAt === 'string' ? { createdAt } : {}),
     ...(owner ? { owner } : {}),
-    deadlineIso: input.deadlineIso,
+    deadline: input.deadline,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
     estimateMinutes: normalizeEstimateMinutes(input.estimateMinutes),
     relations: normalizeRelations(input.relations),

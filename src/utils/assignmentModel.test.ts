@@ -12,9 +12,9 @@ describe('buildAssignment', () => {
     const assignment = buildAssignment({
       id: 'a1',
       title: '  Translate episode  ',
-      createdAtIso: '2026-04-30T09:15:00.000Z',
+      createdAt: '2026-04-30T09:15:00.000Z',
       owner: '  PM Chen  ',
-      deadlineIso: '2026-05-01T10:00:00.000Z',
+      deadline: '2026-05-01T10:00:00.000Z',
       workMinutes: 239.6,
       estimateMinutes: 93.7,
       relations: [
@@ -29,9 +29,9 @@ describe('buildAssignment', () => {
     expect(assignment).toEqual({
       id: 'a1',
       title: 'Translate episode',
-      createdAtIso: '2026-04-30T09:15:00.000Z',
+      createdAt: '2026-04-30T09:15:00.000Z',
       owner: 'PM Chen',
-      deadlineIso: '2026-05-01T10:00:00.000Z',
+      deadline: '2026-05-01T10:00:00.000Z',
       workMinutes: 240,
       estimateMinutes: 94,
       relations: [
@@ -46,7 +46,7 @@ describe('buildAssignment', () => {
     const assignment = buildAssignment({
       id: 'a1',
       title: 'Publish draft',
-      deadlineIso: '2026-05-02T12:00:00.000Z',
+      deadline: '2026-05-02T12:00:00.000Z',
     })
 
     expect(assignment.relations).toEqual([])
@@ -61,7 +61,7 @@ describe('relationIdsByType', () => {
     const assignment: Assignment = {
       id: 'a1',
       title: 'A',
-      deadlineIso: '2026-05-01T10:00:00.000Z',
+      deadline: '2026-05-01T10:00:00.000Z',
       relations: [
         { assignmentId: 'b', type: 'blocks' },
         { assignmentId: 'c', type: 'extends' },
@@ -81,21 +81,21 @@ describe('hasDependencyCycle', () => {
       {
         id: 'a',
         title: 'A',
-        deadlineIso: '2026-05-01T10:00:00.000Z',
+        deadline: '2026-05-01T10:00:00.000Z',
         relations: [{ assignmentId: 'b', type: 'blocks' }],
         comments: [],
       },
       {
         id: 'b',
         title: 'B',
-        deadlineIso: '2026-05-01T11:00:00.000Z',
+        deadline: '2026-05-01T11:00:00.000Z',
         relations: [{ assignmentId: 'c', type: 'blocks' }],
         comments: [],
       },
       {
         id: 'c',
         title: 'C',
-        deadlineIso: '2026-05-01T12:00:00.000Z',
+        deadline: '2026-05-01T12:00:00.000Z',
         relations: [{ assignmentId: 'a', type: 'blocks' }],
         comments: [],
       },
@@ -109,14 +109,14 @@ describe('hasDependencyCycle', () => {
       {
         id: 'a',
         title: 'A',
-        deadlineIso: '2026-05-01T10:00:00.000Z',
+        deadline: '2026-05-01T10:00:00.000Z',
         relations: [{ assignmentId: 'b', type: 'extends' }],
         comments: [],
       },
       {
         id: 'b',
         title: 'B',
-        deadlineIso: '2026-05-01T11:00:00.000Z',
+        deadline: '2026-05-01T11:00:00.000Z',
         relations: [{ assignmentId: 'a', type: 'extends' }],
         comments: [],
       },

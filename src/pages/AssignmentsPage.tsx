@@ -76,15 +76,15 @@ export function AssignmentsPage() {
   const onAddAssignment = () => {
     const currentDraft = readDraft()
     const currentAssignments = currentDraft?.assignments ?? []
-    const baseDeadlineIso = currentAssignments[0]?.deadlineIso ?? new Date().toISOString()
+    const baseDeadlineIso = currentAssignments[0]?.deadline ?? new Date().toISOString()
 
     const newIndex = 0
     const newAssignmentId = `assignment-${Date.now()}`
     const newAssignment = buildAssignment({
       id: newAssignmentId,
       title: 'New assignment',
-      createdAtIso: new Date().toISOString(),
-      deadlineIso: baseDeadlineIso,
+      createdAt: new Date().toISOString(),
+      deadline: baseDeadlineIso,
     })
 
     const nextAssignments = [
@@ -130,7 +130,7 @@ export function AssignmentsPage() {
                     title={assignment.title}
                     meta={
                       <span className="assignmentDueText" aria-label="Assignment list due time display">
-                        <span className="assignmentDueTime">{fmtDate(new Date(assignment.deadlineIso))}</span>
+                        <span className="assignmentDueTime">{fmtDate(new Date(assignment.deadline))}</span>
                       </span>
                     }
                     action={
