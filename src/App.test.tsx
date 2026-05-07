@@ -272,34 +272,13 @@ describe('App deadline behavior', () => {
     expect(preview.textContent).toContain('小編文 1時36分')
   })
 
-  it('shows next assignment message preview from auto-filled assignment context', () => {
-    localStorage.setItem(
-      'aliveline:assignment-history',
-      JSON.stringify([
-        {
-          createdAtIso: '2026-04-10T15:00:00.000Z',
-          deadlineIso: '2026-04-10T15:00:00.000Z',
-          confirmedBy: 'Emily Ding',
-          nextAssignment: '',
-          nextAssignmentConfirmedBy: '',
-          scheduleView: 'adjusted',
-          rootAssignmentId: 'root',
-          assignments: [
-            {
-              id: 'root',
-              title: '3集大愛真健康',
-              deadlineIso: '2026-04-10T15:00:00.000Z',
-              relations: [],
-              comments: [],
-            },
-          ],
-          totalMinutes: 120,
-        },
-      ])
-    )
+  it('shows next assignment message preview from latest affecting deadline context', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-10T13:00:00'))
     renderApp()
-    const deadlineInput = screen.getByLabelText('Deadline time') as HTMLInputElement
-    fireEvent.change(deadlineInput, { target: { value: '2026-04-10T12:00' } })
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-10T13:00' },
+    })
 
     openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: '英文新聞+錄音' } })
@@ -308,20 +287,18 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
     fireEvent.change(screen.getByLabelText('Assignment title'), {
-      target: { value: '3集大愛真健康' },
+      target: { value: '仁心慧語 (呂紹睿)' },
     })
     fireEvent.change(screen.getByLabelText('Owner'), { target: { value: 'Emily Ding' } })
-    fireEvent.change(deadlineInput, { target: { value: '2026-04-11T12:00' } })
-    fireEvent.change(screen.getByLabelText('Assignment title'), { target: { value: '仁心慧語 (呂紹睿)' } })
     fireEvent.click(screen.getByRole('button', { name: 'Next assignment message' }))
 
     const preview = screen.getByLabelText('Next assignment message preview')
     expect(preview.textContent).toBe(
-      '已完成3集大愛真健康，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）23:00起算，謝謝。\n=====\n之前是1分鐘算1小時，現在改成1分鐘算0.8 小時，謝謝。'
+      '已完成英文新聞+錄音，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）14:36起算，謝謝。\n=====\n之前是1分鐘算1小時，現在改成1分鐘算0.8 小時，謝謝。'
     )
   })
 
-  it('requires previous assignment history for next assignment message', () => {
+  it('shows next assignment message from current affecting deadline without copied history', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-10T13:00:00'))
     renderApp()
@@ -344,7 +321,7 @@ describe('App deadline behavior', () => {
 
     const preview = screen.getByLabelText('Next assignment message preview')
     expect(preview.textContent).toBe(
-      'Add a previous assignment history entry to generate this message.'
+      '已完成英文新聞+錄音，接下來會開始翻譯仁心慧語 (呂紹睿)，再麻煩Emily Ding便時幫忙設deadline，從4/10（五）14:36起算，謝謝。\n=====\n之前是1分鐘算1小時，現在改成1分鐘算0.8 小時，謝謝。'
     )
   })
 
@@ -546,7 +523,7 @@ describe('App deadline behavior', () => {
     )
   })
 
-  it('stores assignment history via unified model', async () => {
+  it('does not store assignment history when copying messages', async () => {
     const clipboardWrite = vi.fn().mockResolvedValue(undefined)
     Object.assign(navigator, {
       clipboard: {
@@ -573,16 +550,7 @@ describe('App deadline behavior', () => {
 
     expect(clipboardWrite).toHaveBeenCalledTimes(1)
     await waitFor(() => {
-      const stored = localStorage.getItem('aliveline:assignment-history')
-      expect(stored).toBeTruthy()
-      const parsed = JSON.parse(stored ?? '[]')
-      const root = parsed[0].assignments.find(
-        (item: { id: string }) => item.id === parsed[0].rootAssignmentId
-      )
-      expect(root.title).toBe('Main assignment')
-      const task = parsed[0].assignments.find((item: { id: string }) => item.id === 'task-0')
-      expect(task.title).toBe('Task A')
-      expect(task.estimateMinutes).toBe(72)
+      expect(localStorage.getItem('aliveline:assignment-history')).toBeNull()
     })
   })
 

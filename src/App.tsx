@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import {
-  buildAssignmentHistoryEntry,
-  filterAssignmentHistoryEntriesByMonth,
-  sumAssignmentHistoryEntryMinutes,
-  type AssignmentHistoryEntry,
-} from './utils/assignmentHistoryUnified'
 import { AccordionItem } from './components/Accordion'
 import { AssignmentRow } from './components/AssignmentRow'
 import { DateTimeInput, snapToWorkTime } from './components/DateTimeInput'
@@ -58,7 +52,6 @@ const LS_TASK_FINISH_BASE_KEY = 'aliveline:task-finish-base-iso'
 const LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY = 'aliveline:panel-assignment-history-open'
 const LS_PANEL_TASKS_OPEN_KEY = 'aliveline:panel-tasks-open'
 const LS_PANEL_NEXT_ASSIGNMENT_MESSAGE_OPEN_KEY = 'aliveline:panel-next-assignment-message-open'
-const LS_ASSIGNMENT_HISTORY_KEY = 'aliveline:assignment-history'
 const LS_DAILY_CLEAR_KEY = 'aliveline:daily-clear'
 const LS_REMINDER_NOTIFIED_KEY = 'aliveline:reminder-notified'
 const LS_REMINDER_REQUESTED_KEY = 'aliveline:reminder-requested'
@@ -267,30 +260,6 @@ function replaceTopLevelAssignment(
   return [nextAssignment, ...existingAssignments]
 }
 
-function toHistoryAssignments(root: DraftAssignment) {
-  const childAssignments = root.children.map((child) =>
-    buildAssignment({
-      id: child.id,
-      title: child.title,
-      owner: child.owner,
-      deadlineIso: child.deadlineIso,
-      estimateMinutes: child.estimateMinutes,
-      comments: child.comments,
-      relations: [],
-    })
-  )
-  const historyRoot = buildAssignment({
-    id: root.id,
-    title: root.title,
-    owner: root.owner,
-    deadlineIso: root.deadlineIso,
-    workMinutes: root.workMinutes,
-    comments: root.comments,
-    relations: childAssignments.map((child) => ({ assignmentId: child.id, type: 'extends' })),
-  })
-  return [historyRoot, ...childAssignments]
-}
-
 function readStoredStringList(key: string) {
   const saved = localStorage.getItem(key)
   if (!saved) return [] as string[]
@@ -309,32 +278,15 @@ function readStoredBool(key: string, fallback: boolean) {
   return saved === 'true'
 }
 
-function readStoredAssignmentHistory() {
-  const saved = localStorage.getItem(LS_ASSIGNMENT_HISTORY_KEY)
-  if (!saved) return [] as AssignmentHistoryEntry[]
-  try {
-    const parsed = JSON.parse(saved) as AssignmentHistoryEntry[]
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter((item) => {
-      if (!item || typeof item !== 'object') return false
-      if (typeof item.createdAtIso !== 'string') return false
-      if (typeof item.deadlineIso !== 'string') return false
-      if (typeof item.rootAssignmentId !== 'string') return false
-      if (!Array.isArray(item.assignments)) return false
-      if (!Number.isFinite(item.totalMinutes)) return false
-      return true
-    })
-  } catch {
-    return []
+function readLatestTaskAssignment(tasks: TaskEntry[], taskFinishTimes: Date[]) {
+  for (let i = tasks.length - 1; i >= 0; i -= 1) {
+    const title = tasks[i]?.text?.trim()
+    const deadline = taskFinishTimes[i]
+    if (!title) continue
+    if (!deadline || Number.isNaN(deadline.getTime())) continue
+    return { title, deadline }
   }
-}
-
-function readHistoryRootAssignment(entry: AssignmentHistoryEntry) {
-  const root = entry.assignments.find((assignment) => assignment.id === entry.rootAssignmentId)
-  if (!root) return null
-  const deadline = new Date(entry.deadlineIso)
-  if (Number.isNaN(deadline.getTime())) return null
-  return { title: root.title.trim(), deadline }
+  return null
 }
 
 function downloadTextFile(fileName: string, content: string, contentType: string) {
@@ -409,9 +361,6 @@ export default function App({
   const [isCommentsFormOpen, setIsCommentsFormOpen] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [comments, setComments] = useState<string[]>(() => storedDraft?.comments ?? [])
-  const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryEntry[]>(() =>
-    readStoredAssignmentHistory()
-  )
   const [historyMonth, setHistoryMonth] = useState(() =>
     `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`
   )
@@ -571,64 +520,17 @@ export default function App({
     taskFinishTimes,
     workMinutes,
   ])
-  const selectedHistoryMonth = useMemo(() => {
-    const match = /^(\d{4})-(\d{2})$/.exec(historyMonth)
-    if (!match) return null
-    const year = Number(match[1])
-    const month = Number(match[2])
-    if (!Number.isInteger(year) || !Number.isInteger(month)) return null
-    if (month < 1 || month > 12) return null
-    return { year, month }
-  }, [historyMonth])
-  const monthlyAssignmentHistory = useMemo(() => {
-    if (!selectedHistoryMonth) return assignmentHistory
-    return filterAssignmentHistoryEntriesByMonth(
-      assignmentHistory,
-      selectedHistoryMonth.year,
-      selectedHistoryMonth.month
-    )
-  }, [assignmentHistory, selectedHistoryMonth])
-  const currentDraftExportEntry = useMemo(() => {
-    if (storedDraft?.assignments.length) {
-      const root =
-        storedDraft.assignments.find((assignment) => assignment.id === selectedAssignmentId) ??
-        storedDraft.assignments[0]
-      if (root) {
-        const assignments = toHistoryAssignments(root)
-        const totalMinutes = assignments.reduce((sum, assignment) => sum + (assignment.estimateMinutes ?? 0), 0)
-        return {
-          createdAtIso: new Date().toISOString(),
-          deadlineIso: root.deadlineIso,
-          confirmedBy: root.owner ?? assignmentOwner,
-          nextAssignment: '',
-          nextAssignmentConfirmedBy: '',
-          scheduleView: 'adjusted',
-          rootAssignmentId: root.id,
-          assignments,
-          totalMinutes,
-        } satisfies AssignmentHistoryEntry
-      }
-    }
-
-    const assignment = deadlineExtensionAssignment.trim()
-    const tasksForExport = adjustedTasks.filter(
-      (task) => task.text.trim().length > 0 && Number.isFinite(task.minutes) && task.minutes > 0
-    )
-    return buildAssignmentHistoryEntry({
-      assignment: assignment || 'Assignment',
-      deadline,
-      confirmedBy: assignmentOwner,
-      scheduleView: 'adjusted',
-      tasks: tasksForExport,
-    })
-  }, [adjustedTasks, assignmentOwner, deadline, deadlineExtensionAssignment, selectedAssignmentId, storedDraft])
-  const exportAssignmentHistoryEntries = useMemo(() => {
-    if (monthlyAssignmentHistory.length > 0) return monthlyAssignmentHistory
-    return [currentDraftExportEntry]
-  }, [currentDraftExportEntry, monthlyAssignmentHistory])
+  const exportAssignments = useMemo(() => storedDraft?.assignments ?? [], [storedDraft])
   const exportHistoryMinutes = useMemo(
-    () => sumAssignmentHistoryEntryMinutes(exportAssignmentHistoryEntries),
-    [exportAssignmentHistoryEntries]
+    () =>
+      exportAssignments.reduce(
+        (sum, assignment) =>
+          sum +
+          (assignment.estimateMinutes ?? 0) +
+          assignment.children.reduce((childSum, child) => childSum + (child.estimateMinutes ?? 0), 0),
+        0
+      ),
+    [exportAssignments]
   )
 
   useEffect(() => {
@@ -715,10 +617,6 @@ export default function App({
       String(isNextAssignmentPanelOpen)
     )
   }, [isNextAssignmentPanelOpen])
-
-  useEffect(() => {
-    localStorage.setItem(LS_ASSIGNMENT_HISTORY_KEY, JSON.stringify(assignmentHistory))
-  }, [assignmentHistory])
 
   const updateDeadline = (
     nextDeadline: Date,
@@ -849,8 +747,7 @@ export default function App({
     setDeadlineExtensionCopyState('idle')
   }, [deadlineExtensionMessage])
 
-  const previousAssignment =
-    assignmentHistory.length > 0 ? readHistoryRootAssignment(assignmentHistory[0]) : null
+  const previousAssignment = readLatestTaskAssignment(tasks, adjustedTaskFinishTimes)
 
   const nextAssignmentMessage = useMemo(() => {
     if (!previousAssignment) return ''
@@ -872,7 +769,7 @@ export default function App({
   ])
 
   const nextAssignmentMessageHint = useMemo(() => {
-    if (!previousAssignment) return 'Add a previous assignment history entry to generate this message.'
+    if (!previousAssignment) return 'Add an affecting deadline first to generate this message.'
     if (!deadlineExtensionAssignment.trim() || !assignmentOwner.trim()) {
       return 'Set assignment title and owner to generate the message.'
     }
@@ -888,16 +785,6 @@ export default function App({
     if (!deadlineExtensionMessage) return
     try {
       await navigator.clipboard.writeText(deadlineExtensionMessage)
-      const next = buildAssignmentHistoryEntry({
-        assignment: deadlineMessageInput.assignmentTitle,
-        deadline: new Date(deadlineMessageInput.deadlineIso),
-        confirmedBy: assignmentOwner,
-        nextAssignment: '',
-        nextAssignmentConfirmedBy: '',
-        scheduleView: 'adjusted',
-        tasks: deadlineMessageInput.tasks,
-      })
-      setAssignmentHistory((prev) => [next, ...prev])
       setDeadlineExtensionCopyState('copied')
     } catch {
       setDeadlineExtensionCopyState('failed')
@@ -974,9 +861,7 @@ export default function App({
 
   const onExportAssignmentHistoryJson = () => {
     const rawDraft = localStorage.getItem(LS_ASSIGNMENT_DRAFT_KEY)
-    const exportMonth = selectedHistoryMonth
-      ? `${selectedHistoryMonth.year}-${pad2(selectedHistoryMonth.month)}`
-      : 'all'
+    const exportMonth = historyMonth.trim() || 'all'
     let content = JSON.stringify({ assignments: [], exportMonth }, null, 2)
     if (rawDraft) {
       try {
@@ -987,9 +872,7 @@ export default function App({
         content = JSON.stringify({ assignments: [], exportMonth }, null, 2)
       }
     }
-    const suffix = selectedHistoryMonth
-      ? `${selectedHistoryMonth.year}-${pad2(selectedHistoryMonth.month)}`
-      : 'all'
+    const suffix = exportMonth
     downloadTextFile(`assignment-history-${suffix}.json`, content, 'application/json;charset=utf-8')
   }
 
@@ -1083,7 +966,7 @@ export default function App({
               />
             </div>
             <div className="historyExportMeta metaTextMutedSm">
-              {exportAssignmentHistoryEntries.length} assignments, {(exportHistoryMinutes / 60).toFixed(2)} hours
+              {exportAssignments.length} assignments, {(exportHistoryMinutes / 60).toFixed(2)} hours
             </div>
             <div className="historyExportActions">
               <button onClick={onExportAssignmentHistoryJson} className="btn-primary">
