@@ -369,6 +369,7 @@ export default function App({
 }: AppProps = {}) {
   const deadlineRef = useRef<PickerInput | null>(null)
   const durationStartRef = useRef<PickerInput | null>(null)
+  const importDraftInputRef = useRef<HTMLInputElement | null>(null)
   const fallbackAssignmentIdRef = useRef(`assignment-${Date.now()}`)
   const storedDraft = useMemo(
     () => readStoredAssignmentDraft(selectedAssignmentId),
@@ -405,6 +406,7 @@ export default function App({
   const [nextAssignmentCopyState, setNextAssignmentCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle')
+  const [importDraftState, setImportDraftState] = useState<'idle' | 'imported' | 'failed'>('idle')
   const [isAssignmentHistoryPanelOpen, setIsAssignmentHistoryPanelOpen] = useState(() =>
     readStoredBool(LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY, false)
   )
@@ -992,6 +994,60 @@ export default function App({
     downloadTextFile(`assignment-history-${suffix}.json`, content, 'application/json;charset=utf-8')
   }
 
+  const onClickImportAssignmentDraft = () => {
+    importDraftInputRef.current?.click()
+  }
+
+  const onImportAssignmentDraft = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = event.target.files?.[0]
+    event.target.value = ''
+    if (!picked) return
+
+    try {
+      const raw = await picked.text()
+      const parsed = JSON.parse(raw) as { assignments?: unknown }
+      if (!Array.isArray(parsed.assignments)) {
+        setImportDraftState('failed')
+        return
+      }
+      const normalizedAssignments = parsed.assignments
+        .map((item) => normalizeDraftAssignment(item))
+        .filter((item): item is DraftAssignment => Boolean(item))
+      const importedDraft: StoredAssignmentDraftV2 = { assignments: normalizedAssignments }
+      localStorage.setItem(LS_ASSIGNMENT_DRAFT_KEY, JSON.stringify(importedDraft))
+
+      const importedState =
+        normalizedAssignments.length > 0 ? readStoredAssignmentDraft(selectedAssignmentId) : null
+      if (importedState) {
+        const importedDeadline = new Date(importedState.deadlineIso)
+        if (!Number.isNaN(importedDeadline.getTime())) {
+          setDeadline(importedDeadline)
+          setDirectDeadlineInput(toDatetimeLocalValue(importedDeadline))
+          setDurationStartInput(toDatetimeLocalValue(importedDeadline))
+        }
+        setDeadlineExtensionAssignment(importedState.assignmentTitle)
+        setAssignmentOwner(importedState.owner)
+        setWorkMinutes(importedState.workMinutes)
+        setTasks(importedState.tasks)
+        setComments(importedState.comments)
+      } else {
+        setDeadlineExtensionAssignment('')
+        setAssignmentOwner('')
+        setWorkMinutes(undefined)
+        setTasks([])
+        setComments([])
+      }
+      setChangeBaseDeadline(null)
+      setTaskFinishBase(null)
+      setTaskName('')
+      setTaskHours('')
+      setTaskMinutes('')
+      setImportDraftState('imported')
+    } catch {
+      setImportDraftState('failed')
+    }
+  }
+
   const addComment = () => {
     const nextComment = commentText.trim()
     if (!nextComment) return
@@ -1034,7 +1090,28 @@ export default function App({
               <button onClick={onExportAssignmentHistoryJson} className="btn-primary">
                 <i className="las la-file-code" aria-hidden="true"></i> Export JSON
               </button>
+              <button onClick={onClickImportAssignmentDraft} className="btn-secondary">
+                <i className="las la-file-import" aria-hidden="true"></i> Import JSON
+              </button>
+              <input
+                ref={importDraftInputRef}
+                type="file"
+                accept="application/json,.json"
+                onChange={onImportAssignmentDraft}
+                aria-label="Import assignment draft JSON"
+                style={{ display: 'none' }}
+              />
             </div>
+            {importDraftState === 'imported' && (
+              <div className="copyStatus" aria-label="Import assignment draft status">
+                Imported.
+              </div>
+            )}
+            {importDraftState === 'failed' && (
+              <div className="copyStatus" aria-label="Import assignment draft status">
+                Import failed.
+              </div>
+            )}
           </div>
         </fieldset>
       </AccordionItem>

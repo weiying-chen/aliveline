@@ -434,6 +434,7 @@ describe('App deadline behavior', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
     expect(screen.queryByRole('button', { name: /export csv/i })).toBeNull()
     expect(screen.getByRole('button', { name: /export json/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /import json/i })).toBeTruthy()
   })
 
   it('exports raw assignment draft from local storage as-is', async () => {
@@ -486,6 +487,47 @@ describe('App deadline behavior', () => {
       assignments: draft.assignments,
       exportMonth: `${new Date().getFullYear()}-${`${new Date().getMonth() + 1}`.padStart(2, '0')}`,
     })
+  })
+
+  it('imports assignment draft JSON and refreshes assignment state', async () => {
+    renderApp()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
+    const importInput = screen.getByLabelText('Import assignment draft JSON') as HTMLInputElement
+    const imported = {
+      assignments: [
+        {
+          id: 'imported-assignment',
+          title: 'Imported assignment',
+          deadlineIso: '2026-04-10T12:00:00.000Z',
+          comments: [],
+          children: [
+            {
+              id: 'imported-task-0',
+              title: 'Imported task',
+              deadlineIso: '2026-04-10T12:00:00.000Z',
+              comments: [],
+              estimateMinutes: 50,
+              children: [],
+            },
+          ],
+        },
+      ],
+    }
+
+    const file = new File([JSON.stringify(imported)], 'assignment-draft.json', {
+      type: 'application/json',
+    })
+    fireEvent.change(importInput, { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Assignment title') as HTMLInputElement).value).toBe(
+        'Imported assignment'
+      )
+    })
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
+    expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('40m')
+    expect(screen.getByLabelText('Import assignment draft status').textContent).toBe('Imported.')
   })
 
   it('uses shared muted meta text style for counting and history summary', () => {
