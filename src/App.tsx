@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom'
 import { AccordionItem } from './components/Accordion'
 import { AssignmentRow } from './components/AssignmentRow'
 import { DateTimeInput, snapToWorkTime } from './components/DateTimeInput'
-import { HoursMinutesInput } from './components/HoursMinutesInput'
+import { TimePartsInput } from './components/TimePartsInput'
+import { CompactTimePartsInput } from './components/CompactTimePartsInput'
 import { buildAssignment } from './utils/assignmentModel'
 import { formatDeadlineExtensionMessage, formatDuration, type AssignmentEntry } from './utils/deadlineHistory'
 import { formatNextAssignmentMessage } from './utils/nextAssignmentMessage'
@@ -316,6 +317,10 @@ function readStoredStringList(key: string) {
   }
 }
 
+function isNonNegativeInteger(value: string) {
+  return /^\d+$/.test(value)
+}
+
 function readStoredBool(key: string, fallback: boolean) {
   const saved = localStorage.getItem(key)
   if (saved === null) return fallback
@@ -398,6 +403,16 @@ export default function App({
   const [contentSeconds, setContentSeconds] = useState<number | undefined>(
     () => storedAssignmentsState?.contentSeconds
   )
+  const contentLengthMinutesInput = useMemo(() => {
+    if (typeof contentSeconds === 'number') return String(Math.floor(contentSeconds / 60))
+    if (typeof contentMinutes === 'number') return String(contentMinutes)
+    return ''
+  }, [contentMinutes, contentSeconds])
+  const contentLengthSecondsInput = useMemo(() => {
+    if (typeof contentSeconds === 'number') return String(contentSeconds % 60)
+    if (typeof contentMinutes === 'number') return '0'
+    return ''
+  }, [contentMinutes, contentSeconds])
   const [deadlineExtensionCopyState, setDeadlineExtensionCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle')
@@ -922,6 +937,31 @@ export default function App({
     setAssignmentMinutes(nextMinutes)
   }
 
+  const onContentLengthChange = (nextMinutesText: string, nextSecondsText: string) => {
+    const trimmedMinutes = nextMinutesText.trim()
+    const trimmedSeconds = nextSecondsText.trim()
+    if (!trimmedMinutes && !trimmedSeconds) {
+      setContentMinutes(undefined)
+      setContentSeconds(undefined)
+      return
+    }
+
+    if ((trimmedMinutes && !isNonNegativeInteger(trimmedMinutes)) || (trimmedSeconds && !isNonNegativeInteger(trimmedSeconds))) {
+      return
+    }
+    if (trimmedMinutes.length > 2) return
+    if (trimmedSeconds.length > 2) return
+
+    const minutes = trimmedMinutes ? Number(trimmedMinutes) : 0
+    const secondsRaw = trimmedSeconds ? Number(trimmedSeconds) : 0
+    const seconds = Math.min(59, secondsRaw)
+    if (minutes < 0 || seconds < 0) return
+
+    const totalSeconds = minutes * 60 + seconds
+    setContentSeconds(totalSeconds)
+    setContentMinutes(Math.round(totalSeconds / 60))
+  }
+
   const onExportAssignmentHistoryJson = () => {
     const rawAssignmentsState = localStorage.getItem(LS_ASSIGNMENTS_KEY)
     const exportMonth = historyMonth.trim() || 'all'
@@ -1117,32 +1157,22 @@ export default function App({
                   />
                 </div>
                 <div className="assignmentOverviewOwnerField">
-                  <label className="label" htmlFor="assignment-content-minutes">
-                    Content length (min)
+                  <label className="label">
+                    Content length (mm:ss)
                   </label>
-                  <input
-                    id="assignment-content-minutes"
-                    type="number"
-                    min={0}
-                    step={1}
-                    className="assignmentOverviewOwnerInput"
-                    value={typeof contentMinutes === 'number' ? String(contentMinutes) : ''}
-                    onChange={(e) => {
-                      const nextValue = e.target.value.trim()
-                      if (!nextValue) {
-                        setContentMinutes(undefined)
-                        setContentSeconds(undefined)
-                        return
-                      }
-                      const parsed = Number(nextValue)
-                      if (!Number.isFinite(parsed) || parsed < 0) return
-                      const roundedMinutes = Math.round(parsed)
-                      setContentMinutes(roundedMinutes)
-                      setContentSeconds(roundedMinutes * 60)
-                    }}
-                    placeholder="0"
-                    aria-label="Content length (min)"
-                  />
+                  <div>
+                    <CompactTimePartsInput
+                      leftText={contentLengthMinutesInput}
+                      rightText={contentLengthSecondsInput}
+                      onChange={onContentLengthChange}
+                      leftAriaLabel="Content length minutes"
+                      rightAriaLabel="Content length seconds"
+                      leftPlaceholder="MM"
+                      rightPlaceholder="SS"
+                      leftInputClassName="assignmentOverviewOwnerInput"
+                      rightInputClassName="assignmentOverviewOwnerInput"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1209,19 +1239,19 @@ export default function App({
                     onChange={(value) => onDurationStartInputChange(value)}
                     ariaLabel="Deadline start time"
                   />
-                  <HoursMinutesInput
-                    hoursText={durationHoursInput}
-                    minutesText={durationMinutesInput}
+                  <TimePartsInput
+                    leftText={durationHoursInput}
+                    rightText={durationMinutesInput}
                     onChange={onDurationTimeChange}
-                    hoursAriaLabel="Deadline duration hours"
-                    minutesAriaLabel="Deadline duration minutes"
+                    leftAriaLabel="Deadline duration hours"
+                    rightAriaLabel="Deadline duration minutes"
                     showLabels={false}
-                    hoursInputClassName="deadlineDurationInput"
-                    minutesInputClassName="deadlineDurationInput"
-                    increaseHoursLabel="Increase deadline duration hours by 1"
-                    decreaseHoursLabel="Decrease deadline duration hours by 1"
-                    increaseMinutesLabel="Increase deadline duration minutes by 10"
-                    decreaseMinutesLabel="Decrease deadline duration minutes by 10"
+                    leftInputClassName="deadlineDurationInput"
+                    rightInputClassName="deadlineDurationInput"
+                    increaseLeftLabel="Increase deadline duration hours by 1"
+                    decreaseLeftLabel="Decrease deadline duration hours by 1"
+                    increaseRightLabel="Increase deadline duration minutes by 10"
+                    decreaseRightLabel="Decrease deadline duration minutes by 10"
                   />
                 </div>
               )}
@@ -1343,18 +1373,18 @@ export default function App({
                       )}
                     </div>
                   </div>
-                  <HoursMinutesInput
-                    hoursText={assignmentHours}
-                    minutesText={assignmentMinutes}
+                  <TimePartsInput
+                    leftText={assignmentHours}
+                    rightText={assignmentMinutes}
                     onChange={onAssignmentTimeChange}
-                    hoursInputId="assignment-hours"
-                    minutesInputId="assignment-minutes"
-                    hoursAriaLabel="Hours"
-                    minutesAriaLabel="Minutes"
-                    increaseHoursLabel="Increase hours by 1"
-                    decreaseHoursLabel="Decrease hours by 1"
-                    increaseMinutesLabel="Increase minutes by 10"
-                    decreaseMinutesLabel="Decrease minutes by 10"
+                    leftInputId="assignment-hours"
+                    rightInputId="assignment-minutes"
+                    leftAriaLabel="Hours"
+                    rightAriaLabel="Minutes"
+                    increaseLeftLabel="Increase hours by 1"
+                    decreaseLeftLabel="Decrease hours by 1"
+                    increaseRightLabel="Increase minutes by 10"
+                    decreaseRightLabel="Decrease minutes by 10"
                   />
                   <div className="fieldGroup">
                     <span className="fieldLabel fieldLabelSpacer" aria-hidden="true">

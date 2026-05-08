@@ -508,7 +508,8 @@ describe('App deadline behavior', () => {
     })
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
     expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('40m')
-    expect((screen.getByLabelText('Content length (min)') as HTMLInputElement).value).toBe('18')
+    expect((screen.getByLabelText('Content length minutes') as HTMLInputElement).value).toBe('18')
+    expect((screen.getByLabelText('Content length seconds') as HTMLInputElement).value).toBe('0')
     expect(screen.getByLabelText('Import assignment status').textContent).toBe('Imported.')
   })
 
@@ -536,8 +537,9 @@ describe('App deadline behavior', () => {
     fireEvent.change(importInput, { target: { files: [file] } })
 
     await waitFor(() => {
-      expect((screen.getByLabelText('Content length (min)') as HTMLInputElement).value).toBe('4')
+      expect((screen.getByLabelText('Content length minutes') as HTMLInputElement).value).toBe('3')
     })
+    expect((screen.getByLabelText('Content length seconds') as HTMLInputElement).value).toBe('30')
   })
 
   it('uses shared muted meta text style for counting and history summary', () => {
@@ -717,8 +719,11 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Owner'), {
       target: { value: 'Alice' },
     })
-    fireEvent.change(screen.getByLabelText('Content length (min)'), {
+    fireEvent.change(screen.getByLabelText('Content length minutes'), {
       target: { value: '23' },
+    })
+    fireEvent.change(screen.getByLabelText('Content length seconds'), {
+      target: { value: '30' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Toggle comment form' }))
     fireEvent.change(screen.getByLabelText('Comment'), {
@@ -735,8 +740,8 @@ describe('App deadline behavior', () => {
     const edited = state.assignments.find((item: { id: string }) => item.id === 'assignment-a')
     expect(edited.title).toBe('Edited child assignment')
     expect(edited.owner).toBe('Alice')
-    expect(edited.contentMinutes).toBe(23)
-    expect(edited.contentSeconds).toBe(1380)
+    expect(edited.contentMinutes).toBe(24)
+    expect(edited.contentSeconds).toBe(1410)
     expect(Array.isArray(edited.children)).toBe(true)
     expect(edited.children).toHaveLength(1)
     expect(edited.comments).toEqual(['Use simpler wording in paragraph 2'])

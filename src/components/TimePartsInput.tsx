@@ -1,61 +1,61 @@
 import { applyMinutesDeltaWithCarry, normalizeAssignmentTimeParts, stepHoursText } from '../utils/assignmentTime'
 
-type HoursMinutesInputProps = {
-  hoursText: string
-  minutesText: string
-  onChange: (nextHoursText: string, nextMinutesText: string) => void
-  hoursAriaLabel: string
-  minutesAriaLabel: string
-  hoursPlaceholder?: string
-  minutesPlaceholder?: string
-  hoursInputId?: string
-  minutesInputId?: string
+type TimePartsInputProps = {
+  leftText: string
+  rightText: string
+  onChange: (nextLeftText: string, nextRightText: string) => void
+  leftAriaLabel: string
+  rightAriaLabel: string
+  leftPlaceholder?: string
+  rightPlaceholder?: string
+  leftInputId?: string
+  rightInputId?: string
   showLabels?: boolean
-  hoursLabel?: string
-  minutesLabel?: string
-  hoursInputClassName?: string
-  minutesInputClassName?: string
-  increaseHoursLabel: string
-  decreaseHoursLabel: string
-  increaseMinutesLabel: string
-  decreaseMinutesLabel: string
+  leftLabel?: string
+  rightLabel?: string
+  leftInputClassName?: string
+  rightInputClassName?: string
+  increaseLeftLabel: string
+  decreaseLeftLabel: string
+  increaseRightLabel: string
+  decreaseRightLabel: string
 }
 
-export function HoursMinutesInput({
-  hoursText,
-  minutesText,
+export function TimePartsInput({
+  leftText,
+  rightText,
   onChange,
-  hoursAriaLabel,
-  minutesAriaLabel,
-  hoursPlaceholder = 'Hours',
-  minutesPlaceholder = 'Minutes',
-  hoursInputId,
-  minutesInputId,
+  leftAriaLabel,
+  rightAriaLabel,
+  leftPlaceholder = 'Hours',
+  rightPlaceholder = 'Minutes',
+  leftInputId,
+  rightInputId,
   showLabels = true,
-  hoursLabel = 'Hours',
-  minutesLabel = 'Minutes',
-  hoursInputClassName,
-  minutesInputClassName,
-  increaseHoursLabel,
-  decreaseHoursLabel,
-  increaseMinutesLabel,
-  decreaseMinutesLabel,
-}: HoursMinutesInputProps) {
+  leftLabel = 'Hours',
+  rightLabel = 'Minutes',
+  leftInputClassName,
+  rightInputClassName,
+  increaseLeftLabel,
+  decreaseLeftLabel,
+  increaseRightLabel,
+  decreaseRightLabel,
+}: TimePartsInputProps) {
   const onHoursChange = (value: string) => {
-    onChange(value, minutesText)
+    onChange(value, rightText)
   }
 
   const onMinutesChange = (value: string) => {
-    const normalized = normalizeAssignmentTimeParts(hoursText, value)
+    const normalized = normalizeAssignmentTimeParts(leftText, value)
     onChange(normalized.hoursText, normalized.minutesText)
   }
 
   const onStepHours = (delta: number) => {
-    onChange(stepHoursText(hoursText, delta), minutesText)
+    onChange(stepHoursText(leftText, delta), rightText)
   }
 
   const onStepMinutes = (delta: number) => {
-    const normalized = applyMinutesDeltaWithCarry(hoursText, minutesText, delta)
+    const normalized = applyMinutesDeltaWithCarry(leftText, rightText, delta)
     onChange(normalized.hoursText, normalized.minutesText)
   }
 
@@ -63,18 +63,18 @@ export function HoursMinutesInput({
     <>
       <div className="fieldGroup">
         {showLabels && (
-          <label className="fieldLabel" htmlFor={hoursInputId}>
-            {hoursLabel}
+          <label className="fieldLabel" htmlFor={leftInputId}>
+            {leftLabel}
           </label>
         )}
         <div className="assignmentHoursInputWrap">
           <input
-            id={hoursInputId}
-            className={hoursInputClassName}
+            id={leftInputId}
+            className={leftInputClassName}
             type="number"
             min="0"
             step="1"
-            value={hoursText}
+            value={leftText}
             onChange={(e) => onHoursChange(e.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'ArrowUp') {
@@ -88,8 +88,8 @@ export function HoursMinutesInput({
                 onStepHours(-1)
               }
             }}
-            placeholder={hoursPlaceholder}
-            aria-label={hoursAriaLabel}
+            placeholder={leftPlaceholder}
+            aria-label={leftAriaLabel}
           />
           <div className="assignmentHoursStepButtons">
             <button
@@ -98,7 +98,7 @@ export function HoursMinutesInput({
               data-dir="up"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => onStepHours(1)}
-              aria-label={increaseHoursLabel}
+              aria-label={increaseLeftLabel}
             />
             <button
               type="button"
@@ -106,25 +106,25 @@ export function HoursMinutesInput({
               data-dir="down"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => onStepHours(-1)}
-              aria-label={decreaseHoursLabel}
+              aria-label={decreaseLeftLabel}
             />
           </div>
         </div>
       </div>
       <div className="fieldGroup">
         {showLabels && (
-          <label className="fieldLabel" htmlFor={minutesInputId}>
-            {minutesLabel}
+          <label className="fieldLabel" htmlFor={rightInputId}>
+            {rightLabel}
           </label>
         )}
         <div className="assignmentMinutesInputWrap">
           <input
-            id={minutesInputId}
-            className={minutesInputClassName}
+            id={rightInputId}
+            className={rightInputClassName}
             type="number"
             min="-60"
             step="1"
-            value={minutesText}
+            value={rightText}
             onChange={(e) => onMinutesChange(e.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'ArrowUp') {
@@ -138,8 +138,8 @@ export function HoursMinutesInput({
                 onStepMinutes(-10)
               }
             }}
-            placeholder={minutesPlaceholder}
-            aria-label={minutesAriaLabel}
+            placeholder={rightPlaceholder}
+            aria-label={rightAriaLabel}
           />
           <div className="assignmentMinutesStepButtons">
             <button
@@ -148,7 +148,7 @@ export function HoursMinutesInput({
               data-dir="up"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => onStepMinutes(10)}
-              aria-label={increaseMinutesLabel}
+              aria-label={increaseRightLabel}
             />
             <button
               type="button"
@@ -156,7 +156,7 @@ export function HoursMinutesInput({
               data-dir="down"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => onStepMinutes(-10)}
-              aria-label={decreaseMinutesLabel}
+              aria-label={decreaseRightLabel}
             />
           </div>
         </div>
