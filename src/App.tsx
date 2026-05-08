@@ -250,6 +250,22 @@ function readStoredAssignmentsState(selectedAssignmentId?: string) {
   }
 }
 
+function readPreviousAssignmentFinalDeadline(
+  assignments: StoredAssignment[],
+  selectedAssignmentId?: string
+) {
+  if (assignments.length === 0) return null
+  const selectedIndex = selectedAssignmentId
+    ? assignments.findIndex((assignment) => assignment.id === selectedAssignmentId)
+    : 0
+  const currentIndex = selectedIndex >= 0 ? selectedIndex : 0
+  const previousAssignment = assignments[currentIndex + 1]
+  if (!previousAssignment) return null
+  const previousDeadline = new Date(previousAssignment.deadline)
+  if (Number.isNaN(previousDeadline.getTime())) return null
+  return previousDeadline
+}
+
 function buildStoredAssignments(
   assignmentId: string,
   createdAt: string,
@@ -599,6 +615,22 @@ export default function App({
     contentSeconds,
   ])
   const exportAssignments = useMemo(() => storedAssignmentsState?.assignments ?? [], [storedAssignmentsState])
+  const previousAssignmentFinalDeadline = useMemo(
+    () => readPreviousAssignmentFinalDeadline(exportAssignments, selectedAssignmentId),
+    [exportAssignments, selectedAssignmentId]
+  )
+  const plannedWorkMinutes = useMemo(
+    () => deadlineWorkMinutes(previousAssignmentFinalDeadline ?? now, deadline),
+    [deadline, now, previousAssignmentFinalDeadline]
+  )
+  const plannedWorkHoursText = useMemo(
+    () => String(Math.floor((workMinutes ?? plannedWorkMinutes) / 60)),
+    [plannedWorkMinutes, workMinutes]
+  )
+  const plannedWorkMinutesText = useMemo(
+    () => String((workMinutes ?? plannedWorkMinutes) % 60).padStart(2, '0'),
+    [plannedWorkMinutes, workMinutes]
+  )
   const exportHistoryMinutes = useMemo(
     () =>
       exportAssignments.reduce(
@@ -701,7 +733,8 @@ export default function App({
     options?: { relatedAssignments?: AssignmentEntry[]; resetAssignments?: boolean; captureWorkMinutes?: boolean }
   ) => {
     if (options?.captureWorkMinutes) {
-      setWorkMinutes(deadlineWorkMinutes(now, nextDeadline))
+      const start = previousAssignmentFinalDeadline ?? now
+      setWorkMinutes(deadlineWorkMinutes(start, nextDeadline))
     }
     const sameDeadline = nextDeadline.getTime() === deadline.getTime()
     if (sameDeadline && options?.resetAssignments) {
@@ -1171,6 +1204,24 @@ export default function App({
                       rightPlaceholder="SS"
                       leftInputClassName="assignmentOverviewOwnerInput"
                       rightInputClassName="assignmentOverviewOwnerInput"
+                    />
+                  </div>
+                </div>
+                <div className="assignmentOverviewOwnerField">
+                  <label className="label">
+                    Planned (work time)
+                  </label>
+                  <div aria-label="Planned work time display">
+                    <CompactTimePartsInput
+                      leftText={plannedWorkHoursText}
+                      rightText={plannedWorkMinutesText}
+                      leftAriaLabel="Planned work hours"
+                      rightAriaLabel="Planned work minutes"
+                      leftPlaceholder="HH"
+                      rightPlaceholder="MM"
+                      leftInputClassName="assignmentOverviewOwnerInput"
+                      rightInputClassName="assignmentOverviewOwnerInput"
+                      readOnly={true}
                     />
                   </div>
                 </div>

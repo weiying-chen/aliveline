@@ -3,13 +3,14 @@ import { applyMinutesDeltaWithCarry, normalizeAssignmentTimeParts, stepHoursText
 type CompactTimePartsInputProps = {
   leftText: string
   rightText: string
-  onChange: (nextLeftText: string, nextRightText: string) => void
+  onChange?: (nextLeftText: string, nextRightText: string) => void
   leftAriaLabel: string
   rightAriaLabel: string
   leftPlaceholder?: string
   rightPlaceholder?: string
   leftInputClassName?: string
   rightInputClassName?: string
+  readOnly?: boolean
 }
 
 export function CompactTimePartsInput({
@@ -22,10 +23,15 @@ export function CompactTimePartsInput({
   rightPlaceholder = 'SS',
   leftInputClassName,
   rightInputClassName,
+  readOnly = false,
 }: CompactTimePartsInputProps) {
-  const onLeftChange = (value: string) => onChange(value, rightText)
+  const onLeftChange = (value: string) => {
+    if (readOnly || !onChange) return
+    onChange(value, rightText)
+  }
 
   const onRightChange = (value: string) => {
+    if (readOnly || !onChange) return
     const normalized = normalizeAssignmentTimeParts(leftText, value)
     onChange(normalized.hoursText, normalized.minutesText)
   }
@@ -39,8 +45,10 @@ export function CompactTimePartsInput({
           min="0"
           step="1"
           value={leftText}
+          readOnly={readOnly}
           onChange={(e) => onLeftChange(e.target.value)}
           onKeyDown={(event) => {
+            if (readOnly || !onChange) return
             if (event.key === 'ArrowUp') {
               event.preventDefault()
               onChange(stepHoursText(leftText, 1), rightText)
@@ -63,8 +71,10 @@ export function CompactTimePartsInput({
           min="-60"
           step="1"
           value={rightText}
+          readOnly={readOnly}
           onChange={(e) => onRightChange(e.target.value)}
           onKeyDown={(event) => {
+            if (readOnly || !onChange) return
             if (event.key === 'ArrowUp') {
               event.preventDefault()
               const normalized = applyMinutesDeltaWithCarry(leftText, rightText, 10)

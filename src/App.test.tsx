@@ -686,6 +686,48 @@ describe('App deadline behavior', () => {
     expect(state.assignments[0]?.workMinutes).toBe(120)
   })
 
+  it('captures root workMinutes from previous assignment deadline to current deadline', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-15T12:00:00'))
+    localStorage.setItem(
+      'aliveline:assignments',
+      JSON.stringify({
+        assignments: [
+          {
+            id: 'assignment-current',
+            title: 'Current assignment',
+            deadline: '2026-04-15T10:00:00.000Z',
+            comments: [],
+            children: [],
+          },
+          {
+            id: 'assignment-previous',
+            title: 'Previous assignment',
+            deadline: '2026-04-15T00:00:00.000Z',
+            comments: [],
+            children: [],
+          },
+        ],
+      })
+    )
+
+    render(
+      <MemoryRouter>
+        <App selectedAssignmentId="assignment-current" showTopNav={false} />
+      </MemoryRouter>
+    )
+
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-15T14:00' },
+    })
+
+    const state = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
+    const current = state.assignments.find((item: { id: string }) => item.id === 'assignment-current')
+    expect(current.workMinutes).toBe(300)
+    expect((screen.getByLabelText('Planned work hours') as HTMLInputElement).value).toBe('5')
+    expect((screen.getByLabelText('Planned work minutes') as HTMLInputElement).value).toBe('00')
+  })
+
   it('persists selected assignment edits to assignment storage', () => {
     const now = new Date()
     const y = now.getFullYear()
