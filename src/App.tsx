@@ -425,8 +425,8 @@ export default function App({
     return ''
   }, [contentMinutes, contentSeconds])
   const contentLengthSecondsInput = useMemo(() => {
-    if (typeof contentSeconds === 'number') return String(contentSeconds % 60)
-    if (typeof contentMinutes === 'number') return '0'
+    if (typeof contentSeconds === 'number') return String(contentSeconds % 60).padStart(2, '0')
+    if (typeof contentMinutes === 'number') return '00'
     return ''
   }, [contentMinutes, contentSeconds])
   const [deadlineExtensionCopyState, setDeadlineExtensionCopyState] = useState<

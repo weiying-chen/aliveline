@@ -520,7 +520,7 @@ describe('App deadline behavior', () => {
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
     expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('40m')
     expect((screen.getByLabelText('Content length minutes') as HTMLInputElement).value).toBe('18')
-    expect((screen.getByLabelText('Content length seconds') as HTMLInputElement).value).toBe('0')
+    expect((screen.getByLabelText('Content length seconds') as HTMLInputElement).value).toBe('00')
     expect(screen.getByLabelText('Import assignment status').textContent).toBe('Imported.')
   })
 
