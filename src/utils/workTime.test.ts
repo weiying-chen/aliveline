@@ -143,6 +143,12 @@ describe('shouldShowEarlyFinishReminder', () => {
     expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(true)
   })
 
+  it('shows on Friday for a Monday deadline before 9:00', () => {
+    const now = atDate(2025, 0, 3, 8, 10) // Friday
+    const deadline = atDate(2025, 0, 6, 8, 9) // Monday
+    expect(shouldShowEarlyFinishReminder(now, deadline)).toBe(true)
+  })
+
   it('does not show on weekends', () => {
     const now = atDate(2025, 0, 4, 8, 10)
     const deadline = atDate(2025, 0, 4, 17, 0)

@@ -156,13 +156,15 @@ export function shouldShowEarlyFinishReminder(now: Date, deadline: Date) {
     return deadline.getTime() <= finishCutoff.getTime()
   }
 
-  const nextDay = new Date(dayStart)
-  nextDay.setDate(nextDay.getDate() + 1)
-  const isNextDayDeadline = nextDay.getTime() === deadlineDay.getTime()
-  if (!isNextDayDeadline) return false
+  const nextWorkday = new Date(dayStart)
+  do {
+    nextWorkday.setDate(nextWorkday.getDate() + 1)
+  } while (!isWorkday(nextWorkday))
+  const isNextWorkdayDeadline = nextWorkday.getTime() === deadlineDay.getTime()
+  if (!isNextWorkdayDeadline) return false
 
-  const nextDayReminderCutoff = atLocalTime(deadlineDay, { h: 9, m: 0 })
-  return deadline.getTime() < nextDayReminderCutoff.getTime()
+  const nextWorkdayReminderCutoff = atLocalTime(deadlineDay, { h: 9, m: 0 })
+  return deadline.getTime() < nextWorkdayReminderCutoff.getTime()
 }
 
 export function shouldShowDeadlineExtensionReminder(
