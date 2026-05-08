@@ -139,6 +139,17 @@ describe('App deadline behavior', () => {
     expect((screen.getByLabelText('Deadline time') as HTMLInputElement).value).toBe('2026-04-10T13:00')
   })
 
+  it('keeps planned work time at zero when unset', () => {
+    renderApp()
+
+    fireEvent.change(screen.getByLabelText('Deadline time'), {
+      target: { value: '2026-04-10T12:00' },
+    })
+
+    expect((screen.getByLabelText('Planned work hours') as HTMLInputElement).value).toBe('00')
+    expect((screen.getByLabelText('Planned work minutes') as HTMLInputElement).value).toBe('00')
+  })
+
   it('keeps assignment title when deadline changes', () => {
     renderApp()
 
@@ -724,7 +735,7 @@ describe('App deadline behavior', () => {
     const state = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
     const current = state.assignments.find((item: { id: string }) => item.id === 'assignment-current')
     expect(current.workMinutes).toBe(300)
-    expect((screen.getByLabelText('Planned work hours') as HTMLInputElement).value).toBe('5')
+    expect((screen.getByLabelText('Planned work hours') as HTMLInputElement).value).toBe('05')
     expect((screen.getByLabelText('Planned work minutes') as HTMLInputElement).value).toBe('00')
   })
 

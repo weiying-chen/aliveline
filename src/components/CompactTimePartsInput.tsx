@@ -41,7 +41,7 @@ export function CompactTimePartsInput({
       <div className="compactTimePartInputWrap" data-part="left">
         <input
           className={leftInputClassName}
-          type="number"
+          type={readOnly ? 'text' : 'number'}
           min="0"
           step="1"
           value={leftText}
@@ -67,7 +67,7 @@ export function CompactTimePartsInput({
       <div className="compactTimePartInputWrap" data-part="right">
         <input
           className={rightInputClassName}
-          type="number"
+          type={readOnly ? 'text' : 'number'}
           min="-60"
           step="1"
           value={rightText}
