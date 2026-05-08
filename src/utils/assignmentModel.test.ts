@@ -17,6 +17,7 @@ describe('buildAssignment', () => {
       deadline: '2026-05-01T10:00:00.000Z',
       workMinutes: 93.7,
       contentMinutes: 18.2,
+      contentSeconds: 1092.4,
       relations: [
         { assignmentId: 'a2', type: 'blocks' },
         { assignmentId: ' a2 ', type: 'blocks' },
@@ -34,6 +35,7 @@ describe('buildAssignment', () => {
       deadline: '2026-05-01T10:00:00.000Z',
       workMinutes: 94,
       contentMinutes: 18,
+      contentSeconds: 1092,
       relations: [
         { assignmentId: 'a2', type: 'blocks' },
         { assignmentId: 'a3', type: 'extends' },
@@ -52,8 +54,33 @@ describe('buildAssignment', () => {
     expect(assignment.relations).toEqual([])
     expect(assignment.workMinutes).toBeUndefined()
     expect(assignment.contentMinutes).toBeUndefined()
+    expect(assignment.contentSeconds).toBeUndefined()
     expect(assignment.comments).toEqual([])
     expect(assignment.owner).toBeUndefined()
+  })
+
+  it('derives contentSeconds from contentMinutes when seconds is missing', () => {
+    const assignment = buildAssignment({
+      id: 'a1',
+      title: 'Publish draft',
+      deadline: '2026-05-02T12:00:00.000Z',
+      contentMinutes: 3,
+    })
+
+    expect(assignment.contentMinutes).toBe(3)
+    expect(assignment.contentSeconds).toBe(180)
+  })
+
+  it('derives contentMinutes from contentSeconds when minutes is missing', () => {
+    const assignment = buildAssignment({
+      id: 'a1',
+      title: 'Publish draft',
+      deadline: '2026-05-02T12:00:00.000Z',
+      contentSeconds: 210,
+    })
+
+    expect(assignment.contentSeconds).toBe(210)
+    expect(assignment.contentMinutes).toBe(4)
   })
 })
 

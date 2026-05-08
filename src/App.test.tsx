@@ -512,6 +512,34 @@ describe('App deadline behavior', () => {
     expect(screen.getByLabelText('Import assignment draft status').textContent).toBe('Imported.')
   })
 
+  it('derives content minutes from imported content seconds when minutes is missing', async () => {
+    renderApp()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
+    const importInput = screen.getByLabelText('Import assignment draft JSON') as HTMLInputElement
+    const imported = {
+      assignments: [
+        {
+          id: 'imported-seconds-only',
+          title: 'Imported assignment',
+          deadline: '2026-04-10T12:00:00.000Z',
+          contentSeconds: 210,
+          comments: [],
+          children: [],
+        },
+      ],
+    }
+
+    const file = new File([JSON.stringify(imported)], 'assignment-draft-seconds.json', {
+      type: 'application/json',
+    })
+    fireEvent.change(importInput, { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('Content length (min)') as HTMLInputElement).value).toBe('4')
+    })
+  })
+
   it('uses shared muted meta text style for counting and history summary', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-15T06:00:00'))
@@ -708,6 +736,7 @@ describe('App deadline behavior', () => {
     expect(edited.title).toBe('Edited child assignment')
     expect(edited.owner).toBe('Alice')
     expect(edited.contentMinutes).toBe(23)
+    expect(edited.contentSeconds).toBe(1380)
     expect(Array.isArray(edited.children)).toBe(true)
     expect(edited.children).toHaveLength(1)
     expect(edited.comments).toEqual(['Use simpler wording in paragraph 2'])

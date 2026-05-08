@@ -131,6 +131,7 @@ type AssignmentDraftState = {
   owner: string
   workMinutes?: number
   contentMinutes?: number
+  contentSeconds?: number
   relatedAssignments: AssignmentEntry[]
   comments: string[]
 }
@@ -143,6 +144,7 @@ type DraftAssignment = {
   deadline: string
   workMinutes?: number
   contentMinutes?: number
+  contentSeconds?: number
   comments: string[]
   children: DraftAssignment[]
 }
@@ -170,6 +172,22 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
     typeof item.contentMinutes === 'number' && Number.isFinite(item.contentMinutes) && item.contentMinutes >= 0
       ? Math.round(item.contentMinutes)
       : undefined
+  const contentSeconds =
+    typeof item.contentSeconds === 'number' && Number.isFinite(item.contentSeconds) && item.contentSeconds >= 0
+      ? Math.round(item.contentSeconds)
+      : undefined
+  const resolvedContentSeconds =
+    typeof contentSeconds === 'number'
+      ? contentSeconds
+      : typeof contentMinutes === 'number'
+        ? contentMinutes * 60
+        : undefined
+  const resolvedContentMinutes =
+    typeof contentMinutes === 'number'
+      ? contentMinutes
+      : typeof resolvedContentSeconds === 'number'
+        ? Math.round(resolvedContentSeconds / 60)
+        : undefined
   const childrenInput = Array.isArray(item.children) ? item.children : []
   const children = childrenInput
     .map((child) => normalizeDraftAssignment(child))
@@ -181,7 +199,12 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
     ...(owner ? { owner } : {}),
     deadline: item.deadline,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
-    ...(typeof contentMinutes === 'number' ? { contentMinutes } : {}),
+    ...(typeof resolvedContentMinutes === 'number'
+      ? { contentMinutes: resolvedContentMinutes }
+      : {}),
+    ...(typeof resolvedContentSeconds === 'number'
+      ? { contentSeconds: resolvedContentSeconds }
+      : {}),
     comments,
     children,
   }
@@ -212,7 +235,12 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
       ...(typeof current.createdAt === 'string' ? { createdAt: current.createdAt } : {}),
       owner: current.owner ?? '',
       ...(typeof current.workMinutes === 'number' ? { workMinutes: current.workMinutes } : {}),
-      ...(typeof current.contentMinutes === 'number' ? { contentMinutes: current.contentMinutes } : {}),
+      ...(typeof current.contentMinutes === 'number'
+        ? { contentMinutes: current.contentMinutes }
+        : {}),
+      ...(typeof current.contentSeconds === 'number'
+        ? { contentSeconds: current.contentSeconds }
+        : {}),
       relatedAssignments: sanitizeAssignmentEntries(relatedAssignments),
       comments: current.comments ?? [],
     } as AssignmentDraftState
@@ -229,6 +257,7 @@ function buildDraftAssignments(
   owner: string,
   workMinutes: number | undefined,
   contentMinutes: number | undefined,
+  contentSeconds: number | undefined,
   relatedAssignments: AssignmentEntry[],
   assignmentFinishTimes: Date[],
   comments: string[]
@@ -251,6 +280,7 @@ function buildDraftAssignments(
     deadline: deadline.toISOString(),
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
     ...(typeof contentMinutes === 'number' ? { contentMinutes } : {}),
+    ...(typeof contentSeconds === 'number' ? { contentSeconds } : {}),
     comments,
   })) as DraftAssignment
   return {
@@ -359,7 +389,14 @@ export default function App({
   const [assignmentOwner, setAssignmentOwner] = useState(() => storedDraft?.owner ?? '')
   const [workMinutes, setWorkMinutes] = useState<number | undefined>(() => storedDraft?.workMinutes)
   const [contentMinutes, setContentMinutes] = useState<number | undefined>(
-    () => storedDraft?.contentMinutes
+    () =>
+      storedDraft?.contentMinutes ??
+      (typeof storedDraft?.contentSeconds === 'number'
+        ? Math.round(storedDraft.contentSeconds / 60)
+        : undefined)
+  )
+  const [contentSeconds, setContentSeconds] = useState<number | undefined>(
+    () => storedDraft?.contentSeconds
   )
   const [deadlineExtensionCopyState, setDeadlineExtensionCopyState] = useState<
     'idle' | 'copied' | 'failed'
@@ -516,6 +553,7 @@ export default function App({
       assignmentOwner,
       workMinutes,
       contentMinutes,
+      contentSeconds,
       relatedAssignments,
       assignmentFinishTimes,
       comments
@@ -543,6 +581,7 @@ export default function App({
     assignmentFinishTimes,
     workMinutes,
     contentMinutes,
+    contentSeconds,
   ])
   const exportAssignments = useMemo(() => storedDraft?.assignments ?? [], [storedDraft])
   const exportHistoryMinutes = useMemo(
@@ -934,7 +973,13 @@ export default function App({
         setDeadlineExtensionAssignment(importedState.assignmentTitle)
         setAssignmentOwner(importedState.owner)
         setWorkMinutes(importedState.workMinutes)
-        setContentMinutes(importedState.contentMinutes)
+        setContentMinutes(
+          importedState.contentMinutes ??
+            (typeof importedState.contentSeconds === 'number'
+              ? Math.round(importedState.contentSeconds / 60)
+              : undefined)
+        )
+        setContentSeconds(importedState.contentSeconds)
         setChildAssignments(importedState.relatedAssignments)
         setComments(importedState.comments)
       } else {
@@ -942,6 +987,7 @@ export default function App({
         setAssignmentOwner('')
         setWorkMinutes(undefined)
         setContentMinutes(undefined)
+        setContentSeconds(undefined)
         setChildAssignments([])
         setComments([])
       }
@@ -1085,11 +1131,14 @@ export default function App({
                       const nextValue = e.target.value.trim()
                       if (!nextValue) {
                         setContentMinutes(undefined)
+                        setContentSeconds(undefined)
                         return
                       }
                       const parsed = Number(nextValue)
                       if (!Number.isFinite(parsed) || parsed < 0) return
-                      setContentMinutes(Math.round(parsed))
+                      const roundedMinutes = Math.round(parsed)
+                      setContentMinutes(roundedMinutes)
+                      setContentSeconds(roundedMinutes * 60)
                     }}
                     placeholder="0"
                     aria-label="Content length (min)"

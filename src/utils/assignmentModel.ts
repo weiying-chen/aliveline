@@ -13,6 +13,7 @@ export type Assignment = {
   deadline: string
   workMinutes?: number
   contentMinutes?: number
+  contentSeconds?: number
   relations: AssignmentRelation[]
   comments: string[]
 }
@@ -25,6 +26,7 @@ type BuildAssignmentInput = {
   deadline: string
   workMinutes?: number
   contentMinutes?: number
+  contentSeconds?: number
   relations?: AssignmentRelation[]
   comments?: string[]
 }
@@ -35,6 +37,11 @@ function normalizeWorkMinutes(value: number | undefined) {
 }
 
 function normalizeContentMinutes(value: number | undefined) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return undefined
+  return Math.round(value)
+}
+
+function normalizeContentSeconds(value: number | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return undefined
   return Math.round(value)
 }
@@ -78,7 +85,20 @@ function normalizeCreatedAtIso(createdAt: string | undefined) {
 export function buildAssignment(input: BuildAssignmentInput): Assignment {
   const owner = normalizeOwner(input.owner)
   const workMinutes = normalizeWorkMinutes(input.workMinutes)
-  const contentMinutes = normalizeContentMinutes(input.contentMinutes)
+  const normalizedContentMinutes = normalizeContentMinutes(input.contentMinutes)
+  const normalizedContentSeconds = normalizeContentSeconds(input.contentSeconds)
+  const contentSeconds =
+    typeof normalizedContentSeconds === 'number'
+      ? normalizedContentSeconds
+      : typeof normalizedContentMinutes === 'number'
+        ? normalizedContentMinutes * 60
+        : undefined
+  const contentMinutes =
+    typeof normalizedContentMinutes === 'number'
+      ? normalizedContentMinutes
+      : typeof contentSeconds === 'number'
+        ? Math.round(contentSeconds / 60)
+        : undefined
   const createdAt = normalizeCreatedAtIso(input.createdAt)
   return {
     id: input.id,
@@ -88,6 +108,7 @@ export function buildAssignment(input: BuildAssignmentInput): Assignment {
     deadline: input.deadline,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
     ...(typeof contentMinutes === 'number' ? { contentMinutes } : {}),
+    ...(typeof contentSeconds === 'number' ? { contentSeconds } : {}),
     relations: normalizeRelations(input.relations),
     comments: normalizeComments(input.comments),
   }
