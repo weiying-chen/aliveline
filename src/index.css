@@ -98,15 +98,23 @@ body {
 
 .compactTimePartInputWrap {
   position: relative;
-  width: 2.6ch;
-  min-width: 2.6ch;
+  width: 1.9em;
+  min-width: 1.9em;
 }
 
 .compactTimePartInputWrap .assignmentOverviewOwnerInput {
   padding-right: 0;
   padding-left: 0;
   text-align: left;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+  -webkit-text-fill-color: var(--fg);
+  opacity: 1;
   width: 100%;
+}
+
+.compactTimePartInputWrap[data-part='right'] .assignmentOverviewOwnerInput {
+  text-align: right;
 }
 
 .compactTimePartInputWrap .assignmentOverviewOwnerInput::-webkit-outer-spin-button,
