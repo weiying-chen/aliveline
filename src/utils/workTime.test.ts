@@ -163,10 +163,10 @@ describe('shouldShowDeadlineExtensionReminder', () => {
     expect(shouldShowDeadlineExtensionReminder(now, deadline, false)).toBe(false)
   })
 
-  it('shows at 4:00 when the same-day deadline spills past 17:00', () => {
+  it('does not show at 4:00 when the same-day deadline spills past 17:00', () => {
     const now = at(16, 2)
     const deadline = at(18, 0)
-    expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(true)
+    expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(false)
   })
 
   it('shows at 4:00 when the deadline is exactly 17:00', () => {
@@ -181,11 +181,17 @@ describe('shouldShowDeadlineExtensionReminder', () => {
     expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(true)
   })
 
-  it('does not show the previous afternoon for a next-day deadline', () => {
+  it('shows at 4:00 PM for a next-day deadline', () => {
     const now = at(16, 3)
     const deadline = at(9, 35)
     deadline.setDate(deadline.getDate() + 1)
-    expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(false)
+    expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(true)
+  })
+
+  it('shows at 4:00 PM on Friday for a Monday deadline', () => {
+    const now = atDate(2025, 0, 3, 16, 3) // Friday
+    const deadline = atDate(2025, 0, 6, 9, 35) // Monday
+    expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(true)
   })
 
   it('shows one hour before a same-day deadline ending by 17:00', () => {
@@ -206,10 +212,10 @@ describe('shouldShowDeadlineExtensionReminder', () => {
     expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(false)
   })
 
-  it('does not show after the 17:00 reminder window', () => {
+  it('shows at 5:00 PM when a same-day deadline is at 6:00 PM', () => {
     const now = at(17, 1)
     const deadline = at(18, 0)
-    expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(false)
+    expect(shouldShowDeadlineExtensionReminder(now, deadline)).toBe(true)
   })
 
   it('does not show after a next-day reminder window passes', () => {

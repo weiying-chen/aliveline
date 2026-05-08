@@ -181,12 +181,14 @@ export function shouldShowDeadlineExtensionReminder(
   deadlineDay.setHours(0, 0, 0, 0)
 
   const dayCutoff = atLocalTime(dayStart, lastBlock(WORK_BLOCKS).end)
+  const reminderEnd = new Date(dayCutoff)
+  const reminderStart = new Date(dayCutoff)
+  reminderStart.setMinutes(reminderStart.getMinutes() - 60)
+  const isWithinDayEndWindow =
+    now.getTime() >= reminderStart.getTime() && now.getTime() < reminderEnd.getTime()
 
-  if (deadlineDay.getTime() === dayStart.getTime() && deadline.getTime() >= dayCutoff.getTime()) {
-    const reminderEnd = new Date(dayCutoff)
-    const reminderStart = new Date(dayCutoff)
-    reminderStart.setMinutes(reminderStart.getMinutes() - 60)
-    return now.getTime() >= reminderStart.getTime() && now.getTime() < reminderEnd.getTime()
+  if (deadlineDay.getTime() !== dayStart.getTime()) {
+    return isWithinDayEndWindow
   }
 
   const remindAt = new Date(deadline.getTime() - 60 * 60000)
