@@ -9,15 +9,15 @@ import type { Assignment } from '../utils/assignmentModel'
 
 const LS_ASSIGNMENTS_KEY = 'aliveline:assignments'
 
-type AssignmentDraftV2 = {
+type AssignmentsStateV2 = {
   assignments: (Assignment & { children?: Assignment[] })[]
 }
 
-function readDraft() {
+function readStoredAssignments() {
   const saved = localStorage.getItem(LS_ASSIGNMENTS_KEY)
   if (!saved) return null
   try {
-    const parsed = JSON.parse(saved) as AssignmentDraftV2
+    const parsed = JSON.parse(saved) as AssignmentsStateV2
     if (!Array.isArray(parsed.assignments)) return null
     return parsed
   } catch {
@@ -29,8 +29,8 @@ export function AssignmentsPage() {
   const navigate = useNavigate()
   const listScrollRef = useRef<HTMLDivElement | null>(null)
   const [hasListOverflow, setHasListOverflow] = useState(false)
-  const draft = readDraft()
-  const assignments = (draft?.assignments ?? []).map((assignment) => {
+  const state = readStoredAssignments()
+  const assignments = (state?.assignments ?? []).map((assignment) => {
     if (
       assignment.title === 'New assignment' &&
       assignment.workMinutes === 60 &&
@@ -42,8 +42,8 @@ export function AssignmentsPage() {
   })
 
   useEffect(() => {
-    if (!draft) return
-    const hadLegacyDefault = draft.assignments.some(
+    if (!state) return
+    const hadLegacyDefault = state.assignments.some(
       (assignment) =>
         assignment.title === 'New assignment' &&
         assignment.workMinutes === 60 &&
@@ -53,11 +53,11 @@ export function AssignmentsPage() {
     localStorage.setItem(
       LS_ASSIGNMENTS_KEY,
       JSON.stringify({
-        ...draft,
+        ...state,
         assignments,
-      } satisfies AssignmentDraftV2)
+      } satisfies AssignmentsStateV2)
     )
-  }, [assignments, draft])
+  }, [assignments, state])
 
   useEffect(() => {
     const element = listScrollRef.current
@@ -74,8 +74,8 @@ export function AssignmentsPage() {
   const affectingAssignments = assignments
 
   const onAddAssignment = () => {
-    const currentDraft = readDraft()
-    const currentAssignments = currentDraft?.assignments ?? []
+    const currentAssignmentsState = readStoredAssignments()
+    const currentAssignments = currentAssignmentsState?.assignments ?? []
     const baseDeadlineIso = currentAssignments[0]?.deadline ?? new Date().toISOString()
 
     const newIndex = 0
@@ -96,7 +96,7 @@ export function AssignmentsPage() {
       LS_ASSIGNMENTS_KEY,
       JSON.stringify({
         assignments: nextAssignments,
-      } satisfies AssignmentDraftV2)
+      } satisfies AssignmentsStateV2)
     )
 
     navigate(`/assignments/view/${newIndex}`)
@@ -150,7 +150,7 @@ export function AssignmentsPage() {
           <App
             selectedAssignmentId={affectingAssignments[0]?.id}
             showTopNav={false}
-            persistDraft={false}
+            persistAssignments={false}
             renderMessagesOnly={true}
           />
         </div>

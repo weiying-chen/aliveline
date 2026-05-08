@@ -40,7 +40,7 @@ type DeadlineInputMode = 'direct' | 'duration'
 type AppProps = {
   selectedAssignmentId?: string
   showTopNav?: boolean
-  persistDraft?: boolean
+  persistAssignments?: boolean
   renderMessagesOnly?: boolean
   showMessagesSection?: boolean
 }
@@ -119,12 +119,12 @@ function sanitizeAssignmentEntries(entries: unknown) {
   ) as AssignmentEntry[]
 }
 
-type StoredAssignmentDraftV2 = {
-  assignments: DraftAssignment[]
+type StoredAssignmentsV2 = {
+  assignments: StoredAssignment[]
 }
 
-type AssignmentDraftState = {
-  assignments: DraftAssignment[]
+type AssignmentStateSnapshot = {
+  assignments: StoredAssignment[]
   deadline: string
   assignmentTitle: string
   createdAt?: string
@@ -136,7 +136,7 @@ type AssignmentDraftState = {
   comments: string[]
 }
 
-type DraftAssignment = {
+type StoredAssignment = {
   id: string
   title: string
   createdAt?: string
@@ -146,10 +146,10 @@ type DraftAssignment = {
   contentMinutes?: number
   contentSeconds?: number
   comments: string[]
-  children: DraftAssignment[]
+  children: StoredAssignment[]
 }
 
-function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
+function normalizeStoredAssignment(input: unknown): StoredAssignment | null {
   if (!input || typeof input !== 'object') return null
   const item = input as Record<string, unknown>
   if (typeof item.id !== 'string') return null
@@ -190,8 +190,8 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
         : undefined
   const childrenInput = Array.isArray(item.children) ? item.children : []
   const children = childrenInput
-    .map((child) => normalizeDraftAssignment(child))
-    .filter((child): child is DraftAssignment => Boolean(child))
+    .map((child) => normalizeStoredAssignment(child))
+    .filter((child): child is StoredAssignment => Boolean(child))
   return {
     id: item.id,
     title: item.title.trim(),
@@ -210,7 +210,7 @@ function normalizeDraftAssignment(input: unknown): DraftAssignment | null {
   }
 }
 
-function readStoredAssignmentDraft(selectedAssignmentId?: string) {
+function readStoredAssignmentsState(selectedAssignmentId?: string) {
   const saved = localStorage.getItem(LS_ASSIGNMENTS_KEY)
   if (!saved) return null
   try {
@@ -219,8 +219,8 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
     }
     if (!Array.isArray(parsed.assignments)) return null
     const assignments = parsed.assignments
-      .map((item) => normalizeDraftAssignment(item))
-      .filter((item): item is DraftAssignment => Boolean(item))
+      .map((item) => normalizeStoredAssignment(item))
+      .filter((item): item is StoredAssignment => Boolean(item))
     if (assignments.length === 0) return null
     const current =
       assignments.find((assignment) => assignment.id === selectedAssignmentId) ?? assignments[0]
@@ -243,13 +243,13 @@ function readStoredAssignmentDraft(selectedAssignmentId?: string) {
         : {}),
       relatedAssignments: sanitizeAssignmentEntries(relatedAssignments),
       comments: current.comments ?? [],
-    } as AssignmentDraftState
+    } as AssignmentStateSnapshot
   } catch {
     return null
   }
 }
 
-function buildDraftAssignments(
+function buildStoredAssignments(
   assignmentId: string,
   createdAt: string,
   deadline: Date,
@@ -261,18 +261,18 @@ function buildDraftAssignments(
   relatedAssignments: AssignmentEntry[],
   assignmentFinishTimes: Date[],
   comments: string[]
-) : DraftAssignment {
+) : StoredAssignment {
   const childAssignmentEntries = relatedAssignments.map((item, index) =>
-    normalizeDraftAssignment(buildAssignment({
+    normalizeStoredAssignment(buildAssignment({
       id: `${assignmentId}-item-${index}`,
       title: item.text,
       deadline: (assignmentFinishTimes[index] ?? deadline).toISOString(),
       workMinutes: item.minutes,
       comments: [],
-    })) as DraftAssignment
+    })) as StoredAssignment
   )
 
-  const root = normalizeDraftAssignment(buildAssignment({
+  const root = normalizeStoredAssignment(buildAssignment({
     id: assignmentId,
     title: assignmentTitle,
     createdAt,
@@ -282,7 +282,7 @@ function buildDraftAssignments(
     ...(typeof contentMinutes === 'number' ? { contentMinutes } : {}),
     ...(typeof contentSeconds === 'number' ? { contentSeconds } : {}),
     comments,
-  })) as DraftAssignment
+  })) as StoredAssignment
   return {
     ...root,
     children: childAssignmentEntries,
@@ -290,9 +290,9 @@ function buildDraftAssignments(
 }
 
 function replaceTopLevelAssignment(
-  existingAssignments: DraftAssignment[],
+  existingAssignments: StoredAssignment[],
   assignmentId: string,
-  nextAssignment: DraftAssignment
+  nextAssignment: StoredAssignment
 ) {
   let replaced = false
   const next = existingAssignments.map((assignment) => {
@@ -348,24 +348,24 @@ function downloadTextFile(fileName: string, content: string, contentType: string
 export default function App({
   selectedAssignmentId,
   showTopNav = true,
-  persistDraft = true,
+  persistAssignments = true,
   renderMessagesOnly = false,
   showMessagesSection = true,
 }: AppProps = {}) {
   const deadlineRef = useRef<PickerInput | null>(null)
   const durationStartRef = useRef<PickerInput | null>(null)
-  const importDraftInputRef = useRef<HTMLInputElement | null>(null)
+  const importAssignmentsInputRef = useRef<HTMLInputElement | null>(null)
   const fallbackAssignmentIdRef = useRef(`assignment-${Date.now()}`)
-  const storedDraft = useMemo(
-    () => readStoredAssignmentDraft(selectedAssignmentId),
+  const storedAssignmentsState = useMemo(
+    () => readStoredAssignmentsState(selectedAssignmentId),
     [selectedAssignmentId]
   )
 
   const [now, setNow] = useState(() => new Date())
   const [deadline, setDeadline] = useState(
-    () => readStoredDate(LS_DEADLINE_KEY) ?? (storedDraft ? new Date(storedDraft.deadline) : new Date())
+    () => readStoredDate(LS_DEADLINE_KEY) ?? (storedAssignmentsState ? new Date(storedAssignmentsState.deadline) : new Date())
   )
-  const [relatedAssignments, setChildAssignments] = useState<AssignmentEntry[]>(() => storedDraft?.relatedAssignments ?? [])
+  const [relatedAssignments, setChildAssignments] = useState<AssignmentEntry[]>(() => storedAssignmentsState?.relatedAssignments ?? [])
   const [recentAssignments, setRecentAssignments] = useState<string[]>(() =>
     readStoredStringList(LS_RECENT_ASSIGNMENTS_KEY)
   )
@@ -381,22 +381,22 @@ export default function App({
   const [isRecentOpen, setIsRecentOpen] = useState(false)
   const [recentActiveIndex, setRecentActiveIndex] = useState<number>(-1)
   const [deadlineExtensionAssignment, setDeadlineExtensionAssignment] = useState(
-    () => storedDraft?.assignmentTitle ?? ''
+    () => storedAssignmentsState?.assignmentTitle ?? ''
   )
   const [createdAt] = useState<string>(
-    () => storedDraft?.createdAt ?? new Date().toISOString()
+    () => storedAssignmentsState?.createdAt ?? new Date().toISOString()
   )
-  const [assignmentOwner, setAssignmentOwner] = useState(() => storedDraft?.owner ?? '')
-  const [workMinutes, setWorkMinutes] = useState<number | undefined>(() => storedDraft?.workMinutes)
+  const [assignmentOwner, setAssignmentOwner] = useState(() => storedAssignmentsState?.owner ?? '')
+  const [workMinutes, setWorkMinutes] = useState<number | undefined>(() => storedAssignmentsState?.workMinutes)
   const [contentMinutes, setContentMinutes] = useState<number | undefined>(
     () =>
-      storedDraft?.contentMinutes ??
-      (typeof storedDraft?.contentSeconds === 'number'
-        ? Math.round(storedDraft.contentSeconds / 60)
+      storedAssignmentsState?.contentMinutes ??
+      (typeof storedAssignmentsState?.contentSeconds === 'number'
+        ? Math.round(storedAssignmentsState.contentSeconds / 60)
         : undefined)
   )
   const [contentSeconds, setContentSeconds] = useState<number | undefined>(
-    () => storedDraft?.contentSeconds
+    () => storedAssignmentsState?.contentSeconds
   )
   const [deadlineExtensionCopyState, setDeadlineExtensionCopyState] = useState<
     'idle' | 'copied' | 'failed'
@@ -404,7 +404,7 @@ export default function App({
   const [nextAssignmentCopyState, setNextAssignmentCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle')
-  const [importDraftState, setImportDraftState] = useState<'idle' | 'imported' | 'failed'>('idle')
+  const [importAssignmentsState, setImportAssignmentsState] = useState<'idle' | 'imported' | 'failed'>('idle')
   const [isAssignmentHistoryPanelOpen, setIsAssignmentHistoryPanelOpen] = useState(() =>
     readStoredBool(LS_PANEL_ASSIGNMENT_HISTORY_OPEN_KEY, false)
   )
@@ -417,7 +417,7 @@ export default function App({
   const [isAddAssignmentFormOpen, setIsAddAssignmentFormOpen] = useState(false)
   const [isCommentsFormOpen, setIsCommentsFormOpen] = useState(false)
   const [commentText, setCommentText] = useState('')
-  const [comments, setComments] = useState<string[]>(() => storedDraft?.comments ?? [])
+  const [comments, setComments] = useState<string[]>(() => storedAssignmentsState?.comments ?? [])
   const [historyMonth, setHistoryMonth] = useState(() =>
     `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`
   )
@@ -540,12 +540,12 @@ export default function App({
     [adjustedAssignments, assignmentFinishStart]
   )
   useEffect(() => {
-    if (!persistDraft) return
+    if (!persistAssignments) return
     const targetAssignmentId =
       selectedAssignmentId ??
-      storedDraft?.assignments[0]?.id ??
+      storedAssignmentsState?.assignments[0]?.id ??
       fallbackAssignmentIdRef.current
-    const nextAssignment = buildDraftAssignments(
+    const nextAssignment = buildStoredAssignments(
       targetAssignmentId,
       createdAt,
       deadline,
@@ -558,32 +558,32 @@ export default function App({
       assignmentFinishTimes,
       comments
     )
-    const currentDraft = readStoredAssignmentDraft()
+    const currentAssignmentsState = readStoredAssignmentsState()
     const assignments = replaceTopLevelAssignment(
-      currentDraft?.assignments ?? [],
+      currentAssignmentsState?.assignments ?? [],
       targetAssignmentId,
       nextAssignment
     )
-    const nextDraft: StoredAssignmentDraftV2 = {
+    const nextAssignmentsState: StoredAssignmentsV2 = {
       assignments,
     }
-    localStorage.setItem(LS_ASSIGNMENTS_KEY, JSON.stringify(nextDraft))
+    localStorage.setItem(LS_ASSIGNMENTS_KEY, JSON.stringify(nextAssignmentsState))
   }, [
     assignmentOwner,
     createdAt,
     comments,
     deadline,
     deadlineExtensionAssignment,
-    persistDraft,
+    persistAssignments,
     selectedAssignmentId,
-    storedDraft,
+    storedAssignmentsState,
     relatedAssignments,
     assignmentFinishTimes,
     workMinutes,
     contentMinutes,
     contentSeconds,
   ])
-  const exportAssignments = useMemo(() => storedDraft?.assignments ?? [], [storedDraft])
+  const exportAssignments = useMemo(() => storedAssignmentsState?.assignments ?? [], [storedAssignmentsState])
   const exportHistoryMinutes = useMemo(
     () =>
       exportAssignments.reduce(
@@ -683,13 +683,13 @@ export default function App({
 
   const updateDeadline = (
     nextDeadline: Date,
-    options?: { relatedAssignments?: AssignmentEntry[]; resetDrafts?: boolean; captureWorkMinutes?: boolean }
+    options?: { relatedAssignments?: AssignmentEntry[]; resetAssignments?: boolean; captureWorkMinutes?: boolean }
   ) => {
     if (options?.captureWorkMinutes) {
       setWorkMinutes(deadlineWorkMinutes(now, nextDeadline))
     }
     const sameDeadline = nextDeadline.getTime() === deadline.getTime()
-    if (sameDeadline && options?.resetDrafts) {
+    if (sameDeadline && options?.resetAssignments) {
       setChildAssignments([])
       setChangeBaseDeadline(null)
       setAssignmentFinishBase(null)
@@ -697,7 +697,7 @@ export default function App({
     }
     if (sameDeadline) return
     setDeadline(nextDeadline)
-    if (options?.resetDrafts) {
+    if (options?.resetAssignments) {
       setChildAssignments([])
       setChangeBaseDeadline(null)
       setAssignmentFinishBase(null)
@@ -706,12 +706,12 @@ export default function App({
 
   const onSetDeadline = (value: string, nextDeadline: Date | null) => {
     setDirectDeadlineInput(value)
-    if (nextDeadline) updateDeadline(nextDeadline, { resetDrafts: true, captureWorkMinutes: true })
+    if (nextDeadline) updateDeadline(nextDeadline, { resetAssignments: true, captureWorkMinutes: true })
   }
 
   const reset = () => {
     const next = snapToWorkTime(new Date())
-    updateDeadline(next, { resetDrafts: true, captureWorkMinutes: true })
+    updateDeadline(next, { resetAssignments: true, captureWorkMinutes: true })
     setDirectDeadlineInput(toDatetimeLocalValue(next))
     if (deadlineInputMode === 'duration') {
       setDurationStartInput(toDatetimeLocalValue(next))
@@ -726,7 +726,7 @@ export default function App({
     minutesInput: string
   ) => {
     const nextDeadline = deadlineFromDurationInputs(startInput, hoursInput, minutesInput)
-    if (nextDeadline) updateDeadline(nextDeadline, { resetDrafts: true, captureWorkMinutes: true })
+    if (nextDeadline) updateDeadline(nextDeadline, { resetAssignments: true, captureWorkMinutes: true })
   }
 
   const onDurationStartInputChange = (value: string) => {
@@ -923,12 +923,12 @@ export default function App({
   }
 
   const onExportAssignmentHistoryJson = () => {
-    const rawDraft = localStorage.getItem(LS_ASSIGNMENTS_KEY)
+    const rawAssignmentsState = localStorage.getItem(LS_ASSIGNMENTS_KEY)
     const exportMonth = historyMonth.trim() || 'all'
     let content = JSON.stringify({ assignments: [], exportMonth }, null, 2)
-    if (rawDraft) {
+    if (rawAssignmentsState) {
       try {
-        const parsed = JSON.parse(rawDraft) as { assignments?: unknown }
+        const parsed = JSON.parse(rawAssignmentsState) as { assignments?: unknown }
         const assignments = Array.isArray(parsed.assignments) ? parsed.assignments : []
         content = JSON.stringify({ assignments, exportMonth }, null, 2)
       } catch {
@@ -939,11 +939,11 @@ export default function App({
     downloadTextFile(`assignment-history-${suffix}.json`, content, 'application/json;charset=utf-8')
   }
 
-  const onClickImportAssignmentDraft = () => {
-    importDraftInputRef.current?.click()
+  const onClickImportAssignments = () => {
+    importAssignmentsInputRef.current?.click()
   }
 
-  const onImportAssignmentDraft = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onImportAssignments = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const picked = event.target.files?.[0]
     event.target.value = ''
     if (!picked) return
@@ -952,17 +952,17 @@ export default function App({
       const raw = await picked.text()
       const parsed = JSON.parse(raw) as { assignments?: unknown }
       if (!Array.isArray(parsed.assignments)) {
-        setImportDraftState('failed')
+        setImportAssignmentsState('failed')
         return
       }
       const normalizedAssignments = parsed.assignments
-        .map((item) => normalizeDraftAssignment(item))
-        .filter((item): item is DraftAssignment => Boolean(item))
-      const importedDraft: StoredAssignmentDraftV2 = { assignments: normalizedAssignments }
-      localStorage.setItem(LS_ASSIGNMENTS_KEY, JSON.stringify(importedDraft))
+        .map((item) => normalizeStoredAssignment(item))
+        .filter((item): item is StoredAssignment => Boolean(item))
+      const importedAssignmentsState: StoredAssignmentsV2 = { assignments: normalizedAssignments }
+      localStorage.setItem(LS_ASSIGNMENTS_KEY, JSON.stringify(importedAssignmentsState))
 
       const importedState =
-        normalizedAssignments.length > 0 ? readStoredAssignmentDraft(selectedAssignmentId) : null
+        normalizedAssignments.length > 0 ? readStoredAssignmentsState(selectedAssignmentId) : null
       if (importedState) {
         const importedDeadline = new Date(importedState.deadline)
         if (!Number.isNaN(importedDeadline.getTime())) {
@@ -996,9 +996,9 @@ export default function App({
       setAssignmentName('')
       setAssignmentHours('')
       setAssignmentMinutes('')
-      setImportDraftState('imported')
+      setImportAssignmentsState('imported')
     } catch {
-      setImportDraftState('failed')
+      setImportAssignmentsState('failed')
     }
   }
 
@@ -1044,25 +1044,25 @@ export default function App({
               <button onClick={onExportAssignmentHistoryJson} className="btn-primary">
                 <i className="las la-file-code" aria-hidden="true"></i> Export JSON
               </button>
-              <button onClick={onClickImportAssignmentDraft} className="btn-secondary">
+              <button onClick={onClickImportAssignments} className="btn-secondary">
                 <i className="las la-file-import" aria-hidden="true"></i> Import JSON
               </button>
               <input
-                ref={importDraftInputRef}
+                ref={importAssignmentsInputRef}
                 type="file"
                 accept="application/json,.json"
-                onChange={onImportAssignmentDraft}
-                aria-label="Import assignment draft JSON"
+                onChange={onImportAssignments}
+                aria-label="Import assignment JSON"
                 style={{ display: 'none' }}
               />
             </div>
-            {importDraftState === 'imported' && (
-              <div className="copyStatus" aria-label="Import assignment draft status">
+            {importAssignmentsState === 'imported' && (
+              <div className="copyStatus" aria-label="Import assignment status">
                 Imported.
               </div>
             )}
-            {importDraftState === 'failed' && (
-              <div className="copyStatus" aria-label="Import assignment draft status">
+            {importAssignmentsState === 'failed' && (
+              <div className="copyStatus" aria-label="Import assignment status">
                 Import failed.
               </div>
             )}

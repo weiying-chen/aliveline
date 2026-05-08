@@ -417,7 +417,7 @@ describe('App deadline behavior', () => {
     expect(screen.getByRole('button', { name: /import json/i })).toBeTruthy()
   })
 
-  it('exports raw assignment draft from local storage as-is', async () => {
+  it('exports raw assignment state from local storage as-is', async () => {
     let exportedBlob: Blob | MediaSource | null = null
     Object.assign(URL, {
       createObjectURL: () => 'blob:stub',
@@ -430,7 +430,7 @@ describe('App deadline behavior', () => {
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 
-    const draft = {
+    const state = {
       assignments: [
         {
           id: 'legacy-root',
@@ -448,11 +448,11 @@ describe('App deadline behavior', () => {
         },
       ],
     }
-    localStorage.setItem('aliveline:assignments', JSON.stringify(draft))
+    localStorage.setItem('aliveline:assignments', JSON.stringify(state))
 
     render(
       <MemoryRouter>
-        <App selectedAssignmentId="legacy-root" persistDraft={false} />
+        <App selectedAssignmentId="legacy-root" persistAssignments={false} />
       </MemoryRouter>
     )
     fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
@@ -464,16 +464,16 @@ describe('App deadline behavior', () => {
     const content = await (exportedBlob as Blob).text()
     const parsed = JSON.parse(content)
     expect(parsed).toEqual({
-      assignments: draft.assignments,
+      assignments: state.assignments,
       exportMonth: `${new Date().getFullYear()}-${`${new Date().getMonth() + 1}`.padStart(2, '0')}`,
     })
   })
 
-  it('imports assignment draft JSON and refreshes assignment state', async () => {
+  it('imports assignment state JSON and refreshes assignment state', async () => {
     renderApp()
 
     fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
-    const importInput = screen.getByLabelText('Import assignment draft JSON') as HTMLInputElement
+    const importInput = screen.getByLabelText('Import assignment JSON') as HTMLInputElement
     const imported = {
       assignments: [
         {
@@ -496,7 +496,7 @@ describe('App deadline behavior', () => {
       ],
     }
 
-    const file = new File([JSON.stringify(imported)], 'assignment-draft.json', {
+    const file = new File([JSON.stringify(imported)], 'assignments.json', {
       type: 'application/json',
     })
     fireEvent.change(importInput, { target: { files: [file] } })
@@ -509,14 +509,14 @@ describe('App deadline behavior', () => {
     expect(screen.getByLabelText('Current deadline display').textContent).toContain('2026-04-10')
     expect(screen.getAllByLabelText('Assignment due time display')[0].textContent).toContain('40m')
     expect((screen.getByLabelText('Content length (min)') as HTMLInputElement).value).toBe('18')
-    expect(screen.getByLabelText('Import assignment draft status').textContent).toBe('Imported.')
+    expect(screen.getByLabelText('Import assignment status').textContent).toBe('Imported.')
   })
 
   it('derives content minutes from imported content seconds when minutes is missing', async () => {
     renderApp()
 
     fireEvent.click(screen.getByRole('button', { name: 'Assignment history export' }))
-    const importInput = screen.getByLabelText('Import assignment draft JSON') as HTMLInputElement
+    const importInput = screen.getByLabelText('Import assignment JSON') as HTMLInputElement
     const imported = {
       assignments: [
         {
@@ -530,7 +530,7 @@ describe('App deadline behavior', () => {
       ],
     }
 
-    const file = new File([JSON.stringify(imported)], 'assignment-draft-seconds.json', {
+    const file = new File([JSON.stringify(imported)], 'assignments-seconds.json', {
       type: 'application/json',
     })
     fireEvent.change(importInput, { target: { files: [file] } })
@@ -584,7 +584,7 @@ describe('App deadline behavior', () => {
     })
   })
 
-  it('boots from assignment draft storage', () => {
+  it('boots from assignment state storage', () => {
     const now = new Date()
     const y = now.getFullYear()
     const m = `${now.getMonth() + 1}`.padStart(2, '0')
@@ -637,7 +637,7 @@ describe('App deadline behavior', () => {
     expect((screen.getByLabelText('Assignment title') as HTMLInputElement).value).toBe('Research Project')
   })
 
-  it('updates assignment draft assignments when list changes', () => {
+  it('updates assignment state assignments when list changes', () => {
     renderApp()
     fireEvent.change(screen.getByLabelText('Deadline time'), {
       target: { value: '2026-04-10T12:00' },
@@ -651,15 +651,15 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '20' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    let draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
-    expect(Array.isArray(draft.assignments)).toBe(true)
-    const firstAssignment = draft.assignments[0]?.children?.[0]
+    let state = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
+    expect(Array.isArray(state.assignments)).toBe(true)
+    const firstAssignment = state.assignments[0]?.children?.[0]
     expect(firstAssignment?.title).toBe('Assignment A')
     expect(firstAssignment?.workMinutes).toBe(80)
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove assignment' }))
-    draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
-    expect(draft.assignments[0]?.children ?? []).toEqual([])
+    state = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
+    expect(state.assignments[0]?.children ?? []).toEqual([])
   })
 
   it('keeps root workMinutes frozen after affecting assignments change deadline', () => {
@@ -671,8 +671,8 @@ describe('App deadline behavior', () => {
       target: { value: '2026-04-15T13:00' },
     })
 
-    let draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
-    expect(draft.assignments[0]?.workMinutes).toBe(120)
+    let state = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
+    expect(state.assignments[0]?.workMinutes).toBe(120)
 
     openAddAssignmentForm()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Assignment A' } })
@@ -680,11 +680,11 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
-    expect(draft.assignments[0]?.workMinutes).toBe(120)
+    state = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
+    expect(state.assignments[0]?.workMinutes).toBe(120)
   })
 
-  it('persists selected assignment edits to draft storage', () => {
+  it('persists selected assignment edits to assignment storage', () => {
     const now = new Date()
     const y = now.getFullYear()
     const m = `${now.getMonth() + 1}`.padStart(2, '0')
@@ -731,8 +731,8 @@ describe('App deadline behavior', () => {
     fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '0' } })
     fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
 
-    const draft = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
-    const edited = draft.assignments.find((item: { id: string }) => item.id === 'assignment-a')
+    const state = JSON.parse(localStorage.getItem('aliveline:assignments') ?? '{}')
+    const edited = state.assignments.find((item: { id: string }) => item.id === 'assignment-a')
     expect(edited.title).toBe('Edited child assignment')
     expect(edited.owner).toBe('Alice')
     expect(edited.contentMinutes).toBe(23)
@@ -746,7 +746,7 @@ describe('App deadline behavior', () => {
     expect(nested.workMinutes).toBe(60)
   })
 
-  it('does not persist legacy v1 draft keys', () => {
+  it('does not persist legacy v1 assignment keys', () => {
     renderApp()
     fireEvent.change(screen.getByLabelText('Assignment title'), {
       target: { value: 'Legacy key check' },
@@ -761,7 +761,7 @@ describe('App deadline behavior', () => {
     expect(localStorage.getItem('aliveline:assignments')).toBeTruthy()
   })
 
-  it('ignores malformed draft key payload', () => {
+  it('ignores malformed assignment key payload', () => {
     localStorage.setItem('aliveline:assignments', '{"deadline":123}')
     localStorage.setItem('aliveline:daily-clear', new Date().toISOString().slice(0, 10))
 

@@ -5,15 +5,15 @@ import type { Assignment } from '../utils/assignmentModel'
 
 const LS_ASSIGNMENTS_KEY = 'aliveline:assignments'
 
-type AssignmentDraftV2 = {
+type AssignmentsStateV2 = {
   assignments: (Assignment & { children?: Assignment[] })[]
 }
 
-function readDraft() {
+function readStoredAssignments() {
   const saved = localStorage.getItem(LS_ASSIGNMENTS_KEY)
-  if (!saved) return null as AssignmentDraftV2 | null
+  if (!saved) return null as AssignmentsStateV2 | null
   try {
-    const parsed = JSON.parse(saved) as AssignmentDraftV2
+    const parsed = JSON.parse(saved) as AssignmentsStateV2
     if (!Array.isArray(parsed.assignments)) return null
     return parsed
   } catch {
@@ -28,8 +28,8 @@ export function AssignmentDetailPage() {
     return <Navigate to="/assignments" replace />
   }
 
-  const draft = readDraft()
-  const assignments = draft?.assignments ?? []
+  const state = readStoredAssignments()
+  const assignments = state?.assignments ?? []
   const selected = assignments[index]
 
   if (!selected) {

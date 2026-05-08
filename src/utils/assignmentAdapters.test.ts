@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import type { Assignment } from './assignmentModel'
 import {
-  fromLegacyAssignmentDraft,
-  toLegacyAssignmentDraft,
-  type LegacyAssignmentDraft,
+  fromLegacyAssignmentState,
+  toLegacyAssignmentState,
+  type LegacyAssignmentState,
 } from './assignmentAdapters'
 
-describe('fromLegacyAssignmentDraft', () => {
+describe('fromLegacyAssignmentState', () => {
   it('maps legacy assignment and assignments into unified assignments with extends relations', () => {
-    const legacy: LegacyAssignmentDraft = {
+    const legacy: LegacyAssignmentState = {
       assignmentTitle: '  Translation batch  ',
       deadline: '2026-05-01T10:00:00.000Z',
       assignments: [
@@ -20,7 +20,7 @@ describe('fromLegacyAssignmentDraft', () => {
       ],
     }
 
-    const assignments = fromLegacyAssignmentDraft(legacy)
+    const assignments = fromLegacyAssignmentState(legacy)
 
     expect(assignments).toEqual([
       {
@@ -53,8 +53,8 @@ describe('fromLegacyAssignmentDraft', () => {
   })
 })
 
-describe('toLegacyAssignmentDraft', () => {
-  it('maps root assignment and extends-linked children back to legacy draft', () => {
+describe('toLegacyAssignmentState', () => {
+  it('maps root assignment and extends-linked children back to legacy state', () => {
     const assignments: Assignment[] = [
       {
         id: 'legacy-root',
@@ -84,7 +84,7 @@ describe('toLegacyAssignmentDraft', () => {
       },
     ]
 
-    expect(toLegacyAssignmentDraft(assignments, 'legacy-root')).toEqual({
+    expect(toLegacyAssignmentState(assignments, 'legacy-root')).toEqual({
       assignmentTitle: 'Main assignment',
       deadline: '2026-05-02T10:00:00.000Z',
       assignments: [
@@ -105,7 +105,7 @@ describe('toLegacyAssignmentDraft', () => {
       },
     ]
 
-    expect(toLegacyAssignmentDraft(assignments)).toEqual({
+    expect(toLegacyAssignmentState(assignments)).toEqual({
       assignmentTitle: 'X',
       deadline: '2026-05-03T10:00:00.000Z',
       assignments: [],

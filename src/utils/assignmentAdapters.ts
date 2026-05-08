@@ -1,7 +1,7 @@
 import { buildAssignment, type Assignment } from './assignmentModel'
 import type { AssignmentEntry } from './deadlineHistory'
 
-export type LegacyAssignmentDraft = {
+export type LegacyAssignmentState = {
   assignmentTitle: string
   deadline: string
   assignments: AssignmentEntry[]
@@ -15,28 +15,28 @@ function sanitizeLegacyAssignments(assignments: AssignmentEntry[]) {
     .filter((item) => item.text.length > 0 && Number.isFinite(item.minutes) && item.minutes > 0)
 }
 
-export function fromLegacyAssignmentDraft(draft: LegacyAssignmentDraft): Assignment[] {
-  const sanitizedAssignments = sanitizeLegacyAssignments(draft.assignments)
+export function fromLegacyAssignmentState(state: LegacyAssignmentState): Assignment[] {
+  const sanitizedAssignments = sanitizeLegacyAssignments(state.assignments)
   const childAssignments = sanitizedAssignments.map((item, index) =>
     buildAssignment({
       id: `legacy-item-${index}`,
       title: item.text,
-      deadline: draft.deadline,
+      deadline: state.deadline,
       workMinutes: item.minutes,
     })
   )
 
   const root = buildAssignment({
     id: LEGACY_ROOT_ID,
-    title: draft.assignmentTitle,
-    deadline: draft.deadline,
+    title: state.assignmentTitle,
+    deadline: state.deadline,
     relations: childAssignments.map((item) => ({ assignmentId: item.id, type: 'extends' })),
   })
 
   return [root, ...childAssignments]
 }
 
-export function toLegacyAssignmentDraft(assignments: Assignment[], rootId?: string): LegacyAssignmentDraft {
+export function toLegacyAssignmentState(assignments: Assignment[], rootId?: string): LegacyAssignmentState {
   const root =
     assignments.find((assignment) => assignment.id === rootId) ??
     assignments[0] ??

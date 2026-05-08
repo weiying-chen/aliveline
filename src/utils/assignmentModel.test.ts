@@ -47,7 +47,7 @@ describe('buildAssignment', () => {
   it('defaults missing fields to safe values', () => {
     const assignment = buildAssignment({
       id: 'a1',
-      title: 'Publish draft',
+      title: 'Publish state',
       deadline: '2026-05-02T12:00:00.000Z',
     })
 
@@ -62,7 +62,7 @@ describe('buildAssignment', () => {
   it('derives contentSeconds from contentMinutes when seconds is missing', () => {
     const assignment = buildAssignment({
       id: 'a1',
-      title: 'Publish draft',
+      title: 'Publish state',
       deadline: '2026-05-02T12:00:00.000Z',
       contentMinutes: 3,
     })
@@ -74,7 +74,7 @@ describe('buildAssignment', () => {
   it('derives contentMinutes from contentSeconds when minutes is missing', () => {
     const assignment = buildAssignment({
       id: 'a1',
-      title: 'Publish draft',
+      title: 'Publish state',
       deadline: '2026-05-02T12:00:00.000Z',
       contentSeconds: 210,
     })
