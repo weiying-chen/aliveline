@@ -72,8 +72,11 @@ function adjustedDeadlineDurationMinutes(rawMinutes: number) {
 }
 
 function officialDeadlineFromAddedAssignments(baseDeadline: Date, rawAssignments: AssignmentEntry[]) {
-  const rawTotalMinutes = rawAssignments.reduce((sum, item) => sum + item.minutes, 0)
-  return addWorkMinutes(baseDeadline, adjustedAssignmentMinutes(rawTotalMinutes))
+  const adjustedTotalMinutes = rawAssignments.reduce(
+    (sum, item) => sum + adjustedAssignmentMinutes(item.minutes),
+    0
+  )
+  return addWorkMinutes(baseDeadline, adjustedTotalMinutes)
 }
 
 function deadlineWorkMinutes(start: Date, deadline: Date) {

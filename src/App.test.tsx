@@ -739,6 +739,54 @@ describe('App deadline behavior', () => {
     expect((screen.getByLabelText('Planned work minutes') as HTMLInputElement).value).toBe('00')
   })
 
+  it('uses per-entry adjusted minutes consistently for consumed deadline updates', () => {
+    localStorage.setItem(
+      'aliveline:assignments',
+      JSON.stringify({
+        assignments: [
+          {
+            id: 'assignment-current',
+            title: 'Current assignment',
+            deadline: '2026-04-15T13:00:00.000Z',
+            comments: [],
+            children: [
+              {
+                id: 'assignment-current-item-0',
+                title: 'Small item A',
+                deadline: '2026-04-15T13:00:00.000Z',
+                workMinutes: 2,
+                comments: [],
+                children: [],
+              },
+              {
+                id: 'assignment-current-item-1',
+                title: 'Small item B',
+                deadline: '2026-04-15T13:00:00.000Z',
+                workMinutes: 2,
+                comments: [],
+                children: [],
+              },
+            ],
+          },
+        ],
+      })
+    )
+
+    render(
+      <MemoryRouter>
+        <App selectedAssignmentId="assignment-current" showTopNav={false} />
+      </MemoryRouter>
+    )
+
+    openAddAssignmentForm()
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Regular item' } })
+    fireEvent.change(screen.getByLabelText('Hours'), { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText('Minutes'), { target: { value: '10' } })
+    fireEvent.click(screen.getByRole('button', { name: /add assignment/i }))
+
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('8:12 AM')
+  })
+
   it('persists selected assignment edits to assignment storage', () => {
     const now = new Date()
     const y = now.getFullYear()
