@@ -1212,7 +1212,7 @@ export default function App({
                 </div>
                 <div className="assignmentOverviewOwnerField">
                   <label className="label">
-                    Planned (work time)
+                    Work time (HH:MM)
                   </label>
                   <div aria-label="Planned work time display">
                     <CompactTimePartsInput
