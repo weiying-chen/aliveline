@@ -629,12 +629,12 @@ export default function App({
     [exportAssignments, selectedAssignmentId]
   )
   const plannedWorkHoursText = useMemo(
-    () => String(Math.floor((workMinutes ?? plannedWorkMinutes) / 60)).padStart(2, '0'),
-    [plannedWorkMinutes, workMinutes]
+    () => String(Math.floor((workMinutes ?? 0) / 60)).padStart(2, '0'),
+    [workMinutes]
   )
   const plannedWorkMinutesText = useMemo(
-    () => String((workMinutes ?? plannedWorkMinutes) % 60).padStart(2, '0'),
-    [plannedWorkMinutes, workMinutes]
+    () => String((workMinutes ?? 0) % 60).padStart(2, '0'),
+    [workMinutes]
   )
   const exportHistoryMinutes = useMemo(
     () =>
