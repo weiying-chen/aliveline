@@ -628,10 +628,6 @@ export default function App({
     () => readPreviousAssignmentFinalDeadline(exportAssignments, selectedAssignmentId),
     [exportAssignments, selectedAssignmentId]
   )
-  const plannedWorkMinutes = useMemo(
-    () => deadlineWorkMinutes(previousAssignmentFinalDeadline ?? now, deadline),
-    [deadline, now, previousAssignmentFinalDeadline]
-  )
   const plannedWorkHoursText = useMemo(
     () => String(Math.floor((workMinutes ?? plannedWorkMinutes) / 60)).padStart(2, '0'),
     [plannedWorkMinutes, workMinutes]
