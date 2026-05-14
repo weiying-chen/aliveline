@@ -527,6 +527,12 @@ export default function App({
       LS_DAILY_CLEAR_KEY,
       now.getTime() >= cutoff.getTime() ? todayKey : yesterdayKey
     )
+    if (changeBaseDeadline) {
+      // Daily clear should consume temporary affecting tasks and restore the base deadline.
+      setDeadline(changeBaseDeadline)
+      setDirectDeadlineInput(toDatetimeLocalValue(changeBaseDeadline))
+      setDurationStartInput(toDatetimeLocalValue(changeBaseDeadline))
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setChildAssignments([])
     setAssignmentName('')
@@ -627,12 +633,12 @@ export default function App({
     [deadline, now, previousAssignmentFinalDeadline]
   )
   const plannedWorkHoursText = useMemo(
-    () => String(Math.floor((workMinutes ?? 0) / 60)).padStart(2, '0'),
-    [workMinutes]
+    () => String(Math.floor((workMinutes ?? plannedWorkMinutes) / 60)).padStart(2, '0'),
+    [plannedWorkMinutes, workMinutes]
   )
   const plannedWorkMinutesText = useMemo(
-    () => String((workMinutes ?? 0) % 60).padStart(2, '0'),
-    [workMinutes]
+    () => String((workMinutes ?? plannedWorkMinutes) % 60).padStart(2, '0'),
+    [plannedWorkMinutes, workMinutes]
   )
   const exportHistoryMinutes = useMemo(
     () =>

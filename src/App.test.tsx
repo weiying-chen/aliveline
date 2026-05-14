@@ -876,4 +876,31 @@ describe('App deadline behavior', () => {
     expect((screen.getByLabelText('Assignment title') as HTMLInputElement).value).toBe('')
   })
 
+  it('restores base deadline during daily clear', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-05-12T09:00:00'))
+    localStorage.setItem('aliveline:daily-clear', '2026-05-10')
+    localStorage.setItem('aliveline:deadline-iso', '2026-05-15T06:06:00.000Z')
+    localStorage.setItem('aliveline:change-base-deadline-iso', '2026-05-15T02:16:00.000Z')
+    localStorage.setItem(
+      'aliveline:assignments',
+      JSON.stringify({
+        assignments: [
+          {
+            id: 'assignment-a',
+            title: 'Assignment A',
+            deadline: '2026-05-15T06:06:00.000Z',
+            comments: [],
+            children: [],
+          },
+        ],
+      })
+    )
+
+    renderApp()
+
+    expect(screen.getByLabelText('Current deadline display').textContent).toContain('10:16 AM')
+    expect((screen.getByLabelText('Deadline time') as HTMLInputElement).value).toBe('2026-05-15T10:16')
+  })
+
 })
