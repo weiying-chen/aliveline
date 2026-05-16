@@ -17,7 +17,7 @@ import {
   parseDatetimeLocalValue,
   toDatetimeLocalValue,
 } from './utils/time'
-import { updateRecentAssignmentNames as updateRecentAssignmentNames } from './utils/assignmentNameHistory'
+import { updateRecentAssignmentNames } from './utils/assignmentNameHistory'
 import {
   calculateAssignmentFinishTimes as calculateAssignmentFinishTimes,
   minutesFromTimeParts,
