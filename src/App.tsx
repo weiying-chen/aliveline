@@ -527,11 +527,12 @@ export default function App({
       LS_DAILY_CLEAR_KEY,
       now.getTime() >= cutoff.getTime() ? todayKey : yesterdayKey
     )
-    if (changeBaseDeadline) {
+    const baseDeadlineForClear = changeBaseDeadline ?? readStoredDate(LS_CHANGE_BASE_KEY)
+    if (baseDeadlineForClear) {
       // Daily clear should consume temporary affecting tasks and restore the base deadline.
-      setDeadline(changeBaseDeadline)
-      setDirectDeadlineInput(toDatetimeLocalValue(changeBaseDeadline))
-      setDurationStartInput(toDatetimeLocalValue(changeBaseDeadline))
+      setDeadline(baseDeadlineForClear)
+      setDirectDeadlineInput(toDatetimeLocalValue(baseDeadlineForClear))
+      setDurationStartInput(toDatetimeLocalValue(baseDeadlineForClear))
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setChildAssignments([])
