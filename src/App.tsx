@@ -337,10 +337,19 @@ export default function App() {
     )
     setPreviousDeadline(deadline)
     setPreviousChangedAt(now)
+
     setTasks([])
     setTaskName('')
     setTaskHours('')
     setTaskMinutes('')
+
+    const baseDeadlineForClear = changeBaseDeadline ?? readStoredDate(LS_CHANGE_BASE_KEY)
+    if (baseDeadlineForClear) {
+      // Daily clear should consume temporary affecting tasks and restore the base deadline.
+      setDeadline(baseDeadlineForClear)
+      setDirectDeadlineInput(toDatetimeLocalValue(baseDeadlineForClear))
+      setDurationStartInput(toDatetimeLocalValue(baseDeadlineForClear))
+    }
     setChangeBaseDeadline(null)
     setTaskFinishBase(null)
     setPreviousTasks([])
