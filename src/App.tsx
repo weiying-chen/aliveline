@@ -132,6 +132,7 @@ type AssignmentStateSnapshot = {
   deadline: string
   assignmentTitle: string
   createdAt?: string
+  baseDeadline?: string
   owner: string
   workMinutes?: number
   contentMinutes?: number
@@ -144,6 +145,7 @@ type StoredAssignment = {
   id: string
   title: string
   createdAt?: string
+  baseDeadline?: string
   owner?: string
   deadline: string
   workMinutes?: number
@@ -167,6 +169,10 @@ function normalizeStoredAssignment(input: unknown): StoredAssignment | null {
   const createdAt =
     typeof item.createdAt === 'string' && !Number.isNaN(new Date(item.createdAt).getTime())
       ? item.createdAt
+      : undefined
+  const baseDeadline =
+    typeof item.baseDeadline === 'string' && !Number.isNaN(new Date(item.baseDeadline).getTime())
+      ? item.baseDeadline
       : undefined
   const workMinutes =
     typeof item.workMinutes === 'number' && Number.isFinite(item.workMinutes) && item.workMinutes >= 0
@@ -200,6 +206,7 @@ function normalizeStoredAssignment(input: unknown): StoredAssignment | null {
     id: item.id,
     title: item.title.trim(),
     ...(typeof createdAt === 'string' ? { createdAt } : {}),
+    ...(typeof baseDeadline === 'string' ? { baseDeadline } : {}),
     ...(owner ? { owner } : {}),
     deadline: item.deadline,
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
@@ -237,6 +244,9 @@ function readStoredAssignmentsState(selectedAssignmentId?: string) {
       deadline: current.deadline,
       assignmentTitle: current.title,
       ...(typeof current.createdAt === 'string' ? { createdAt: current.createdAt } : {}),
+      ...(typeof current.baseDeadline === 'string'
+        ? { baseDeadline: current.baseDeadline }
+        : {}),
       owner: current.owner ?? '',
       ...(typeof current.workMinutes === 'number' ? { workMinutes: current.workMinutes } : {}),
       ...(typeof current.contentMinutes === 'number'
@@ -272,6 +282,7 @@ function readPreviousAssignmentFinalDeadline(
 function buildStoredAssignments(
   assignmentId: string,
   createdAt: string,
+  baseDeadline: Date | null,
   deadline: Date,
   assignmentTitle: string,
   owner: string,
@@ -296,6 +307,7 @@ function buildStoredAssignments(
     id: assignmentId,
     title: assignmentTitle,
     createdAt,
+    ...(baseDeadline ? { baseDeadline: baseDeadline.toISOString() } : {}),
     owner,
     deadline: deadline.toISOString(),
     ...(typeof workMinutes === 'number' ? { workMinutes } : {}),
@@ -307,6 +319,14 @@ function buildStoredAssignments(
     ...root,
     children: childAssignmentEntries,
   }
+}
+
+function readStoredAssignmentBaseDeadline(selectedAssignmentId?: string) {
+  const stored = readStoredAssignmentsState(selectedAssignmentId)
+  if (!stored?.baseDeadline) return null
+  const parsed = new Date(stored.baseDeadline)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed
 }
 
 function replaceTopLevelAssignment(
@@ -394,7 +414,8 @@ export default function App({
     readStoredStringList(LS_RECENT_ASSIGNMENTS_KEY)
   )
   const [changeBaseDeadline, setChangeBaseDeadline] = useState<Date | null>(() =>
-    readStoredDate(LS_CHANGE_BASE_KEY)
+    readStoredDate(LS_CHANGE_BASE_KEY) ??
+    (storedAssignmentsState?.baseDeadline ? new Date(storedAssignmentsState.baseDeadline) : null)
   )
   const [assignmentFinishBase, setAssignmentFinishBase] = useState<Date | null>(() =>
     readStoredDate(LS_ASSIGNMENT_FINISH_BASE_KEY)
@@ -527,7 +548,10 @@ export default function App({
       LS_DAILY_CLEAR_KEY,
       now.getTime() >= cutoff.getTime() ? todayKey : yesterdayKey
     )
-    const baseDeadlineForClear = changeBaseDeadline ?? readStoredDate(LS_CHANGE_BASE_KEY)
+    const baseDeadlineForClear =
+      changeBaseDeadline ??
+      readStoredDate(LS_CHANGE_BASE_KEY) ??
+      readStoredAssignmentBaseDeadline(selectedAssignmentId)
     if (baseDeadlineForClear) {
       // Daily clear should consume temporary affecting tasks and restore the base deadline.
       setDeadline(baseDeadlineForClear)
@@ -589,6 +613,7 @@ export default function App({
     const nextAssignment = buildStoredAssignments(
       targetAssignmentId,
       createdAt,
+      changeBaseDeadline,
       deadline,
       deadlineExtensionAssignment,
       assignmentOwner,
