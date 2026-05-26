@@ -664,7 +664,6 @@ export default function App() {
   }, [deadlineExtensionMessage])
 
   const nextAssignmentMessage = useMemo(() => {
-    if (!nextAssignmentStartAt) return ''
     if (!deadlineExtensionAssignment.trim()) return ''
     if (!nextAssignment.trim()) return ''
     if (!nextAssignmentConfirmedBy.trim()) return ''
@@ -672,7 +671,7 @@ export default function App() {
       completedAssignment: deadlineExtensionAssignment,
       nextAssignment,
       assignee: nextAssignmentConfirmedBy,
-      start: nextAssignmentStartAt,
+      start: deadline,
       deadline,
     })
   }, [
@@ -680,7 +679,6 @@ export default function App() {
     deadlineExtensionAssignment,
     nextAssignment,
     nextAssignmentConfirmedBy,
-    nextAssignmentStartAt,
   ])
 
   useEffect(() => {
