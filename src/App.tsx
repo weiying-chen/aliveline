@@ -900,7 +900,7 @@ export default function App({
       completedAssignment: previousAssignment.title,
       nextAssignment: deadlineExtensionAssignment,
       assignee: assignmentOwner,
-      start: previousAssignment.deadline,
+      start: deadline,
       deadline,
     })
   }, [
